@@ -52,10 +52,10 @@ $$
         \end{pmatrix}
 $$
 
-into an expression of $\phi,\psi$ and their derivatives. It is tricky to compute the partial derivative of $W$ because (a) it involves both $z,\bar z$ and (b) it has a $\Re$. But I guess this is computable anyway... 
+into an expression of $\phi,\psi$ and their derivatives. 
 
 
-First of all, notice that we can exchange partial derivatives with the $\Re$ operator. So we can ignore the $\Re$ operator for now. After some laboring one can discover that 
+Despite seeming complexity, the results are simple:  
 
 $$
 \begin{align}
@@ -65,8 +65,6 @@ $$
     &= \Re(-4\phi'')
 \end{align}
 $$
-
-Despite the laboring computation, the results end up pretty nicely... 
 
 In conclusion, we have that 
 
