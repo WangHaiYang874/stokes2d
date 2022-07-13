@@ -12,7 +12,7 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 # todo
 ## math-ish
-- [ ] extracting potentials
+- [x] extracting pressure
 - [ ] understand how to handle geometry with corners by adding some caps and smooth corners. 
 
 ## engineering-ish
@@ -20,3 +20,4 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 - [x] debugging the solve to get spectral accuracy
 - [ ] vectorize the evaluation of the solver
 - [ ] refactoring everything into a easy to use software package
+- [ ] compute the pressure
