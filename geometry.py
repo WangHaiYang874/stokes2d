@@ -181,11 +181,13 @@ def _bump(a: np.ndarray) -> np.ndarray:
 def _d_bump(a: np.ndarray) -> np.ndarray:
     with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
         ret = -2 * _bump(a) * a / (a**2-1)**2
+    ret[abs(a) >= 1] = 0
     ret[np.isnan(ret)] = 0
     return ret
 
 def _d_d_bump(a: np.ndarray) -> np.ndarray:
     with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
         ret = 2 * _bump(a) * (3*a**4 - 1) / (a**2-1)**4
+    ret[abs(a) >= 1] = 0
     ret[np.isnan(ret)] = 0
     return ret
