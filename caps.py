@@ -1,5 +1,4 @@
 import numpy as np
-import scipy as sp
 from scipy.special import p_roots as gauss_quad_nodes
 from scipy.integrate import fixed_quad as quad 
 
