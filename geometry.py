@@ -1,9 +1,6 @@
-from random import gauss
-from zipfile import ZIP_BZIP2
 import numpy as np
 from scipy.special import p_roots as gauss_quad_nodes
 from scipy.integrate import fixed_quad as quad
-from copy import deepcopy
 
 
 class geometry:
@@ -35,7 +32,7 @@ class geometry:
         self.dx_da = dt.real
         self.dy_da = dt.imag
 
-        ddt = (self.ddx_dda + 1j*self.ddy_dda)*np.exp(1j*theta)
+        ddt = self.get_ddt_dda()*np.exp(1j*theta)
         self.ddx_dda = ddt.real
         self.ddy_dda = ddt.imag
 
@@ -48,8 +45,10 @@ class geometry:
         return self.x + 1j*self.y
 
     def get_dt_da(self):
-        '''dt/da'''
         return self.dx_da + 1j*self.dy_da
+    
+    def get_ddt_dda(self):
+        return self.ddx_dda + 1j*self.ddy_dda
 
     def get_k(self):
         return (self.dx_da*self.ddy_dda - self.dy_da*self.ddx_dda)/((self.dx_da**2+self.dy_da**2)**(1.5))
@@ -92,10 +91,10 @@ class cap(geometry):
         self.y = -b*_int_Psi(a)
 
         self.dx_da = -8*_psi(a)
-        self.dy_da = b*self.x/16
+        self.dy_da = -b*_Psi(a)
 
         self.ddx_dda = -8*_d_psi(a)
-        self.ddy_dda = b*self.dx_da/16
+        self.ddy_dda = -b*_psi(a)
 
         if scale is not None:
             self.scale(scale)
