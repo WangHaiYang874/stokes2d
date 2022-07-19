@@ -119,6 +119,9 @@ class obstruction(geometry):
         self.ddx_dda = np.zeros(n)
         self.ddy_dda = _d_d_bump(a)
 
+        self.shift((-0.5,0))
+        
+        
         if scale is not None:
             self.scale(scale)
         if rotate is not None:
@@ -128,6 +131,39 @@ class obstruction(geometry):
 
     def get_data(self):
         return self.a, self.da, self.get_t(), self.get_dt_da(), self.get_k()
+
+class obstructed_tube(geometry):
+    def __init__(self,R=1,L=40,obstruction_h=0.5,obstruction_w=1,cap_height=1.5,N=1024) -> None:
+        
+        super().__init__()
+        
+        n = N//8
+        obstruction_h = obstruction_h*np.e
+        gamma1 = cap(rotate=-np.pi/2, scale=(R,cap_height),shift=(L/2,0), n=n)
+        gamma2 = line(p1=(L/2,R), p2=(obstruction_w/2,R),n=n)
+        gamma3 = obstruction(
+            shift=(0,R), 
+            rotate=np.pi, 
+            scale=(obstruction_w,obstruction_h), 
+            n=n)
+        gamma4 = line(p1=(-obstruction_w/2,R),p2=(-L/2,R),n=n)
+        gamma5 = cap(rotate=np.pi/2, scale=(R,cap_height),shift=(-L/2,0), n=n)
+        gamma6 = line(p1=(-L/2,-R), p2=(-obstruction_w/2,-R),n=n)
+        gamma7 = obstruction(
+            shift=(0,-R),
+            rotate=0, 
+            scale=(obstruction_w,obstruction_h), n=n)
+        gamma8 = line(p1=(obstruction_w/2,-R),p2=(L/2,-R),n=n)
+
+        Gamma = [gamma1, gamma2, gamma3, gamma4, gamma5, gamma6, gamma7, gamma8]
+        self.a = np.concatenate([gamma.a + 2*i for i, gamma in zip(range(len(Gamma)), Gamma)])
+        self.da = np.concatenate([gamma.da for gamma in Gamma])
+        self.x = np.concatenate([gamma.x for gamma in Gamma])
+        self.y = np.concatenate([gamma.y for gamma in Gamma])
+        self.dx_da = np.concatenate([gamma.dx_da for gamma in Gamma])
+        self.dy_da = np.concatenate([gamma.dy_da for gamma in Gamma])
+        self.ddx_dda = np.concatenate([gamma.ddx_dda for gamma in Gamma])
+        self.ddy_dda = np.concatenate([gamma.ddy_dda for gamma in Gamma])
 
 
 def _psi(a: np.ndarray) -> np.ndarray:
