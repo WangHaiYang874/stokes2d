@@ -165,6 +165,26 @@ class obstructed_tube(geometry):
         self.ddx_dda = np.concatenate([gamma.ddx_dda for gamma in Gamma])
         self.ddy_dda = np.concatenate([gamma.ddy_dda for gamma in Gamma])
 
+class circle(geometry):
+    def __init__(self, center, scale, n=128) -> None:
+        a = np.linspace(0, 2*np.pi, n+1)[:-1]
+        da = 2*np.pi/n
+        t = np.exp(a*1j)
+        dt_da = 1j*t
+        ddt_dda = -t
+
+        self.a = a
+        self.da = da
+        self.x = t.real
+        self.y = t.imag
+        self.dx_da = dt_da.real
+        self.dy_da = dt_da.imag
+        self.ddx_dda = ddt_dda.real
+        self.ddy_dda = ddt_dda.imag
+
+        self.scale(scale)
+        self.shift(center)
+
 
 def _psi(a: np.ndarray) -> np.ndarray:
 
