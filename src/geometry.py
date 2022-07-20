@@ -171,9 +171,9 @@ class obstructed_tube(geometry):
 
 
 class circle(geometry):
-    def __init__(self, center, scale, n=128) -> None:
+    def __init__(self, center=None, scale=None, n=128) -> None:
         a = np.linspace(0, 2*np.pi, n+1)[:-1]
-        da = 2*np.pi/n
+        da = 2*np.pi/n * np.ones(n)
         t = np.exp(a*1j)
         dt_da = 1j*t
         ddt_dda = -t
@@ -187,8 +187,10 @@ class circle(geometry):
         self.ddx_dda = ddt_dda.real
         self.ddy_dda = ddt_dda.imag
 
-        self.scale(scale)
-        self.shift(center)
+        if scale is not None:
+            self.scale(scale)
+        if center is not None:
+            self.shift(center)
 
 
 def _psi(a: np.ndarray) -> np.ndarray:
