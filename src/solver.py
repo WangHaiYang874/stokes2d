@@ -10,11 +10,13 @@ class stokes2d:
         self.v = v
         self.h2 = u
         self.h1 = -v
+        self.rho = rho
+        self.nu = nu
         self.compute_kernels()
         self.solve()
 
     def compute_kernels(self):
-        _, da, t, dt_da, k = self.geometry.get_data(self)
+        _, da, t, dt_da, k = self.geometry.get_data()
         dt = t[:, np.newaxis] - t[np.newaxis, :]
         d = dt_da[np.newaxis, :]
         da_ = da[np.newaxis, :]
@@ -38,7 +40,7 @@ class stokes2d:
 
     def solve(self):
         n = len(self.geometry.a)
-        A = np.zeros((n, n))
+        A = np.zeros((2*n, 2*n))
         A[:n, :n] = np.identity(n) + (self.K1+self.K2).real
         A[:n, n:] = (-self.K1+self.K2).imag
         A[n:, :n] = (self.K1+self.K2).imag
@@ -56,8 +58,8 @@ class stokes2d:
 
     def compute_velocity(self, z):
 
-        t = self.geometry.t
-        dt = self.geometry.dt_da*self.geometry.da
+        t = self.geometry.get_t()
+        dt = self.geometry.get_dt_da()*self.geometry.da
         omega = self.omega
 
         if isinstance(z, numbers.Number):
@@ -87,12 +89,12 @@ class stokes2d:
                 - np.sum((np.conjugate(t)*omega*dt)[np.newaxis, :]/t_minus_z_sq, axis=1))
 
         ret = phi + z*np.conjugate(d_phi) + np.conjugate(psi)
-        return ret.imag, -ret.real
+        return ret.imag - 1j*ret.real
 
     def compute_pressure(self, z):
 
-        t = self.geometry.t
-        dt = self.geometry.dt_da*self.geometry.da
+        t = self.geometry.get_t()
+        dt = self.geometry.get_dt_da()*self.geometry.da
         omega = self.omega
 
         if isinstance(z, numbers.Number):
