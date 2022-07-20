@@ -5,33 +5,31 @@ notations and equations follow from professor Greengard's [paper on 2D Stokes an
 To begin with, recall that
 
 $$
-\begin{align}
 \nabla p 
-    &= \begin{pmatrix}
+    = \begin{pmatrix}
         \frac{\partial p}{\partial x}\\
         \frac{\partial p}{\partial y}\\
         \end{pmatrix} 
-    &= \rho\nu \Delta \vec{u} 
-    &= \rho\nu \begin{pmatrix}
+    = \rho\nu \Delta \vec{u} 
+    = \rho\nu \begin{pmatrix}
         \Delta u\\
         \Delta v
         \end{pmatrix}\\
 \vec{u}
-    &= \begin{pmatrix}
+    = \begin{pmatrix}
         u\\ v
     \end{pmatrix}
-    &= \begin{pmatrix}
+    = \begin{pmatrix}
         \frac{\partial W}{\partial y}\\
         -\frac{\partial W}{\partial x}
-    \end{pmatrix} & 
+    \end{pmatrix} 
     \\ 
 W(x,y) 
-    &= W(x+yi) 
-    &= W(z)
-    &= \Re(\bar{z} \phi(z) + \chi(z))\\
-\phi(z) &= \frac1{2\pi i} \int_\Gamma \frac{\omega(\xi)}{\xi - z} d\xi \\
-\psi(z) &= \frac{1}{2\pi i} \int_\Gamma \frac{\bar \omega(\xi)d\xi + \omega(\xi)d\bar{\xi}}{\xi - z}   -\frac1{2\pi i} \int_\Gamma \frac{\bar\xi \omega(\xi)}{(\xi-z)^2} d\xi
-\end{align}
+    = W(x+yi) 
+    = W(z)
+    = \Re(\bar{z} \phi(z) + \chi(z))\\
+\phi(z) = \frac1{2\pi i} \int_\Gamma \frac{\omega(\xi)}{\xi - z} d\xi \\
+\psi(z) = \frac{1}{2\pi i} \int_\Gamma \frac{\bar \omega(\xi)d\xi + \omega(\xi)d\bar{\xi}}{\xi - z}   -\frac1{2\pi i} \int_\Gamma \frac{\bar\xi \omega(\xi)}{(\xi-z)^2} d\xi
 $$ $\Re$ means taking the real part. $\phi, \chi$ are two complex analytic function, and $\psi = \chi'$. 
 
 The first equation is Stokes equation. The second is the definition of stream function, which is bi-harmonic and therefore has the Goursat's representation in the third equation. The fourth and fifth equations are Sherman-Lauricella integral equations. Our solver would solve for $\omega$ using the Nystorm method. This means that we are eventually capable of numerically compute the values of $\phi,\psi$ or their derivatives. 
