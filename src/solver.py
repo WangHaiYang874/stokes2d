@@ -91,7 +91,7 @@ class stokes2d:
         ret = phi + z*np.conjugate(d_phi) + np.conjugate(psi)
         return ret.imag - 1j*ret.real
 
-    def compute_pressure(self, z):
+    def compute_grad_pressure(self, z):
 
         t = self.geometry.get_t()
         dt = self.geometry.get_dt_da()*self.geometry.da
