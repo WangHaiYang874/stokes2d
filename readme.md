@@ -18,6 +18,7 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 - [ ] understand how to handle geometry with corners by adding some caps and smooth corners.
   - [X] smooth caps
   - [ ] smooth corners
+    - [ ] create a Y-shaped tube
 - [ ] investigating how far away does the flow returns to poiseuille again: The key thing is to attempt to characterize how fast the return to Poiseuille occurs in a length-normalized setting.
   - [X] plot flow everywhere in the domain
   - [X] to visualize the "return to Poiseuille": to plot the error along the axis of symmetry of the pipe. Then, instead of a heat map, you can make a semilogy plot with "length along the tube" on the x-axis and absolute error on the y-axis. That is, plot a 1D slice of your image plots in a semilogy plot to make the error clearer.
@@ -26,11 +27,9 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 ## engineering-ish
 
-- construct a `Y` shaped tube
-  - do the investigation on how far away does the flow returns to poiseuille again.
+- [X] vectorize the evaluation of the solver
+- [X] refactoring everything into a easy to use software package
 
-- [ ] vectorize the evaluation of the solver
-- [ ] refactoring everything into a easy to use software package
-  - [ ] refactoring the geometry class
+  - [X] refactoring the geometry class
 - [X] debugging the solve to get spectral accuracy
 - [X] using `gmres` instead of `np.linalg.solve`
