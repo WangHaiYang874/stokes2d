@@ -17,13 +17,15 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 - [X] extracting pressure
 - [ ] understand how to handle geometry with corners by adding some caps and smooth corners.
   - [X] smooth caps
-  - [ ] smooth corners
+  - [X] smooth corners
     - [ ] create a Y-shaped tube
 - [ ] investigating how far away does the flow returns to poiseuille again: The key thing is to attempt to characterize how fast the return to Poiseuille occurs in a length-normalized setting.
   - [X] plot flow everywhere in the domain
   - [X] to visualize the "return to Poiseuille": to plot the error along the axis of symmetry of the pipe. Then, instead of a heat map, you can make a semilogy plot with "length along the tube" on the x-axis and absolute error on the y-axis. That is, plot a 1D slice of your image plots in a semilogy plot to make the error clearer.
   - [ ] Do a parameter study: it is likely that the relative size of your obstruction is what controls the length over which the return to Poiseuille occurs. I recommend creating a parametrized version of your geometry where you can control the size of the obstruction with a single scalar parameter. I doubt there is any good reason to have two bumps on either side of the channel---a simple thing you could do is add a (smoothed?) semicircular "bite" on either side of the pipe of radius r. Then you can try plotting the "deviation from Poiseuille" with respect to the scale parameter r/R.
   - [ ] check whether this provides an upper bound on how fast the return to Poiseuille happens. E.g., if you can fit one obstruction inside of another obstruction, will the return happen for the smaller, contained obstruction at least as fast as for the larger obstruction? Probably Fredrik or Leslie can weigh in and give some insight as to whether this is likely to be the case... I don't know, myself.
+  - [ ] set a tol for return to poiseuille, varying the obstruction height, and observe how fast it is returning.
+  - [ ] measure the difference of your flow to a Poiseuille flow at distance 7.5 from the obstruction (there you seem to reach the error imposed by the GMRES tolerance) as you increase N? Please plot this error vs the number of points on the boundary in log log scale.
 
 ## engineering-ish
 
@@ -33,3 +35,5 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [X] refactoring the geometry class
 - [X] debugging the solve to get spectral accuracy
 - [X] using `gmres` instead of `np.linalg.solve`
+- [ ] designing the panels better
+- [ ]
