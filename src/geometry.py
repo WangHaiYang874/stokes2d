@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import p_roots as gauss_quad_nodes
 from scipy.integrate import fixed_quad as quad
-
+import numbers
 
 class geometry:
     def __init__(self) -> None:
@@ -233,6 +233,11 @@ def _d_psi(a: np.ndarray) -> np.ndarray:
 
 
 def _bump(a: np.ndarray) -> np.ndarray:
+    if isinstance(a, numbers.Number):
+        if np.abs(a) >= 1:
+            return 0
+        return np.exp(1/(a**2-1))
+    
     with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
         ret = np.exp(1/(a**2-1))
     ret[abs(a) >= 1] = 0
