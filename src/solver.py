@@ -4,7 +4,7 @@ import numbers
 
 
 class stokes2d:
-    def __init__(self, geometry, u, v, rho=1, nu=1):
+    def __init__(self, geometry, u, v, rho=1, nu=1,gmres_tol=1e-12):
         self.geometry = geometry
         self.u = u
         self.v = v
@@ -12,17 +12,21 @@ class stokes2d:
         self.h1 = -v
         self.rho = rho
         self.nu = nu
-        self.compute_kernels()
+        self.gmres_tol = gmres_tol
         self.solve()
 
-    def compute_kernels(self):
+
+    def solve(self):
+        
+        # compute the kernels
+        
         _, da, t, dt_da, k = self.geometry.get_data()
         dt = t[:, np.newaxis] - t[np.newaxis, :]
         d = dt_da[np.newaxis, :]
         da_ = da[np.newaxis, :]
 
-        # this ignore the error for computing the diagonal elements with 0/0 error
 
+        # this ignore the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
             K1 = -da_ * np.imag(d/dt) / np.pi
             K2 = -da_ * (-d/np.conjugate(dt) + np.conjugate(d)
@@ -35,19 +39,17 @@ class stokes2d:
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
-        self.K1 = K1
-        self.K2 = K2
-
-    def solve(self):
+        # building the equation for gmres
+        
         n = len(self.geometry.a)
         A = np.zeros((2*n, 2*n))
-        A[:n, :n] = np.identity(n) + (self.K1+self.K2).real
-        A[:n, n:] = (-self.K1+self.K2).imag
-        A[n:, :n] = (self.K1+self.K2).imag
-        A[n:, n:] = np.identity(n) + (self.K1-self.K2).real
+        A[:n, :n] = np.identity(n) + (K1+K2).real
+        A[:n, n:] = (-K1+K2).imag
+        A[n:, :n] = (K1+K2).imag
+        A[n:, n:] = np.identity(n) + (K1-K2).real
         rhs = np.concatenate((self.h1, self.h2))
         print('gmres starts solving the Nystorm, please wait...')
-        omega, _ = gmres(A, rhs, tol=1e-12, maxiter=1000)
+        omega, _ = gmres(A, rhs, tol=self.gmres_tol, atol=0)
         if _ == 0:
             print('gmres converged')
         else:

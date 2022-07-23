@@ -131,6 +131,35 @@ class obstruction(geometry):
     def get_data(self):
         return self.a, self.da, self.get_t(), self.get_dt_da(), self.get_k()
 
+class doubly_obstructed_tube(geometry):
+    def __init__(self) -> None:
+        super().__init__()
+        gamma1 = line((-21,1),(-30,1),n=128*8)
+        gamma2 = obstruction(shift=(-20,1), scale=(2,1), rotate=np.pi,n=128*2)
+        gamma3 = line((19,1),(-19,1),n=128*8*4)
+        gamma4 = obstruction(shift=(20,1), scale=(2,1), rotate=np.pi,n=128*2)
+        gamma5 = line((30,1),(21,1),n=128*8)
+        gamma6 = cap(rotate=-np.pi/2, scale=(1,1), shift=(30,0),n=128*4)
+        gamma7 = line((21,-1),(30,-1),n=128*8)
+        gamma8 = obstruction(shift=(20,-1), scale=(2,1), n=128*2)
+        gamma9 = line((-19,-1),(19,-1),n=128*8*4)
+        gamma10 = obstruction(shift=(-20,-1), scale=(2,1),n=128*2)
+        gamma11 = line((-30,-1),(-21,-1),n=128*8)
+        gamma12 = cap(rotate=np.pi/2, scale=(1,1), shift=(-30,0),n=128*4)
+        
+        Gamma = [gamma1, gamma2, gamma3, gamma4, gamma5, gamma6, gamma7, gamma8, gamma9, gamma10, gamma11, gamma12]
+        Gamma.reverse()
+        
+        self.a = np.concatenate(
+            [gamma.a + 2*i for i, gamma in zip(range(len(Gamma)), Gamma)])
+        self.da = np.concatenate([gamma.da for gamma in Gamma])
+        self.x = np.concatenate([gamma.x for gamma in Gamma])
+        self.y = np.concatenate([gamma.y for gamma in Gamma])
+        self.dx_da = np.concatenate([gamma.dx_da for gamma in Gamma])
+        self.dy_da = np.concatenate([gamma.dy_da for gamma in Gamma])
+        self.ddx_dda = np.concatenate([gamma.ddx_dda for gamma in Gamma])
+        self.ddy_dda = np.concatenate([gamma.ddy_dda for gamma in Gamma])
+
 
 class obstructed_tube(geometry):
     def __init__(self, R=1, L=40, obstruction_h=0.5, obstruction_w=1, cap_height=1.5, N=1024) -> None:
