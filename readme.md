@@ -31,12 +31,34 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 ## engineering-ish
 
 - [X] vectorize the evaluation of the solver
+- [ ] ffm-ize the evaluation of the solver
 - [X] refactoring everything into a easy to use software package
 
   - [X] refactoring the geometry class
 - [X] debugging the solve to get spectral accuracy
 - [X] using `gmres` instead of `np.linalg.solve`
-- [ ] designing the panels better, instead of having fixed number of points on them, it can be designed to have optimized number of points on the panels such that the $5h$ rule is obeyed given an $h$.
+- [ ] redesign the geometric objects,
+
+  - [ ] make them sampler obeying the $5h$-rule is obeyed given a $\epsilon <= 5h$.
+  - [ ] make them carrying the initial conditions of velocity:
+
+    - [ ] for non-cap geometry, it will be simply all zeros
+    - [ ] for cap geometry, it will need to be assigned a flux and then have a boolean for inlet or outlet.
+  - [ ] for closed geometry, or the standard pieces
+
+    - [ ] specifically include the points/path of integration in it for the evaluation of pressure difference, or simply gives its the rule of integration.
+    - [ ] specifically include the points on its corners to make sure that it will be matchable in the grid of the game. this needs to ignore the caps, which are artificial math construct for smoothness.
+    - [ ] specifically include the points that velocity needs to be evaluated inside the geometry
+    - [ ] give a specific criterion to check if a point is in that geometry: is this really necessary? no
+    - [ ] plotting
+      - [ ] have a method for plotting the velocity field using perhaps imshow
+      - [ ] have a method for plotting the actual boundary of the geometry using a not-so-thin balck line.
+- [ ] store every data of the standard pieces. the data needs to include
+
+  - [ ] solver( or solvers for geometry with multiple inlets/outlets)
+    - [ ] given fluxed at inlets and outlets, it should be able to compute the pressure difference, the velocity field
+  - [ ] infact, the pressure difference and velocity field should be precomputed and taken linear combinations
+- [ ] package the gaussian quadrature rules from scipy into something like a json file? Perhaps I need $n=16,32,64,\cdots 4096$. 
 
 ## maybe later
 
