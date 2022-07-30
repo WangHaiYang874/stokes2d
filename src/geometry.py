@@ -1,10 +1,12 @@
 import numpy as np
 from scipy.special import p_roots as gauss_quad_nodes
-from scipy.integrate import fixed_quad as quad
+from scipy.integrate import quad
 import numbers
 
 class geometry:
     def __init__(self) -> None:
+        
+        # the parametrization, d_parametrization, etc. 
         self.a = None
         self.da = None
         self.x = None
@@ -13,8 +15,13 @@ class geometry:
         self.dy_da = None
         self.ddx_dda = None
         self.ddy_dda = None
+        
+        # the boundary velocity condition. 
+        self.u
+        self.v
 
     def scale(self, scale):
+        
         scale_x, scale_y = scale
         self.x = scale_x*self.x
         self.y = scale_y*self.y
@@ -22,6 +29,7 @@ class geometry:
         self.dy_da = scale_y*self.dy_da
         self.ddx_dda = scale_x*self.ddx_dda
         self.ddy_dda = scale_y*self.ddy_dda
+        
 
     def rotate(self, theta):
         t = self.get_t()*np.exp(1j*theta)
@@ -55,6 +63,9 @@ class geometry:
 
     def get_data(self):
         return self.a, self.da, self.get_t(), self.get_dt_da(), self.get_k()
+    
+    def get_h(self):
+        pass
 
 
 class line(geometry):
@@ -131,25 +142,29 @@ class obstruction(geometry):
     def get_data(self):
         return self.a, self.da, self.get_t(), self.get_dt_da(), self.get_k()
 
+
 class doubly_obstructed_tube(geometry):
     def __init__(self) -> None:
         super().__init__()
-        gamma1 = line((-21,1),(-30,1),n=128*8)
-        gamma2 = obstruction(shift=(-20,1), scale=(2,1), rotate=np.pi,n=128*2)
-        gamma3 = line((19,1),(-19,1),n=128*8*4)
-        gamma4 = obstruction(shift=(20,1), scale=(2,1), rotate=np.pi,n=128*2)
-        gamma5 = line((30,1),(21,1),n=128*8)
-        gamma6 = cap(rotate=-np.pi/2, scale=(1,1), shift=(30,0),n=128*4)
-        gamma7 = line((21,-1),(30,-1),n=128*8)
-        gamma8 = obstruction(shift=(20,-1), scale=(2,1), n=128*2)
-        gamma9 = line((-19,-1),(19,-1),n=128*8*4)
-        gamma10 = obstruction(shift=(-20,-1), scale=(2,1),n=128*2)
-        gamma11 = line((-30,-1),(-21,-1),n=128*8)
-        gamma12 = cap(rotate=np.pi/2, scale=(1,1), shift=(-30,0),n=128*4)
-        
-        Gamma = [gamma1, gamma2, gamma3, gamma4, gamma5, gamma6, gamma7, gamma8, gamma9, gamma10, gamma11, gamma12]
+        gamma1 = line((-21, 1), (-30, 1), n=128*8)
+        gamma2 = obstruction(shift=(-20, 1), scale=(2, 1),
+                             rotate=np.pi, n=128*2)
+        gamma3 = line((19, 1), (-19, 1), n=128*8*4)
+        gamma4 = obstruction(shift=(20, 1), scale=(2, 1),
+                             rotate=np.pi, n=128*2)
+        gamma5 = line((30, 1), (21, 1), n=128*8)
+        gamma6 = cap(rotate=-np.pi/2, scale=(1, 1), shift=(30, 0), n=128*4)
+        gamma7 = line((21, -1), (30, -1), n=128*8)
+        gamma8 = obstruction(shift=(20, -1), scale=(2, 1), n=128*2)
+        gamma9 = line((-19, -1), (19, -1), n=128*8*4)
+        gamma10 = obstruction(shift=(-20, -1), scale=(2, 1), n=128*2)
+        gamma11 = line((-30, -1), (-21, -1), n=128*8)
+        gamma12 = cap(rotate=np.pi/2, scale=(1, 1), shift=(-30, 0), n=128*4)
+
+        Gamma = [gamma1, gamma2, gamma3, gamma4, gamma5, gamma6,
+                 gamma7, gamma8, gamma9, gamma10, gamma11, gamma12]
         Gamma.reverse()
-        
+
         self.a = np.concatenate(
             [gamma.a + 2*i for i, gamma in zip(range(len(Gamma)), Gamma)])
         self.da = np.concatenate([gamma.da for gamma in Gamma])
@@ -222,6 +237,70 @@ class circle(geometry):
             self.shift(center)
 
 
+class corner(geometry):
+    def __init__(self, p, q, r, n=64):
+        '''
+        the points p, q, r on the R^2 describe a corner that is given by line p-q and then q-r. q is the point of intersection. 
+        '''
+        self.p = np.array(p)
+        self.q = np.array(q)
+        self.r = np.array(r)
+
+        assert(np.linalg.norm(p-q) > 0)
+        assert(np.linalg.norm(p-q) == np.linalg.norm(q-r))
+
+        self.standard_corner(n)
+
+        # now we begin the transformation of standard_corner to the corner
+
+        standard_p = np.array([-1, 1])
+        standard_q = np.array([0, 0])
+        standard_r = np.array([1, 1])
+
+        standard_v1 = standard_q - standard_p
+        standard_v2 = standard_r - standard_q
+
+        v1 = q-p
+        v2 = r-q
+
+        # We need to find a transformation that maps standard_vi to vi.
+        standard_v_mat = np.array([[standard_v1[0], standard_v2[0]], [
+                                  standard_v1[1], standard_v2[1]]])
+        v_mat = np.array([[v1[0], v2[0]], [v1[1], v2[1]]])
+        A = np.matmul(v_mat, np.linalg.inv(standard_v_mat))
+        # the above code is equivalent to: A * standard_v_mat = v_mat
+
+        self.x, self.y = np.matmul(A, np.array([self.x, self.y]))
+        self.dx_da, self.dy_da = np.matmul(
+            A, np.array([self.dx_da, self.dy_da]))
+        self.ddx_dda, self.ddy_dda = np.matmul(
+            A, np.array([self.ddx_dda, self.ddy_dda]))
+
+        # Now, we need to shift the corner to the correct position.
+        self.shift(q)
+
+    def standard_corner(self, n):
+        '''
+        the standard corner is a corner with 
+        p = (-1,1)
+        q = (0,0)
+        r = (1,1)
+
+        which is just the graph of y=abs(x) for x in [-1,1]
+        '''
+
+        a, da = gauss_quad_nodes(n)
+        self.a = a
+        self.da = da
+        self.x = a.copy()
+        self.y = np.array([convoluted_abs(x_) for x_ in self.x])
+
+        self.dx_da = np.ones(self.a.shape)
+        self.dy_da = np.array([d_convoluted_abs(x_) for x_ in self.x])
+        self.ddx_dda = np.zeros(self.a.shape)
+        self.ddy_dda = np.array([dd_convoluted_abs(x_) for x_ in self.x])
+
+
 def _psi(a: np.ndarray) -> np.ndarray:
 
     with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
@@ -261,12 +340,12 @@ def _d_psi(a: np.ndarray) -> np.ndarray:
     return ret
 
 
-def _bump(a: np.ndarray) -> np.ndarray:
+def _bump(a):
     if isinstance(a, numbers.Number):
         if np.abs(a) >= 1:
             return 0
         return np.exp(1/(a**2-1))
-    
+
     with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
         ret = np.exp(1/(a**2-1))
     ret[abs(a) >= 1] = 0
@@ -288,3 +367,30 @@ def _d_d_bump(a: np.ndarray) -> np.ndarray:
     ret[abs(a) >= 1] = 0
     ret[np.isnan(ret)] = 0
     return ret
+
+
+bump_def_int = quad(_bump, -1, 1, epsabs=1e-15, full_output=1)[0]
+
+
+def _normalized_bump(a):
+    return _bump(a)/bump_def_int
+
+def convoluted_abs(x):
+    if np.abs(x) >= 1:
+        return np.abs(x)
+
+    def b(y): return _normalized_bump(y)*np.abs(x-y)
+    return quad(b, -1, 1, epsabs=1e-15, epsrel=1e-15, full_output=1)[0]
+
+def d_convoluted_abs(x):
+    if np.abs(x) >= 1:
+        return np.sign(x)
+
+    def b(y): return _bump(y)*np.sign(x-y)
+    return -quad(b, -1, x, epsabs=1e-15, epsrel=1e-15, full_output=1)[0]\
+        + quad(b, x, 1, epsabs=1e-15, epsrel=1e-15, full_output=1)[0]
+
+def dd_convoluted_abs(x):
+    if np.abs(x) >= 1:
+        return 0
+    return 2*_normalized_bump(x)
