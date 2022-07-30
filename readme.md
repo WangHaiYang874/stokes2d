@@ -58,7 +58,12 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [ ] solver( or solvers for geometry with multiple inlets/outlets)
     - [ ] given fluxed at inlets and outlets, it should be able to compute the pressure difference, the velocity field
   - [ ] infact, the pressure difference and velocity field should be precomputed and taken linear combinations
-- [ ] package the gaussian quadrature rules from scipy into something like a json file? Perhaps I need $n=16,32,64,\cdots 4096$. 
+- [ ] package the gaussian quadrature rules from scipy into something like a json file? Perhaps I need $n=16,32,64,\cdots 4096$.
+- [ ] removing scipy.
+- [ ] things to think about
+
+  - [ ] how to use matplotlib with pygame
+  - [ ] the coordinate system of pygame is stupid. Can I change that? [see stacks overflow](https://stackoverflow.com/questions/10167329/change-the-position-of-the-origin-in-pygame-coordinate-system#:~:text=Is%20it%20possible%20to%20change%20the%20coordinate%20system,and%20use%20it%20just%20before%20drawing%20any%20object.). 
 
 ## maybe later
 
