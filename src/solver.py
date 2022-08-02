@@ -2,9 +2,23 @@ import numpy as np
 from scipy.sparse.linalg import gmres
 import numbers
 
+def v2h(u,v):
+    '''
+    transform velocity into the complex numbers. 
+    '''
+    return -v + 1j*u
+
+def h2v(h):
+    '''
+    transform the complex representation of velocity into velocity. 
+    '''
+    return np.array([h.imag, -h.real]).T
 
 class stokes2d:
     def __init__(self, geometry, u, v, rho=1, nu=1,gmres_tol=1e-12):
+        '''
+        h = -v + 1j*u
+        '''
         self.geometry = geometry
         self.u = u
         self.v = v
@@ -15,11 +29,10 @@ class stokes2d:
         self.gmres_tol = gmres_tol
         self.solve()
 
-
     def solve(self):
         
         # compute the kernels
-        
+                
         _, da, t, dt_da, k = self.geometry.get_data()
         dt = t[:, np.newaxis] - t[np.newaxis, :]
         d = dt_da[np.newaxis, :]
@@ -91,7 +104,9 @@ class stokes2d:
                 - np.sum((np.conjugate(t)*omega*dt)[np.newaxis, :]/t_minus_z_sq, axis=1))
 
         ret = phi + z*np.conjugate(d_phi) + np.conjugate(psi)
-        return ret.imag - 1j*ret.real
+        # ret.imag = u
+        # ret.real = -v
+        return h2v(ret)
 
     def compute_grad_pressure(self, z):
 
@@ -110,3 +125,9 @@ class stokes2d:
 
         grad_p = -4*self.rho*self.nu*(dd_phi.imag + 1j*dd_phi.real)
         return grad_p
+    
+    def build_pressure_drop(self):
+        pass
+    def build_velocity_field(self):
+        pass
+    
