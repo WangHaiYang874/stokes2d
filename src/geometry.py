@@ -21,7 +21,6 @@ class geometry:
         self.v
 
     def scale(self, scale):
-        
         scale_x, scale_y = scale
         self.x = scale_x*self.x
         self.y = scale_y*self.y
@@ -29,7 +28,6 @@ class geometry:
         self.dy_da = scale_y*self.dy_da
         self.ddx_dda = scale_x*self.ddx_dda
         self.ddy_dda = scale_y*self.ddy_dda
-        
 
     def rotate(self, theta):
         t = self.get_t()*np.exp(1j*theta)
@@ -65,54 +63,115 @@ class geometry:
         return self.a, self.da, self.get_t(), self.get_dt_da(), self.get_k()
     
     def get_h(self):
-        pass
+        return -self.v + 1j*self.u
 
 
 class line(geometry):
-    def __init__(self, p1, p2, n=128) -> None:
-        a, da = gauss_quad_nodes(n)
-        self.a = a
-        self.da = da
-        self.x = p1[0] + (p2[0]-p1[0])*((a+1)/2)
-        self.y = p1[1] + (p2[1]-p1[1])*((a+1)/2)
-        self.dx_da = (p2[0]-p1[0])/2 * np.ones(n)
-        self.dy_da = (p2[1]-p1[1])/2 * np.ones(n)
+    
+    def __init__(self, p1, p2) -> None:
+        
+        '''
+        this gives the line starts from p1 and ends at p2.
+        '''
+        
+        self.p1 = np.array(p1)
+        self.p2 = np.array(p2)
+        
+        
+    def build_geometry(self, max_distance=1e-2):
+        
+        n = 8
+        cond = True
+        
+        while cond:
+            a, da = gauss_quad_nodes(n)
+            self.a = a
+            self.da = da
+            self.x = self.p1[0] + (self.p2[0]-self.p1[0])*((a+1)/2)
+            self.y = self.p1[1] + (self.p2[1]-self.p1[1])*((a+1)/2)
+            if np.max(np.abs(np.diff(self.get_t()))) < max_distance:
+                cond = False
+            else:
+                n *= 2
+        
+        self.dx_da = (self.p2[0]-self.p1[0])/2 * np.ones(n)
+        self.dy_da = (self.p2[1]-self.p1[1])/2 * np.ones(n)
         self.ddx_dda = np.zeros(n)
         self.ddy_dda = np.zeros(n)
 
+        # because in our geometry, only caps represent the inflow and outflow, which might
+        # have non-zero velocity.
+        
+        self.u = np.zeros(n)
+        self.v = np.zeros(n)
+        
 
 class cap(geometry):
-    '''TODO: make the standard cap a class variable'''
 
-    def __init__(self, n=128, scale=None, rotate=None, shift=None):
+    def __init__(self, p1=(1,0),p2=(-1,0), max_distance=None) -> None:
+        
         '''
-        n: number of points
-        scale: (scale_x,scale_y)
-        rotate: theta \in [0,2pi]
-        shift: (shift_x,shift_y)
-
         by default, it generates a smooth cap with n points in the counterclockwise direction 
-        that goes through points (1,0), (0,1), (-1,0). Looks like a semi-circle. 
+        that goes through points 
+            p1 = (1,0)
+            p* = (0,1), 
+            p2 = (-1,0). 
+        Looks like a semi-circle.
+        
+        Given specified value of p1, p2, this will deduce the p* accordingly. and draw a cap
+        that starts at p1 and ends at p2, going in the counterclockwise direction. 
         '''
-        a, da = gauss_quad_nodes(n)
-        self.a = a
-        self.da = da
-        self.x = -8*_Psi(a)
-        b = 1/quad(_Psi, 0, 1, n=128)[0]
-        self.y = -b*_int_Psi(a)
+        
+        self.p1 = np.array(p1)
+        self.p2 = np.array(p2)
+        
+    def build_geometry(self, max_distance=1e-2):
+        
+        n = 8
+        cond = True
+        
+        while cond:
 
+            a, da = gauss_quad_nodes(n)
+            self.a = a
+            self.da = da
+            
+            self.x = -8*_Psi(a)
+            
+            b = 1/quad(_Psi,0,1,epsabs=1e-14,epsrel=1e-14)[0]
+            self.y = -b*_int_Psi(a)
+
+            max_distance_ = np.max(np.abs(np.diff(self.get_t())))
+            
+            if max_distance_ < max_distance:
+                cond = False
+            else:
+                n *= 2
+            
         self.dx_da = -8*_psi(a)
         self.dy_da = -b*_Psi(a)
 
         self.ddx_dda = -8*_d_psi(a)
         self.ddy_dda = -b*_psi(a)
-
-        if scale is not None:
-            self.scale(scale)
-        if rotate is not None:
-            self.rotate(rotate)
-        if shift is not None:
-            self.shift(shift)
+        
+        scale = np.linalg.norm(self.p1 - self.p2)/2
+        self.scale((-scale, -scale))
+        
+        # now it is the time to set the unit flux condition. 
+        
+        h = (scale**2 - self.x**2)*3/(4*scale**3)
+        
+        angle = np.angle(self.p2[0] + 1j*self.p2[1] - self.p1[0] - 1j*self.p1[1])
+        
+        self.h = h*np.exp(1j*angle)
+        
+        self.u = self.h.imag
+        self.v = -self.h.real
+        
+        self.rotate(angle)        
+        self.shift((self.p1 + self.p2)/2)
+        
+        
 
 
 class obstruction(geometry):
@@ -313,22 +372,37 @@ def _psi(a: np.ndarray) -> np.ndarray:
     return ret
 
 
-def _Psi(a: np.ndarray) -> np.ndarray:
+def _Psi(a):
 
-    with np.errstate(divide='ignore', over='ignore'):
-        ret = -np.tanh(-2*a/(1-a**2))/8
-    ret[a >= 1] = 1/8
-    ret[a <= -1] = -1/8
-    nan_mask = np.isnan(ret)
-    if np.any(nan_mask):
-        ret[nan_mask & a > 0.9] = 1/8
-        ret[nan_mask & a < -0.9] = -1/8
-    return ret
+    if isinstance(a, np.ndarray):    
+        with np.errstate(divide='ignore', over='ignore'):
+            ret = -np.tanh(-2*a/(1-a**2))/8
+        ret[a >= 1] = 1/8
+        ret[a <= -1] = -1/8
+        nan_mask = np.isnan(ret)
+        if np.any(nan_mask):
+            ret[nan_mask & a > 0.9] = 1/8
+            ret[nan_mask & a < -0.9] = -1/8
+        return ret
+    if isinstance(a,numbers.Number):
+        if a >= 1:
+            return 1/8
+        if a <= -1:
+            return -1/8
+        return -np.tanh(-2*a/(1-a**2))/8
+    
 
 
-def _int_Psi(a: np.ndarray) -> np.ndarray:
+def _int_Psi(a):
     '''the number 128 in the expression below is chosen by numerical experiment'''
-    return np.array([quad(_Psi, -1, b, n=128)[0] for b in a])
+    if isinstance(a, np.ndarray):
+        return np.array([quad(_Psi, -1, b, epsabs=1e-14,epsrel=1e-14)[0] for b in a])
+    if isinstance(a, numbers.Number):
+        return quad(_Psi, -1, a, epsabs=1e-14,epsrel=1e-14)[0]
+    else:
+        print('input is not a number or a numpy array')
+        assert 0
+    
 
 
 def _d_psi(a: np.ndarray) -> np.ndarray:
@@ -369,8 +443,7 @@ def _d_d_bump(a: np.ndarray) -> np.ndarray:
     return ret
 
 
-bump_def_int = quad(_bump, -1, 1, epsabs=1e-15, full_output=1)[0]
-
+bump_def_int = quad(_bump, -1, 1, epsabs=1e-14,epsrel=1e-14)[0]
 
 def _normalized_bump(a):
     return _bump(a)/bump_def_int
