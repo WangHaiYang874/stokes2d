@@ -17,8 +17,11 @@ class geometry:
         self.ddy_dda = None
         
         # the boundary velocity condition. 
-        self.u
-        self.v
+        self.u = None
+        self.v = None
+        
+    def build(self):
+        pass
 
     def scale(self, scale):
         scale_x, scale_y = scale
@@ -78,7 +81,7 @@ class line(geometry):
         self.p2 = np.array(p2)
         
         
-    def build_geometry(self, max_distance=1e-2):
+    def build(self, max_distance=1e-2):
         
         n = 8
         cond = True
@@ -125,10 +128,11 @@ class cap(geometry):
         self.p1 = np.array(p1)
         self.p2 = np.array(p2)
         
-    def build_geometry(self, max_distance=1e-2):
+    def build(self, max_distance=1e-2):
         
         n = 8
         cond = True
+        scale = np.linalg.norm(self.p1 - self.p2)/2
         
         while cond:
 
@@ -143,7 +147,7 @@ class cap(geometry):
 
             max_distance_ = np.max(np.abs(np.diff(self.get_t())))
             
-            if max_distance_ < max_distance:
+            if max_distance_*scale < max_distance:
                 cond = False
             else:
                 n *= 2
@@ -154,7 +158,6 @@ class cap(geometry):
         self.ddx_dda = -8*_d_psi(a)
         self.ddy_dda = -b*_psi(a)
         
-        scale = np.linalg.norm(self.p1 - self.p2)/2
         self.scale((-scale, -scale))
         
         # now it is the time to set the unit flux condition. 
@@ -174,9 +177,11 @@ class cap(geometry):
 
 class corner(geometry):
     def __init__(self, p, q, r, n=64):
+        
         '''
         the points p, q, r on the R^2 describe a corner that is given by line p-q and then q-r. q is the point of intersection. 
         '''
+        
         self.p = np.array(p)
         self.q = np.array(q)
         self.r = np.array(r)
@@ -184,9 +189,13 @@ class corner(geometry):
         assert(np.linalg.norm(p-q) > 0)
         assert(np.linalg.norm(p-q) == np.linalg.norm(q-r))
 
-        self.standard_corner(n)
-
-        # now we begin the transformation of standard_corner to the corner
+    def build(self, max_distance=1e-2):
+        
+        p = self.p
+        q = self.q
+        r = self.r
+        
+        # constructing the transformation matrix. 
 
         standard_p = np.array([-1, 1])
         standard_q = np.array([0, 0])
@@ -198,39 +207,43 @@ class corner(geometry):
         v1 = q-p
         v2 = r-q
 
+        
         # We need to find a transformation that maps standard_vi to vi.
         standard_v_mat = np.array([[standard_v1[0], standard_v2[0]], [
                                   standard_v1[1], standard_v2[1]]])
         v_mat = np.array([[v1[0], v2[0]], [v1[1], v2[1]]])
+        
         A = np.matmul(v_mat, np.linalg.inv(standard_v_mat))
-        # the above code is equivalent to: A * standard_v_mat = v_mat
-
-        self.x, self.y = np.matmul(A, np.array([self.x, self.y]))
-        self.dx_da, self.dy_da = np.matmul(
-            A, np.array([self.dx_da, self.dy_da]))
-        self.ddx_dda, self.ddy_dda = np.matmul(
-            A, np.array([self.ddx_dda, self.ddy_dda]))
-
-        # Now, we need to shift the corner to the correct position.
-        self.shift(q)
-
-    def standard_corner(self, n):
-        '''
-        the standard corner is a corner with 
-        p = (-1,1)
-        q = (0,0)
-        r = (1,1)
-
-        which is just the graph of y=abs(x) for x in [-1,1]
-        '''
-
-        a, da = gauss_quad_nodes(n)
-        self.a = a
-        self.da = da
-        self.x = a.copy()
-        self.y = np.array([convoluted_abs(x_) for x_ in self.x])
+        # A * standard_v_mat = v_mat
+        
+        
+        # building the geometry now. 
+        
+        n = 8
+        cond = True
+        
+        while cond:
+            a, da = gauss_quad_nodes(n)
+            self.x = a.copy()
+            self.y = np.array([convoluted_abs(x_) for x_ in self.x])
+            self.x, self.y = np.matmul(A, np.array([self.x, self.y]))
+            if np.max(np.abs(np.diff(self.get_t()))) < max_distance:
+                cond = False
+            else:
+                n *= 2
 
         self.dx_da = np.ones(self.a.shape)
         self.dy_da = np.array([d_convoluted_abs(x_) for x_ in self.x])
         self.ddx_dda = np.zeros(self.a.shape)
         self.ddy_dda = np.array([dd_convoluted_abs(x_) for x_ in self.x])
+
+        self.dx_da, self.dy_da = np.matmul(
+            A, np.array([self.dx_da, self.dy_da]))
+        self.ddx_dda, self.ddy_dda = np.matmul(
+            A, np.array([self.ddx_dda, self.ddy_dda]))
+        
+        # Now, we need to shift the corner to the correct position.
+        self.shift(q)
+        
+        self.u = np.zeros(self.x.shape)
+        self.v = np.zeros(self.x.shape)
