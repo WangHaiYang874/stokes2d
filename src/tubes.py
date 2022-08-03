@@ -24,7 +24,6 @@ import sys
 sys.path.append('.')
 from geometry import *
 
-
 class closed_geometry(geometry):
     '''
     given points 
@@ -43,5 +42,14 @@ class closed_geometry(geometry):
     and then it should automatically smooth the corners.  
     '''
     
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, points, lines) -> None:
+        assert len(points) == len(lines)
+        self.Gammas = []
+        pass
+    def to_rough_geometry(self):
+        
+        
+        
+        
+    
+    
