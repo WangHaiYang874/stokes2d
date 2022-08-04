@@ -44,6 +44,9 @@ class stokes2d:
         A[n:, n:] = np.identity(n) + (K1-K2).real
         
         self.A = A
+    
+    def clean_A(self):
+        self.A = None
         
     def solve(self,U):
 
@@ -120,6 +123,7 @@ class stokes2d:
 
         grad_p = -4*np.array((dd_phi.imag,dd_phi.real)).T
         return grad_p
+    
     
 class stokes2dGlobal:
     pass

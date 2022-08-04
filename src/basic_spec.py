@@ -25,5 +25,8 @@ def H2U(H):
 
 '''
 gradient of pressure has only one form: np array with shape (n,2)
+'''
 
+'''
+TODO: I should also set the tolerance for quadrature rules here. 
 '''

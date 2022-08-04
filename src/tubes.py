@@ -23,27 +23,89 @@ import numpy as np
 import sys
 sys.path.append('.')
 from geometry import *
+from basic_spec import *
 
-class straight_line(geometry):
+class pipe(geometry):
+    def __init__(self) -> None:
+        
+        super().__init__()
+        
+        self.curves = None
+        self.caps_center = None
+        self.solver = None
+        self.omegas = None
+        self.pressure_drops = None
+        self.extent = None
+        self.grids = None
+        self.velocity_fields = None
+    
+    def build_geometry(self, max_distance=5e-3):
+        self.curves = [c.build(max_distance) for c in self.curves]
+        self.a = np.concatenate([c.a + 2*i for i,c in enumerate(self.curves)])
+        self.da = np.concatenate([c.da for c in self.curves])
+        self.x = np.concatenate([c.x for c in self.curves])
+        self.y = np.concatenate([c.y for c in self.curves])
+        self.dx_da = np.concatenate([c.dx_da for c in self.curves])
+        self.dy_da = np.concatenate([c.dy_da for c in self.curves])
+        self.ddx_dda = np.concatenate([c.ddx_dda for c in self.curves])
+        self.ddy_dda = np.concatenate([c.ddy_dda for c in self.curves])
+        
+        self.caps_center = []
+
+        for i,c in enumerate(self.curves):
+
+
+    def build_solver(self):
+        pass
+    
+    def build_omegas(self):
+        pass
+    
+    def build_pressure_drops(self):
+        pass
+    
+    def build_velocity_fields(self):
+        pass
+    
+    def build_graph(self):
+        pass
+    
+    def build(self):
+        pass
+    
+    def is_inside(self, z):
+        pass
+
+class straight_pipe:
     def __init__(self,p1,p2,r=1) -> None:
         '''
         this creates a simple tube. Why do I create it first? because it serves well as 
         a template for other more sophisticated geometries. 
         '''
         super().__init__()
-        self.center_line = line(p1,p2)
-        theta = np.arctan2(p2[1]-p1[1],p2[0]-p1[0]) + np.pi/2
+                
         
-        ul = p1 + r*np.array([np.cos(theta),np.sin(theta)])
-        ll = p1 - r*np.array([np.cos(theta),np.sin(theta)])
-        ur = p2 + r*np.array([np.cos(theta),np.sin(theta)])
-        lr = p2 - r*np.array([np.cos(theta),np.sin(theta)])
+        self.angle = np.arctan2(p2[1]-p1[1],p2[0]-p1[0])
+        theta = self.angle + np.pi/2
+        top_left = p1 + r*np.array([np.cos(theta),np.sin(theta)])
+        bottom_left = p1 - r*np.array([np.cos(theta),np.sin(theta)])
+        top_right = p2 + r*np.array([np.cos(theta),np.sin(theta)])
+        bottom_right = p2 - r*np.array([np.cos(theta),np.sin(theta)])
         
-        up_line = line(ul,ur)
-        right_line = line(ur,lr)
-        low_line = line(lr,ll)
-        left_line = line(ll,ul)
+        top_line = line(top_left,top_right)
+        right_line = line(top_right,bottom_right)
+        bottom_line = line(bottom_right,bottom_left)
+        left_line = line(bottom_left,top_left)
         
+        self.curves = [top_line,right_line,bottom_line,left_line]
+
+        up = np.max(top_left[1],top_right[1],bottom_left[1],bottom_right[1])
+        low = np.min(top_left[1],top_right[1],bottom_left[1],bottom_right[1])
+        left = np.min(top_left[0],top_right[0],bottom_left[0],bottom_right[0])
+        right = np.max(top_left[0],top_right[0],bottom_left[0],bottom_right[0])
+                
+    
+
         
         
         

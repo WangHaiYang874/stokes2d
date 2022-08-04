@@ -2,6 +2,26 @@ import numpy as np
 from scipy.special import p_roots as gauss_quad_nodes
 from scipy.integrate import quad
 from math_functions import *
+from basic_spec import *
+
+
+def get_velocity(p1,p2,t,flux=0):
+    '''
+    notice that this works for a particular case. that is x has been rotated yet. 
+    '''
+    
+    if flux == 0:
+        return np.zeros((len(t),2))
+    
+    vec = p2-p1
+    angle = np.arctan2(vec[1],vec[0])    
+    length = np.linalg.norm(vec)
+    r = length/2
+    x = ((t- p1[0] - p1[1]*1j)*np.exp(-1j*angle)).real
+    x = x - r
+    H = (x**2 - r**2)*3/(4*r**3)
+    H = flux*np.exp(1j*angle)*H
+    return H2U(H)
 
 class geometry:
     def __init__(self) -> None:
@@ -16,9 +36,11 @@ class geometry:
         self.ddx_dda = None
         self.ddy_dda = None
         
-        # the boundary velocity condition. 
-        self.u = None
-        self.v = None
+        # some other important variables. 
+        self.out_normal_direction = None
+        self.p = None
+        self.p1 = None
+        self.p2 = None
         
     def build(self):
         pass
@@ -68,6 +90,8 @@ class geometry:
     def get_h(self):
         return -self.v + 1j*self.u
 
+    def get_velocity(self, flux=0):
+        pass
 
 class line(geometry):
     
@@ -79,7 +103,6 @@ class line(geometry):
         
         self.p1 = np.array(p1)
         self.p2 = np.array(p2)
-        
         
     def build(self, max_distance=1e-2):
         
@@ -101,14 +124,16 @@ class line(geometry):
         self.dy_da = (self.p2[1]-self.p1[1])/2 * np.ones(n)
         self.ddx_dda = np.zeros(n)
         self.ddy_dda = np.zeros(n)
-
-        # because in our geometry, only caps represent the inflow and outflow, which might
-        # have non-zero velocity.
         
-        self.u = np.zeros(n)
-        self.v = np.zeros(n)
-        
+        self.p = (self.p1 + self.p2)/2
+        self.out_normal_direction = np.arctan2(self.p2[1]-self.p1[1],self.p2[0]-self.p1[0]) + np.pi/2
 
+    def get_velocity(self, flux=0):
+        if flux == 0:
+            return np.zeros((len(self.a),2))
+        else:
+            return get_velocity(self.p1,self.p2,self.get_t(),flux)
+        
 class cap(geometry):
 
     def __init__(self, p1=(1,0),p2=(-1,0), max_distance=None) -> None:
@@ -154,46 +179,44 @@ class cap(geometry):
             
         self.dx_da = -8*_psi(a)
         self.dy_da = -b*_Psi(a)
-
         self.ddx_dda = -8*_d_psi(a)
         self.ddy_dda = -b*_psi(a)
-        
-        self.scale((-scale, -scale))
-        
-        # now it is the time to set the unit flux condition. 
-        
-        h = (scale**2 - self.x**2)*3/(4*scale**3)
-        
-        angle = np.angle(self.p2[0] + 1j*self.p2[1] - self.p1[0] - 1j*self.p1[1])
-        
-        self.h = h*np.exp(1j*angle)
-        
-        self.u = self.h.imag
-        self.v = -self.h.real
-        
-        self.rotate(angle)        
-        self.shift((self.p1 + self.p2)/2)
 
+        
+        self.scale((-scale, -scale)) # minus sign makes it going counterclockwise. 
+        angle = np.arctan2(self.p2[1]-self.p1[1], self.p2[0]-self.p1[0])
+        self.rotate(angle)
+        self.shift((self.p1 + self.p2)/2)
+        
+        
+        self.out_normal_direction = angle + np.pi/2
+        self.p = (self.p1 + self.p2)/2
+        
+    def get_velocity(self, flux=1):
+        if flux == 0:
+            return np.zeros((len(self.a),2))
+        else:
+            return get_velocity(self.p1,self.p2,self.get_t(),flux)
 
 class corner(geometry):
-    def __init__(self, p, q, r, n=64):
+    def __init__(self, p1, p_, p2, n=64):
         
         '''
-        the points p, q, r on the R^2 describe a corner that is given by line p-q and then q-r. q is the point of intersection. 
+        the points p1, p_, p2 on the R^2 describe a corner that is given by line p1-p_ and then p_-p2. p_ is the point of intersection. 
         '''
         
-        self.p = np.array(p)
-        self.q = np.array(q)
-        self.r = np.array(r)
+        self.p1 = np.array(p1)
+        self.p_ = np.array(p_)
+        self.p2 = np.array(p2)
 
-        assert(np.linalg.norm(p-q) > 0)
-        assert(np.linalg.norm(p-q) == np.linalg.norm(q-r))
+        assert(np.linalg.norm(p1-p_) > 0)
+        assert(np.linalg.norm(p1-p_) == np.linalg.norm(p2-p_))
 
     def build(self, max_distance=1e-2):
         
-        p = self.p
-        q = self.q
-        r = self.r
+        p = self.p1
+        q = self.p_
+        r = self.p2
         
         # constructing the transformation matrix. 
 
@@ -245,5 +268,9 @@ class corner(geometry):
         # Now, we need to shift the corner to the correct position.
         self.shift(q)
         
-        self.u = np.zeros(self.x.shape)
-        self.v = np.zeros(self.x.shape)
+        self.p = (self.p1 + self.p2)/2
+        self.out_normal_direction = np.arctan2(r[1]-p[1], r[0]-p[0]) + np.pi/2
+    
+    def get_velocity(self, flux=0):
+        assert(flux == 0)
+        return np.zeros((len(self.a),2))
