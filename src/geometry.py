@@ -199,7 +199,7 @@ class cap(geometry):
             return get_velocity(self.p1,self.p2,self.get_t(),flux)
 
 class corner(geometry):
-    def __init__(self, p1, p_, p2, n=64):
+    def __init__(self, p1, p_, p2):
         
         '''
         the points p1, p_, p2 on the R^2 describe a corner that is given by line p1-p_ and then p_-p2. p_ is the point of intersection. 
@@ -242,16 +242,21 @@ class corner(geometry):
         
         # building the geometry now. 
         
-        n = 8
+        n = 32
         cond = True
         
         while cond:
             a, da = gauss_quad_nodes(n)
+            self.a = a
+            self.da = da
+            
             self.x = a.copy()
             self.y = np.array([convoluted_abs(x_) for x_ in self.x])
             self.x, self.y = np.matmul(A, np.array([self.x, self.y]))
+            
             if np.max(np.abs(np.diff(self.get_t()))) < max_distance:
                 cond = False
+                
             else:
                 n *= 2
 

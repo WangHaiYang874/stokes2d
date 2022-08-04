@@ -39,6 +39,7 @@ class pipe(geometry):
         self.grids = None
         self.velocity_fields = None
     
+    
     def build_geometry(self, max_distance=5e-3):
         self.curves = [c.build(max_distance) for c in self.curves]
         self.a = np.concatenate([c.a + 2*i for i,c in enumerate(self.curves)])
@@ -49,10 +50,18 @@ class pipe(geometry):
         self.dy_da = np.concatenate([c.dy_da for c in self.curves])
         self.ddx_dda = np.concatenate([c.ddx_dda for c in self.curves])
         self.ddy_dda = np.concatenate([c.ddy_dda for c in self.curves])
-        
-        self.caps_center = []
 
+        self.caps_center = []
+        self.caps_center_out_normal = []
+        self.caps_radius = []
+        
         for i,c in enumerate(self.curves):
+            if isinstance(c, cap):
+                self.caps_center.append(c.center)
+                self.caps_center_out_normal.append(c.center_out_normal)
+                self.caps_radius.append(np.linalg.norm(c.p1 - c.p2))
+
+        
 
 
     def build_solver(self):
@@ -106,13 +115,6 @@ class straight_pipe:
                 
     
 
-        
-        
-        
-        
-        
-    
-
 
 class closed_geometry(geometry):
     '''
@@ -132,15 +134,15 @@ class closed_geometry(geometry):
     and then it should automatically smooth the corners.  
     '''
     
-    def __init__(self, points, lines, corner_size=1e-1) -> None:
+    def __init__(self, points, lines) -> None:
         
         assert len(points) == len(lines)
         
-        n = len(points)
         self.curves = []
         
-        for i in range(n):
-            next = (i+1)%n
+        for i in range(len(points)):
+            
+            next = (i+1)%len(points)
             
             if lines[i] == line:
                 self.curves.append(line(points[i], points[next]))
@@ -149,50 +151,57 @@ class closed_geometry(geometry):
             else:
                 raise ValueError('invalid line type')
 
-
-        # smooth the corners
+        self.smooth_corners()
+        
+    def smooth_corners(self, corner_size=1e-1):
         
         i = self.next_corner()
+        
         while i is not None:
-            j = (i+1)%n
+            
+            j = (i+1)%len(self.curves)
+            assert(np.all(self.curves[i].p2 == self.curves[j].p1))
+            
             p = self.curves[i].p1
             q = self.curves[i].p2
             r = self.curves[j].p2
             
-            p_ = q + corner_size*(q-p)/np.linalg.norm(q-p)
+            p_ = q + corner_size*(p-q)/np.linalg.norm(q-p)
             r_ = q + corner_size*(r-q)/np.linalg.norm(r-q)
-            corner = corner(p_, q, r_)
+            c = corner(p_, q, r_)
+            
             self.curves[i].p2 = p_
             self.curves[j].p1 = r_
-            self.curves.insert(j,corner)
+            self.curves.insert(j,c)
+
+            i = self.next_corner()
             
-        # getting all the caps, as they literally represents all the flows. 
-        self.caps_index = [i for i in range(len(self.curves)) if isinstance(self.curves[i], cap)]
-        self.caps_points = [(self.curves[i].p1 + self.curves[i].p2)/2 for i in self.caps_index]
-        
-                
     def next_corner(self):
         '''
         if there are two consecutive line, they will have a corner. 
         this function return the index of the lines. 
         '''
+        
         for i in range(len(self.curves)):
             j = (i+1)%len(self.curves)
             if isinstance(self.curves[i], line) and isinstance(self.curves[j], line):
                 return i
         return None
     
-    
-    def build(self,max_distance=1e-2):
-        for i in self.curves:
-            i.build(max_distance)
+    def build_geometry(self, max_distance=5e-3):
+        [c.build(max_distance) for c in self.curves]
+        self.a = np.concatenate([c.a + 2*i for i,c in enumerate(self.curves)])
+        self.da = np.concatenate([c.da for c in self.curves])
+        self.x = np.concatenate([c.x for c in self.curves])
+        self.y = np.concatenate([c.y for c in self.curves])
+        self.dx_da = np.concatenate([c.dx_da for c in self.curves])
+        self.dy_da = np.concatenate([c.dy_da for c in self.curves])
+        self.ddx_dda = np.concatenate([c.ddx_dda for c in self.curves])
+        self.ddy_dda = np.concatenate([c.ddy_dda for c in self.curves])
+
+        self.caps = []
         
-                
-            
+        for i in range(len(self.curves)):
+            if isinstance(self.curves[i], cap):
+                self.caps.append(i)
         
-        
-        
-        
-        
-    
-    

@@ -25,13 +25,14 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [ ] some bands with fixed angles
   - [ ] pipes with different radius at inflow and outflow
   - [ ] ask microfluids people what shape they are interested in.
+  - [ ] a simple straight pipe.
 - [ ] a solver for a multiply connected domain.
 - [ ] think about particles. it is hard but think about it...
 
 ## engineering-ish
 
 - [X] vectorize the evaluation of the solver
-- [ ] ffm-ize the evaluation of the solver
+- [ ] (maybe later) ffm-ize the evaluation of the solver
 - [X] refactoring everything into a easy to use software package
 
   - [X] refactoring the geometry class
@@ -39,31 +40,41 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 - [X] using `gmres` instead of `np.linalg.solve`
 - [ ] redesign the geometric objects,
 
-  - [ ] make them sampler obeying the $5h$-rule is obeyed given a $\epsilon <= 5h$.
-  - [ ] make them carrying the initial conditions of velocity:
+  - [X] make them sampler obeying the $5h$-rule is obeyed given a $\epsilon <= 5h$.
+  - [X] make them carrying the initial conditions of velocity:
 
-    - [ ] for non-cap geometry, it will be simply all zeros
-    - [ ] for cap geometry, it will need to be assigned a flux and then have a boolean for inlet or outlet.
+    - [X] for non-cap geometry, it will be simply all zeros
+    - [X] for cap geometry, it will need to be assigned a flux and then have a boolean for inlet or outlet.
   - [ ] for closed geometry, or the standard pieces
 
-    - [ ] specifically include the points/path of integration in it for the evaluation of pressure difference, or simply gives its the rule of integration.
-    - [ ] specifically include the points on its corners to make sure that it will be matchable in the grid of the game. this needs to ignore the caps, which are artificial math construct for smoothness.
-    - [ ] specifically include the points that velocity needs to be evaluated inside the geometry
-    - [ ] give a specific criterion to check if a point is in that geometry: is this really necessary? no
+    - [ ] nodes and edges
+
+      - [ ] nodes are the center of flows
+        - [ ] position of the nodes
+        - [ ] out_normal direction of the flow
+        - [ ] radius of the flow
+      - [ ] edges
+        - [ ] for $n $ nodes, there are going to be $n-1$ edges representing the flows that can generate all possible flows.
+        - [ ] the pressure drop for edges with unit flux should be computed. the pressure drop should actually be a $(n-1),(n-1)$ matrix, wtf. this is too complicated... 
+        - [ ] the velocity field should also be computed. for plotting the graph.
+        - [ ] the edges are undirected in the sense that $p_1\to p_2$ and $p_2\to p_1$ are two edges exists automatically, but the pressure drop will have a sign.
+    - [ ] give a specific criterion to check if a point is in that geometry.
     - [ ] plotting
+
       - [ ] have a method for plotting the velocity field using perhaps imshow
       - [ ] have a method for plotting the actual boundary of the geometry using a not-so-thin balck line.
+      - [ ] i can also plot vector field and stream line with number. How surprising.
 - [ ] store every data of the standard pieces. the data needs to include
 
   - [ ] solver( or solvers for geometry with multiple inlets/outlets)
-    - [ ] given fluxed at inlets and outlets, it should be able to compute the pressure difference, the velocity field
-  - [ ] infact, the pressure difference and velocity field should be precomputed and taken linear combinations
-- [ ] package the gaussian quadrature rules from scipy into something like a json file? Perhaps I need $n=16,32,64,\cdots 4096$.
-- [ ] removing scipy.
-- [ ] things to think about
 
-  - [ ] how to use matplotlib with pygame
-  - [ ] the coordinate system of pygame is stupid. Can I change that? [see stacks overflow](https://stackoverflow.com/questions/10167329/change-the-position-of-the-origin-in-pygame-coordinate-system#:~:text=Is%20it%20possible%20to%20change%20the%20coordinate%20system,and%20use%20it%20just%20before%20drawing%20any%20object.). 
+    - [ ] given fluxed at inlets and outlets, it should be able to compute the pressure difference, the velocity field
+- [ ] removing scipy.
+
+  - [ ] package the gaussian quadrature rules from scipy into something like a json file? Perhaps I need $n=16,32,64,\cdots 4096$.
+- [ ] things to think about
+- [X] how to use matplotlib with pygame
+- [ ] the coordinate system of pygame is stupid. Can I change that? [see stacks overflow](https://stackoverflow.com/questions/10167329/change-the-position-of-the-origin-in-pygame-coordinate-system#:~:text=Is%20it%20possible%20to%20change%20the%20coordinate%20system,and%20use%20it%20just%20before%20drawing%20any%20object.).
 
 ## maybe later
 

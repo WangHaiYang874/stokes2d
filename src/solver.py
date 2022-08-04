@@ -9,6 +9,7 @@ class stokes2d:
         
         self.geometry = geometry
         self.gmres_tol = gmres_tol
+        self.build_A()
 
     def build_A(self):
         '''this builds the matrix for the Nystorm discretization'''
