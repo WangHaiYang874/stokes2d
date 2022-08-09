@@ -108,6 +108,32 @@ class stokes2d:
         
         return H2U(ret)
 
+    def compute_pressure(self,z,omega):
+        # see equation (14) from the paper. 
+        # p = Im phi'(z), up to a constant factor. 
+        
+        t = self.geometry.get_t()
+        dt = self.geometry.get_dt_da()*self.geometry.da
+        
+        if isinstance(z,numbers.Number):
+        
+            t_minus_z_sq = (t-z)**2
+            d_phi = np.sum(omega*dt/t_minus_z_sq)/(2j*np.pi)
+            return np.imag(d_phi)
+        
+        assert(isinstance(z,np.ndarray))
+        shape = z.shape
+        z = z.flatten()
+        
+        t_minus_z_sq = (t[np.newaxis, :] - z[:, np.newaxis])**2
+        d_phi = np.sum((omega*dt)[np.newaxis, :] /
+                        (t_minus_z_sq), axis=1)/(2j*np.pi)
+        
+        pressure = np.imag(d_phi)
+        return pressure.reshape(shape)
+        
+        
+
     def compute_grad_pressure(self, z, omega):
 
         t = self.geometry.get_t()
