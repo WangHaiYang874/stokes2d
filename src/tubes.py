@@ -134,11 +134,12 @@ class closed_geometry(geometry):
     and then it should automatically smooth the corners.  
     '''
     
-    def __init__(self, points, lines) -> None:
+    def __init__(self, points, lines,corner_size=1e-1) -> None:
         
         assert len(points) == len(lines)
         
         self.curves = []
+        self.corner_size = corner_size
         
         for i in range(len(points)):
             
@@ -151,7 +152,7 @@ class closed_geometry(geometry):
             else:
                 raise ValueError('invalid line type')
 
-        self.smooth_corners()
+        self.smooth_corners(self.corner_size)
         
     def smooth_corners(self, corner_size=1e-1):
         
