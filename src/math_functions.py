@@ -108,9 +108,9 @@ def d_convoluted_abs(x):
     if np.abs(x) >= 1:
         return np.sign(x)
 
-    def b(y): return _bump(y)*np.sign(x-y)
-    return -quad(b, -1, x, epsabs=1e-15, epsrel=1e-15, full_output=1)[0]\
-        + quad(b, x, 1, epsabs=1e-15, epsrel=1e-15, full_output=1)[0]
+    def b(y): return _bump(y)
+    return +quad(b, -1, x, epsabs=1e-15, epsrel=1e-15, full_output=1)[0]\
+        - quad(b, x, 1, epsabs=1e-15, epsrel=1e-15, full_output=1)[0]
 
 def dd_convoluted_abs(x):
     if np.abs(x) >= 1:
