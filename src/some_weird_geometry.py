@@ -6,29 +6,42 @@ from math_functions import *
 
 
 class obstruction(geometry):
-    def __init__(self, n=128, scale=None, rotate=None, shift=None):
+    def __init__(self, scale=None, rotate=None, shift=None):
+        super().__init__()
+        
+        self.scale_ = scale
+        self.rotate_ = rotate
+        self.shift_ = shift
+        
+    def build(self, max_distance=1e-2):
+        n = 16
+        cond = True
+        while cond:
+            a, da = gauss_quad_nodes(n)
+            self.a = a
+            self.da = da
+            
+            self.x = (a+1)/2
+            self.y = _bump(a)
+            
+            self.dx_da = 1/2*np.ones(n)
+            self.dy_da = _d_bump(a)
 
-        a, da = gauss_quad_nodes(n)
-        self.a = a
-        self.da = da
-        self.x = (a+1)/2
-        self.y = _bump(a)
+            self.ddx_dda = np.zeros(n)
+            self.ddy_dda = _d_d_bump(a)
+            self.shift((-0.5, 0))
 
-        self.dx_da = 1/2*np.ones(n)
-        self.dy_da = _d_bump(a)
-
-        self.ddx_dda = np.zeros(n)
-        self.ddy_dda = _d_d_bump(a)
-
-        self.shift((-0.5, 0))
-
-        if scale is not None:
-            self.scale(scale)
-        if rotate is not None:
-            self.rotate(rotate)
-        if shift is not None:
-            self.shift(shift)
-
+            if self.scale_ is not None:
+                self.scale(self.scale_)
+            if self.rotate_ is not None:
+                self.rotate(self.rotate_)
+            if self.shift_ is not None:
+                self.shift(self.shift_)
+                
+            if np.max(np.abs(self.get_t())) < max_distance:
+                cond = False
+            
+        
     def get_data(self):
         return self.a, self.da, self.get_t(), self.get_dt_da(), self.get_k()
 
@@ -36,27 +49,29 @@ class obstruction(geometry):
 class doubly_obstructed_tube(geometry):
     def __init__(self) -> None:
         super().__init__()
-        gamma1 = line((-21, 1), (-30, 1), n=128*8)
+        gamma1 = line((-21, 1), (-30, 1))
         gamma2 = obstruction(shift=(-20, 1), scale=(2, 1),
-                             rotate=np.pi, n=128*2)
-        gamma3 = line((19, 1), (-19, 1), n=128*8*4)
+                             rotate=np.pi)
+        gamma3 = line((19, 1), (-19, 1)*4)
         gamma4 = obstruction(shift=(20, 1), scale=(2, 1),
-                             rotate=np.pi, n=128*2)
-        gamma5 = line((30, 1), (21, 1), n=128*8)
-        gamma6 = cap(rotate=-np.pi/2, scale=(1, 1), shift=(30, 0), n=128*4)
-        gamma7 = line((21, -1), (30, -1), n=128*8)
-        gamma8 = obstruction(shift=(20, -1), scale=(2, 1), n=128*2)
-        gamma9 = line((-19, -1), (19, -1), n=128*8*4)
-        gamma10 = obstruction(shift=(-20, -1), scale=(2, 1), n=128*2)
-        gamma11 = line((-30, -1), (-21, -1), n=128*8)
-        gamma12 = cap(rotate=np.pi/2, scale=(1, 1), shift=(-30, 0), n=128*4)
+                             rotate=np.pi)
+        gamma5 = line((30, 1), (21, 1))
+        gamma6 = cap(rotate=-np.pi/2, scale=(1, 1), shift=(30, 0))
+        gamma7 = line((21, -1), (30, -1))
+        gamma8 = obstruction(shift=(20, -1), scale=(2, 1))
+        gamma9 = line((-19, -1), (19, -1)*4)
+        gamma10 = obstruction(shift=(-20, -1), scale=(2, 1))
+        gamma11 = line((-30, -1), (-21, -1))
+        gamma12 = cap(rotate=np.pi/2, scale=(1, 1), shift=(-30, 0))
 
         Gamma = [gamma1, gamma2, gamma3, gamma4, gamma5, gamma6,
                  gamma7, gamma8, gamma9, gamma10, gamma11, gamma12]
         Gamma.reverse()
+        
+        [g.build() for g in Gamma]
 
         self.a = np.concatenate(
-            [gamma.a + 2*i for i, gamma in zip(range(len(Gamma)), Gamma)])
+            [gamma.a + 2*i for i, gamma in enumerate(Gamma)])
         self.da = np.concatenate([gamma.da for gamma in Gamma])
         self.x = np.concatenate([gamma.x for gamma in Gamma])
         self.y = np.concatenate([gamma.y for gamma in Gamma])
