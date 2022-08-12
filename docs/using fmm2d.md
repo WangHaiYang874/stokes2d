@@ -12,3 +12,16 @@ At Aug 10th 2022, professor Greengard wrote
 
 
 What I am really going to do are calling things with charges at the sources, instead of the target. So I might need to get around it somehow. 
+
+
+# installing fmm2d for python
+
+On a Ubuntu environment, do the following, with the prerequisites of build-essential, gcc, gfortran, etc: 
+```
+git clone https://github.com/flatironinstitute/fmm2d.git
+cd fmm2d
+make install PREFIX="somewhere that doesn't require sudo"
+# add the complied files into the dynamic link path
+make python
+```
+now one should be able to use `fmm2dpy` as a python library in jupyter notebook, with the correct python environment. 
