@@ -129,7 +129,7 @@ class line(geometry):
         self.p = (self.p1 + self.p2)/2
         self.out_normal_direction = np.arctan2(
             self.p2[1]-self.p1[1], self.p2[0]-self.p1[0]) + np.pi/2
-
+        
     def get_velocity(self, flux=0):
         if flux == 0:
             return np.zeros((len(self.a), 2))

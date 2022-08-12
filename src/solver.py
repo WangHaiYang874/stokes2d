@@ -2,7 +2,11 @@ import numpy as np
 from scipy.sparse.linalg import gmres
 import numbers
 from basic_spec import *
-
+import sys
+# sys.path.insert(0, './bbFMM2D-Python')
+# from CustomKernels import *
+# from kernel_Base import *
+# from HD_2D_Tree import *
 
 class stokes2d:
     def __init__(self, geometry, gmres_tol=5e-13):
@@ -25,7 +29,6 @@ class stokes2d:
             K1 = -da_ * np.imag(d/dt) / np.pi
             K2 = -da_ * (-d/np.conjugate(dt) + np.conjugate(d)
                          * dt/(np.conjugate(dt**2))) / (2j*np.pi)
-            
         # now we need to fill the diagonal elements
         d = dt_da
         K1_diagonal = k*np.abs(d)*da/(2*np.pi)
@@ -45,6 +48,8 @@ class stokes2d:
         A[n:, n:] = np.identity(n) + (K1-K2).real
         
         self.A = A
+    
+    
     
     def clean_A(self):
         self.A = None

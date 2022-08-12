@@ -31,7 +31,8 @@ class pipe(geometry):
         super().__init__()
         
         self.curves = None
-        self.caps_center = None
+        self.caps = None
+        self.caps_out_normal_direction = None
         self.solver = None
         self.omegas = None
         self.pressure_drops = None
@@ -60,9 +61,6 @@ class pipe(geometry):
                 self.caps_center.append(c.center)
                 self.caps_center_out_normal.append(c.center_out_normal)
                 self.caps_radius.append(np.linalg.norm(c.p1 - c.p2))
-
-        
-
 
     def build_solver(self):
         pass
@@ -206,3 +204,77 @@ class closed_geometry(geometry):
             if isinstance(self.curves[i], cap):
                 self.caps.append(i)
         
+class cross(closed_geometry):
+    def __init__(self,length, radius, corner_size=0.2):
+        
+        p1 = np.array([-length,-radius])
+        p2 = np.array([-radius, -radius])
+        p3 = np.array([-radius, -length])
+        p4 = np.array([radius, -length])
+        p5 = np.array([radius, -radius])
+        p6 = np.array([length, -radius])
+        p7 = np.array([length, radius])
+        p8 = np.array([radius, radius])
+        p9 = np.array([radius, length])
+        p10= np.array([-radius, length])
+        p11= np.array([-radius, radius])
+        p12= np.array([-length, radius])
+        
+        points = [p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12]
+        curves = [line,line,cap,
+                  line,line,cap,
+                  line,line,cap,
+                  line,line,cap]
+        
+        super().__init__(points, curves, corner_size)
+    
+    def build_solver(self, ):
+        self.omegas = []
+        pass
+        
+    def get_flows(self):
+        self.caps_index = [i for i, j in enumerate(self.curves) if isinstance(j, cap)]
+        self.inflow = self.caps[0]
+        self.outflows = self.caps[1:]
+        
+    def get_all_boundary_velocity_conditions(self):
+        
+        velocities = []
+        
+        for j in self.outflows:
+            velocity = []
+            for i,c in enumerate(self.curves):
+                if i == self.inflow:
+                    velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=1)))
+                elif i == j:
+                    velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=-1)))
+                else:
+                    velocity.append(np.zeros_like(c.a))
+            velocities.append(np.concatenate(velocity))
+        
+        self.velocities = np.array(velocities)
+        
+    def compute_pressure_drops(self):
+        pressure_drops = []
+        
+        for i, o in enumerate(self.outflows):
+            omega = self.omegas[i]
+            pressure_drop = []
+            
+            p1 = cross.curves[self.inflow].p
+            p1_cplx = p1[0] + 1j*p1[1]
+            p1_pressure = self.solver.compute_pressure(p1_cplx, omega)
+            
+            for j, o2 in enumerate(self.outflows):
+                p2 = cross.curves[o2].p
+                p2_cplx = p2[0] + 1j*p2[1]
+                p2_pressure = self.solver.compute_pressure(p2_cplx, omega)
+                pressure_drop.append(p2_pressure - p1_pressure)
+        
+            pressure_drops.append(pressure_drop)
+        
+        self.pressure_drops = pressure_drops
+        
+        
+        
+    
