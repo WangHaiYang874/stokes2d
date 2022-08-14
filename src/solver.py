@@ -160,7 +160,7 @@ class stokes2d:
         
         return H2U(H)
 
-    def compute_pressure(self,z,omega):
+    def compute_pressure_exact(self,z,omega):
         # see equation (14) from the paper. 
         # p = Im phi'(z), up to a constant factor. 
         
@@ -184,25 +184,26 @@ class stokes2d:
         pressure = np.imag(d_phi)
         return pressure.reshape(shape)
         
-        
-
-    def compute_grad_pressure(self, z, omega):
-
+    def compute_pressure_fmm(self,z,omega):
+        eps = 1e-15
         t = self.geometry.get_t()
         dt = self.geometry.get_dt_da()*self.geometry.da
-
-        if isinstance(z, numbers.Number):
-            dd_phi = np.sum(omega*dt/(t-z)**3)/(1j*np.pi)
-
-        else:
-            assert isinstance(z, np.ndarray) and z.ndim == 1
-            t_minus_z_cubic = (t[np.newaxis, :] - z[:, np.newaxis])**3
-            dd_phi = np.sum((omega*dt)[np.newaxis, :] /
-                            t_minus_z_cubic, axis=1)/(1j*np.pi)
-
-        grad_p = -4*np.array((dd_phi.imag,dd_phi.real)).T
-        return grad_p
-    
+        charges = np.zeros_like(t)
+        sources = np.array([self.geometry.x,self.geometry.y])
+        
+        x = z.real
+        y = z.imag
+        
+        targets = np.array([x,y])
+        
+        d_phi = fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        charges=charges,
+                        dipstr=omega*dt,
+                        targets=targets,
+                        pgt=2).gradtarg/(-2j*np.pi)
+        
+        return np.imag(d_phi)
     
 class stokes2dGlobal:
     pass
