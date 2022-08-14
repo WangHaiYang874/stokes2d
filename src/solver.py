@@ -2,6 +2,7 @@ import numpy as np
 from scipy.sparse.linalg import gmres
 import numbers
 from basic_spec import *
+import fmm2dpy as fmm
 import sys
 # sys.path.insert(0, './bbFMM2D-Python')
 # from CustomKernels import *
@@ -73,7 +74,7 @@ class stokes2d:
         
         return omega
 
-    def compute_velocity(self, z, omega):
+    def compute_velocity_direct(self, z, omega):
         
         t = self.geometry.get_t()
         dt = self.geometry.get_dt_da()*self.geometry.da
@@ -112,6 +113,52 @@ class stokes2d:
         ret = ret.reshape(shape)
         
         return H2U(ret)
+    
+    def compute_velocity_fmm(self, z, omega):
+        
+        '''
+        this only support the case when z is a 1-d numpy array
+        '''
+        
+        eps = 1e-15
+        t = self.geometry.get_t()
+        dt = self.geometry.get_dt_da()*self.geometry.da
+        charges = np.zeros_like(t)
+        sources = np.array([self.geometry.x,self.geometry.y])
+        
+        x = z.real
+        y = z.imag
+        
+        targets = np.array([x,y])
+        
+        phi = fmm.cfmm2d(eps=eps, 
+                        sources=sources,
+                        charges=charges,
+                        dipstr=omega*dt,
+                        targets=targets,
+                        pgt=2)
+        
+        phi, d_phi = phi.pottarg/(-2j*np.pi), phi.gradtarg/(-2j*np.pi)
+        
+        psi1 = fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        charges=charges,
+                        dipstr=np.real(omega.conjugate()*dt),
+                        targets=targets,
+                        pgt=1).pottarg/(-1j*np.pi)
+        
+        psi2 = fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        charges=charges,
+                        dipstr=np.real(np.conjugate(t)*omega*dt),
+                        targets=targets,
+                        pgt=2).gradtarg/(2j*np.pi)
+        
+        psi = psi1 + psi2
+        
+        H = phi + (x+1j*y)*d_phi.conjugate() + psi.conjugate()
+        
+        return H2U(H)
 
     def compute_pressure(self,z,omega):
         # see equation (14) from the paper. 
