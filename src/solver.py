@@ -16,6 +16,30 @@ class stokes2d:
         self.gmres_tol = gmres_tol
         self.build_A()
 
+    def build_kernels(self):
+        '''this builds the matrix for the Nystorm discretization'''
+        
+        # compute the kernels
+        _, da, t, dt_da, k = self.geometry.get_data()
+        dt = t[:, np.newaxis] - t[np.newaxis, :]
+        d = dt_da[np.newaxis, :]
+        da_ = da[np.newaxis, :]
+
+        # this ignore the error for computing the diagonal elements with 0/0 error
+        with np.errstate(divide='ignore', invalid='ignore'):
+            K1 = -da_ * np.imag(d/dt) / np.pi
+            K2 = -da_ * (-d/np.conjugate(dt) + np.conjugate(d)
+                         * dt/(np.conjugate(dt**2))) / (2j*np.pi)
+        # now we need to fill the diagonal elements
+        d = dt_da
+        K1_diagonal = k*np.abs(d)*da/(2*np.pi)
+        K2_diagonal = -da*k*(d**2)/(np.abs(d)*2*np.pi)
+        np.fill_diagonal(K1, K1_diagonal)
+        np.fill_diagonal(K2, K2_diagonal)
+
+        return K1,K2
+        
+    
     def build_A(self):
         '''this builds the matrix for the Nystorm discretization'''
         
@@ -160,7 +184,7 @@ class stokes2d:
         
         return H2U(H)
 
-    def compute_pressure_exact(self,z,omega):
+    def compute_pressure_direct(self,z,omega):
         # see equation (14) from the paper. 
         # p = Im phi'(z), up to a constant factor. 
         
