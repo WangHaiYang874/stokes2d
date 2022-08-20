@@ -45,7 +45,7 @@ $$
 For our problem, it is clear that the smaller the $R$, the faster would the return to poiseuille be. 
 
 
-# formulations
+# A simple investigation 
 
 First let's consider a simpler case with zero flux
 
@@ -61,11 +61,11 @@ The Green's representation theorem tells us that
 
 $$
 \Delta u(x,y) 
-= - \int_{\partial \Omega} \Delta u(\xi,\eta) \frac{\partial G}{\partial \nu}(x,y|\xi,\eta)|dS(\xi,\eta) \\
+= - \int_{\partial \Omega} \Delta u(\xi,\eta) \frac{\partial G}{\partial \nu}(x,y|\xi,\eta)dS(\xi,\eta) \\
 = \\
--\int_{-1}^1 \Delta u(0,\eta) \frac{\partial G}{\partial \xi}(x,y|0,\eta)|d\eta \\
-+\int_0^\infty \Delta u(\xi,1) \frac{\partial G}{\partial \xi}(x,y|\xi,1)|d\xi \\
-\quad \ \ +\int_0^\infty \Delta u(\xi,-1) \frac{\partial G}{\partial \xi}(x,y|\xi,-1)|d\xi
+-\int_{-1}^1 \Delta u(0,\eta) \frac{\partial G}{\partial \xi}(x,y|0,\eta)d\eta \\
++\int_0^\infty \Delta u(\xi,1) \frac{\partial G}{\partial \xi}(x,y|\xi,1)d\xi \\
+\quad \ \ +\int_0^\infty \Delta u(\xi,-1) \frac{\partial G}{\partial \xi}(x,y|\xi,-1)d\xi
 $$
 
 notice that $\Delta u = u_{xx} + u_{yy} = -v_{xy} + u_{yy}$ equals to 
@@ -78,7 +78,29 @@ so the above equation simplifies into
 $$
 -v_{xy}(x,y) + u_{yy}(x,y)
 = \\
-\int_{-1}^1 v_{xy}(0,\eta) \frac{\partial G}{\partial \xi}(x,y|0,\eta)|d\eta 
-+\int_0^\infty u_{yy}(\xi,1) \frac{\partial G}{\partial \xi}(x,y|\xi,1)|d\xi 
-+\int_0^\infty u_{yy}(\xi,-1) \frac{\partial G}{\partial \xi}(x,y|\xi,-1)|d\xi
+\int_{-1}^1 v_{xy}(0,\eta) \frac{\partial G}{\partial \xi}(x,y|0,\eta)d\eta 
++\int_0^\infty u_{yy}(\xi,1) \frac{\partial G}{\partial \xi}(x,y|\xi,1)d\xi 
++\int_0^\infty u_{yy}(\xi,-1) \frac{\partial G}{\partial \xi}(x,y|\xi,-1)d\xi
 $$
+
+We can do the similar thing for $\Delta v$: 
+
+notice that $\Delta v = v_{xx} + v_{yy} = v_{xx} - u_{xy}$ equals to 
+- $v_{xx}$ on $\Omega_1$
+- $0$ on $\Omega_{2,3}$
+
+
+$$
+v_{xx}(x,y) - u_{xy} = \Delta v(x,y) = -\int_{-1}^1 v_{xx}(0,\eta) \frac{\partial G}{\partial \xi}(x,y|0,\eta)d\eta \\
+$$
+
+this equation is much simpler so we can start with this one first. 
+
+It can be calculated that
+
+$$
+\frac{\partial G}{\partial \xi}(x,y|0,\eta) = \\
+ \sum_{n\ odd} \exp(\frac{-n\pi x}{2})  \cos(\frac{n\pi y}2) \cos(\frac{n\pi \eta}2) + \sum_{n\ even} \exp(\frac{-n\pi x}{2})  \sin(\frac{n\pi y}2) \sin(\frac{n\pi \eta}2) 
+$$
+
+This basically says that no matter what is $v_{xx}$, $\Delta v(x,y) = O(\exp(-x/2))$ as $x\to \infty$. 
