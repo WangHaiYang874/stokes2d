@@ -1,9 +1,9 @@
 import numpy as np
-from scipy.sparse.linalg import gmres, LinearOperator
+from scipy.sparse.linalg import gmres, LinearOperator, aslinearoperator
 import numbers
 from basic_spec import *
 import fmm2dpy as fmm
-
+from time import time
 
 class stokes2d:
     def __init__(self, geometry, gmres_tol=1e-12):
@@ -49,12 +49,12 @@ class stokes2d:
         A[n:, :n] = (K1+K2).imag
         A[n:, n:] = np.identity(n) + (K1-K2).real
 
-        self.A = A
+        self.A = aslinearoperator(A)
 
     def clean_A(self):
         self.A = None
 
-    def compute_omega(self, U, if_fmm=True):
+    def compute_omega(self, U, if_fmm=True, if_callback=False, if_lgmres=False):
         """compute the omega from Nystorm discretization
 
         Args:
@@ -78,17 +78,35 @@ class stokes2d:
                 self.build_A()
             A = self.A
 
-        print('running gmres')
-        omega, _ = gmres(A, rhs, tol=self.gmres_tol, atol=0, maxiter=100)
+        # print('running gmres')
 
-        if _ == 0:
-            print('gmres converged')
-        else:
-            print('gmres did not converge', _)
+        callback=None
+
+        if if_callback:
+            callback = gmres_callback(A,rhs)
+
+
+        ### lgmres does not help with the convergence. 
+
+        # if if_lgmres:
+            # omega, _ = lgmres(A, rhs, tol=self.gmres_tol, atol=0, maxiter=80,callback=callback)
+        # else:
+
+        omega, _ = gmres(A, rhs, 
+                            tol=self.gmres_tol, atol=0, 
+                            maxiter=100,restart=10,
+                            callback=callback,callback_type='x')
+
+        if _ > 0:
+            print('gmres did not converge after', _, ' iterations')
+        if _ < 0:
+            print('gmres breakdown')
 
         n = len(self.geometry.a)
         omega = omega[:n] + 1j*omega[n:]
 
+        if if_callback:
+            return omega, callback
         return omega
 
     ''' the fmm version of nystorm '''
@@ -307,6 +325,21 @@ class stokes2d:
                            pgt=2).gradtarg/(-2j*np.pi)
 
         return np.imag(d_phi)
+
+class gmres_callback:
+    def __init__(self,A,b):
+        self.counter = 0
+        self.pr_norm = []
+        self.A  = A
+        self.b  = b 
+        self.norm = []
+
+    def __call__(self, x):
+        self.counter += 1
+        self.norm.append(np.linalg.norm(self.A.matvec(x)-self.b)/np.linalg.norm(self.b))
+        if self.counter > 10:
+            if np.mean(self.norm[-5:]) > np.mean(self.norm[-10:-5]): return True
+
 
 
 class stokes2dGlobal:
