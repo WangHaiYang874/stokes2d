@@ -144,7 +144,7 @@ class stokes2d:
 
     def K1_fmm(self, omega):
 
-        eps = 1e-14
+        eps = 1e-17
         _, da, _, dt_da, _ = self.geometry.get_data()
         sources = np.array([self.geometry.x, self.geometry.y])
         dt = dt_da*da
@@ -168,7 +168,7 @@ class stokes2d:
 
     def K2_fmm(self, omega):
 
-        eps = 1e-14
+        eps = 1e-17
         _, da, t, dt_da, _ = self.geometry.get_data()
         sources = np.array([self.geometry.x, self.geometry.y])
 
@@ -241,7 +241,7 @@ class stokes2d:
         this only support the case when z is a 1-d numpy array
         '''
 
-        eps = 1e-16
+        eps = 1e-17
         t = self.geometry.get_t()
         dt = self.geometry.get_dt_da()*self.geometry.da
         charges = np.zeros_like(t)
@@ -306,7 +306,7 @@ class stokes2d:
         return pressure.reshape(shape)
 
     def compute_pressure_fmm(self, z, omega):
-        eps = 1e-16
+        eps = 1e-17
         t = self.geometry.get_t()
         dt = self.geometry.get_dt_da()*self.geometry.da
         charges = np.zeros_like(t)

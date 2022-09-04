@@ -144,7 +144,7 @@ class cap(geometry):
         by default, it generates a smooth cap with n points in the counterclockwise direction 
         that goes through points 
             p1 = (1,0)
-            p* = (0,1), 
+            p* = (0,2), 
             p2 = (-1,0). 
         Looks like a semi-circle.
 
@@ -170,7 +170,7 @@ class cap(geometry):
             self.x = -8*_Psi(a)
 
             b = _int_Psi_normalizer
-            self.y = -b*_int_Psi(a)
+            self.y = -2*b*_int_Psi(a)
 
             max_distance_ = np.max(np.abs(np.diff(self.get_t())))
 
@@ -180,9 +180,9 @@ class cap(geometry):
                 n *= 2
 
         self.dx_da = -8*_psi(a)
-        self.dy_da = -b*_Psi(a)
+        self.dy_da = -2*b*_Psi(a)
         self.ddx_dda = -8*_d_psi(a)
-        self.ddy_dda = -b*_psi(a)
+        self.ddy_dda = -2*b*_psi(a)
 
         # minus sign makes it going counterclockwise.
         self.scale((-scale, -scale))
