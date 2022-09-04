@@ -136,19 +136,16 @@ class closed_geometry(geometry):
         
         assert len(points) == len(lines)
         
+        if not np.all([i in [line,cap] for i in lines]):            
+            raise ValueError('invalid curve type, only line and cap are permitted here. ')
+        
         self.curves = []
         self.corner_size = corner_size
         
-        for i in range(len(points)):
-            
-            next = (i+1)%len(points)
-            
-            if lines[i] == line:
-                self.curves.append(line(points[i], points[next]))
-            elif lines[i] == cap:
-                self.curves.append(cap(points[i], points[next]))
-            else:
-                raise ValueError('invalid line type')
+        n = len(lines)
+        for i in range(n):
+            j = (i + 1)%len(lines)
+            self.curves.append(lines[i](points[i],points[j]))
 
         self.smooth_corners(self.corner_size)
         
@@ -159,18 +156,26 @@ class closed_geometry(geometry):
         while i is not None:
             
             j = (i+1)%len(self.curves)
-            assert(np.all(self.curves[i].p2 == self.curves[j].p1))
             
+            assert(np.all(self.curves[i].p2 == self.curves[j].p1))
+            # they do intersect. 
+
+
             p = self.curves[i].p1
             q = self.curves[i].p2
             r = self.curves[j].p2
             
-            p_ = q + corner_size*(p-q)/np.linalg.norm(q-p)
-            r_ = q + corner_size*(r-q)/np.linalg.norm(r-q)
-            c = corner(p_, q, r_)
+            corner_size = min(corner_size,np.linalg.norm(p-q)/2, np.linalg.norm(r-q)/2)
+
+            assert(corner_size > 0)
+
+            p1 = q + (((p-q) / np.linalg.norm(p-q)) * corner_size)
+            r1 = q + (((r-q) / np.linalg.norm(r-q)) * corner_size)
+
+            c = corner(p1, q, r1)
             
-            self.curves[i].p2 = p_
-            self.curves[j].p1 = r_
+            self.curves[i].p2 = p1
+            self.curves[j].p1 = r1
             self.curves.insert(j,c)
 
             i = self.next_corner()
