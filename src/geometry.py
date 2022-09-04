@@ -158,9 +158,9 @@ class cap(geometry):
     def build(self, max_distance=1e-2):
 
         n = 8
-        cond = True
         scale = np.linalg.norm(self.p1 - self.p2)/2
 
+        cond = True
         while cond:
 
             a, da = gauss_quad_nodes(n)
@@ -211,7 +211,8 @@ class corner(geometry):
         self.p2 = np.array(p2)
 
         assert(np.linalg.norm(p1-p_) > 0)
-        assert(np.linalg.norm(p1-p_) == np.linalg.norm(p2-p_))
+        assert(np.abs(np.linalg.norm(p1-p_) - np.linalg.norm(p2-p_))<1e-15)
+        # this should be zero, but there is some error of machine precision. 
 
     def build(self, max_distance=1e-2):
 
