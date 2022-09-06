@@ -30,3 +30,17 @@ gradient of pressure has only one form: np array with shape (n,2)
 '''
 TODO: I should also set the tolerance for quadrature rules here. 
 '''
+
+def pt(x,y):
+    return np.array((x,y))
+
+def gauss_quad_rule(n=16,domain=(-1,1)):
+    assert n>0
+    a,da = np.polynomial.legendre.leggauss(n)
+    if domain == (-1,1):
+        return a,da
+    left, right = domain
+    a = ((right - left) * a + (right + left))/2
+    da = da * (right - left) / 2
+    return a,da
+

@@ -1,11 +1,9 @@
 
-# pipe_network
+# pipe network
 
 1. connecting pipes. (matching boundaries and graph) 
 2. build the global solvers given boundary conditions. 
-3. draw the (velocity-field/pressure/vorticity) at each points inside this network. 
-4. draw different part of the network. 
-
+3. draw stuff
 
 #### attributes
 
@@ -25,25 +23,24 @@
 # pipe
 
 This class primarily needs the following functionalities
-1. provide criterion for connecting with other pipes. this would pass to a separate graph object. 
-2. solve several `linear_independent` stokes equations (#=number of inlets and outlets - 1)
+1. draw stuff.
+   2. prebuild the velocity field. 
+2. solve. 
    1. for those solvers: the flux difference is already given
    2. build the pressure drop matrix. 
-3. vector field and etc. 
-4. building the geometry with panels that satisfy certain rules. 
-   1. legendre coefficients
-   2. max_distance
-   3. maybe build double geometry, to have a better quadrature rules near the boundary. 
-5. building the graph with all the solved data. 
-6. building the velocity field, the data of velocity and vorticity. 
+   3. several `linear_independent` stokes equations (#=number of inlets and outlets - 1)
+3. connection. 
+
 
 
 # curve
 
-1. build the geometry up to certain creterion
-
+1. geometric data
+2. capability of providing a refined quad rule for each panel. 
+3. velocity boundary conditions.
 
 # graph
+todo
 
 #### attribute
 

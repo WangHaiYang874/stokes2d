@@ -99,7 +99,7 @@ class line(geometry):
 
     def __init__(self, p1, p2) -> None:
         '''
-        this gives the line starts from p1 and ends at p2.
+        this gives the Line starts from p1 and ends at p2.
         '''
 
         self.p1 = np.array(p1)
@@ -141,14 +141,14 @@ class cap(geometry):
 
     def __init__(self, p1=(1, 0), p2=(-1, 0), max_distance=None) -> None:
         '''
-        by default, it generates a smooth cap with n points in the counterclockwise direction 
+        by default, it generates a smooth Cap with n points in the counterclockwise direction
         that goes through points 
             p1 = (1,0)
             p* = (0,2), 
             p2 = (-1,0). 
         Looks like a semi-circle.
 
-        Given specified value of p1, p2, this will deduce the p* accordingly. and draw a cap
+        Given specified value of p1, p2, this will deduce the p* accordingly. and draw a Cap
         that starts at p1 and ends at p2, going in the counterclockwise direction. 
         '''
 
@@ -203,7 +203,7 @@ class cap(geometry):
 class corner(geometry):
     def __init__(self, p1, p_, p2):
         '''
-        the points p1, p_, p2 on the R^2 describe a corner that is given by line p1-p_ and then p_-p2. p_ is the point of intersection. 
+        the points p1, p_, p2 on the R^2 describe a Corner that is given by Line p1-p_ and then p_-p2. p_ is the point of intersection.
         '''
 
         self.p1 = np.array(p1)
@@ -240,7 +240,7 @@ class corner(geometry):
         A = np.matmul(v_mat, np.linalg.inv(standard_v_mat))
         # A * standard_v_mat = v_mat
 
-        # building the geometry now.
+        # building the Curve now.
 
         n = 32
         max_distance_cond = True
@@ -248,7 +248,7 @@ class corner(geometry):
 
         while max_distance_cond or legendre_cond:
 
-            # generating the standard geometry.
+            # generating the standard Curve.
             a, da = gauss_quad_nodes(n)
             self.a = a
             self.da = da
@@ -288,7 +288,7 @@ class corner(geometry):
             
             n *= 2
 
-        # Now, we need to shift the corner to the correct position.
+        # Now, we need to shift the Corner to the correct position.
         self.shift(q)
 
         self.p = (self.p1 + self.p2)/2

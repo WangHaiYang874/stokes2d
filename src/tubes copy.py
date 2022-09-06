@@ -1,14 +1,14 @@
 '''
-from the geometry, we have figured out how to draw stuff: 
+from the Curve, we have figured out how to draw stuff:
 the lines, obstructions, and caps, smoothed corners, etc. 
-those are going to be just a panel for a tube. 
+those are going to be just a Panel for a tube.
 
 In this file, I'll write the codes to automate the process of 
-drawing tubes from the codes of the geometry. There are certain
+drawing tubes from the codes of the Curve. There are certain
 things I wish this file can do. 
 
 1. a tube should be a sampler, instead of fixing number of points on 
-the panel, we should be able to sample points on the tube to make sure 
+the Panel, we should be able to sample points on the tube to make sure
 our stokes2d solver can have given tolerance and distance away from the 
 boundary, as the main numerical error appears only near the boundary. In
 my previous experiements, 5h rule works out pretty well for controlling the 
@@ -16,10 +16,9 @@ numerical error.
 
 2. I also want to write a codes for several generic tubes with different specifications
 such as the radius, the length, the number of bifurcations, how large should the smoothed
-corner be, etc. 
+Corner be, etc.
 '''
 
-import numpy as np
 import sys
 sys.path.append('.')
 from geometry import *
@@ -118,17 +117,17 @@ class closed_geometry(geometry):
     '''
     given points 
         p1, p2, p3, ... , pn
-    and the description of the line 
+    and the description of the Line
         l1 = p1-p2
         l2 = p2-p3
         ...
         ln = pn-p1
         the descriptions can be:
-            a line
-            a cap
+            a Line
+            a Cap
             a obstruction
             etc
-    this class should firstly create a cornered geometry with the given specification of points and lines
+    this class should firstly create a cornered Curve with the given specification of points and lines
     and then it should automatically smooth the corners.  
     '''
     
@@ -137,7 +136,7 @@ class closed_geometry(geometry):
         assert len(points) == len(lines)
         
         if not np.all([i in [line,cap] for i in lines]):            
-            raise ValueError('invalid curve type, only line and cap are permitted here. ')
+            raise ValueError('invalid Curve type, only Line and Cap are permitted here. ')
         
         self.curves = []
         self.corner_size = corner_size
@@ -182,7 +181,7 @@ class closed_geometry(geometry):
             
     def next_corner(self):
         '''
-        if there are two consecutive line, they will have a corner. 
+        if there are two consecutive Line, they will have a Corner.
         this function return the index of the lines. 
         '''
         
