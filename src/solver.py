@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse.linalg import gmres, LinearOperator, aslinearoperator
 import numbers
-from basic_spec import *
+from utility_and_spec import *
 import fmm2dpy as fmm
 from time import time
 
@@ -109,8 +109,6 @@ class stokes2d:
             return omega, callback
         return omega
 
-    ''' the fmm version of nystorm '''
-
     def build_A_fmm(self):
         '''this builds the matrix for the Nystorm discretization'''
 
@@ -166,33 +164,7 @@ class stokes2d:
 
         return K11 + K12 + K1_diag
 
-    def K2_fmm(self, omega):
 
-        eps = 1e-17
-        _, da, t, dt_da, _ = self.geometry.get_data()
-        sources = np.array([self.geometry.x, self.geometry.y])
-
-        dt = dt_da*da
-
-        K21 = fmm.cfmm2d(eps=eps,
-                         sources=sources,
-                         dipstr=- np.conjugate(dt*omega)/(2j*np.pi),
-                         pg=1
-                         ).pot.conjugate()
-
-        K221 = t*fmm.cfmm2d(eps=eps,
-                            sources=sources,
-                            dipstr=- dt * omega.conjugate()/(2j*np.pi),
-                            pg=2
-                            ).grad.conjugate()
-
-        K222 = fmm.cfmm2d(eps=eps,
-                          sources=sources,
-                          dipstr=dt * omega.conjugate() * t.conjugate()/(2j*np.pi),
-                          pg=2).grad.conjugate()
-
-        # diagonal elements
-        K2_diag = self.K2_diagonal * omega
 
         return K21 + K221 + K222 + K2_diag
 

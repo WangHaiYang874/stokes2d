@@ -71,7 +71,7 @@
       <updated>1662351601858</updated>
       <workItem from="1662351604686" duration="824000" />
       <workItem from="1662352443498" duration="310000" />
-      <workItem from="1662352798312" duration="25507000" />
+      <workItem from="1662352798312" duration="29466000" />
     </task>
     <task id="LOCAL-00001" summary="refactored to enable panels---refactoring is not done so the code is basically broken.">
       <created>1662440207354</created>
@@ -80,7 +80,14 @@
       <option name="project" value="LOCAL" />
       <updated>1662440207354</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="refactored to enable panels---refactoring is not done so the code is basically broken.">
+      <created>1662440279305</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1662440279305</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

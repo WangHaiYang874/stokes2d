@@ -23,7 +23,7 @@ import numpy as np
 import sys
 sys.path.append('.')
 from geometry import *
-from basic_spec import *
+from utility_and_spec import *
 
 class pipe(geometry):
     def __init__(self) -> None:

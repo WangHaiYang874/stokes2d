@@ -1,4 +1,4 @@
-from basic_spec import *
+from utility_and_spec import *
 from linear_transform import affine_transformation
 from math_functions import *
 
@@ -79,7 +79,7 @@ class Curve:
             self.standard_start_pt, self.standard_mid_pt, self.standard_end_pt,
             self.start_pt, self.mid_pt, self.end_pt)
 
-    def build_geometry(self, max_distance=None, legendre_ratio=None):
+    def build(self, max_distance=None, legendre_ratio=None):
         # initial Panel
         a, da = gauss_quad_rule()
         x = self.x_fn(a)
