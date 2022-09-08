@@ -37,15 +37,21 @@ class Pipe:
 
         # graph data.
         self.lets  = None # stands for inlets and outlets
+        self.flows = None
+        self.outlets = None
+        self.inlet = None
+
+        # solver data
+        self.A = None
         self.omegas = None
         self.pressure_drops = None
+        self.velocity_field = None
+        self.pressure = None
+        self.vorticity = None
 
         # drawing data
         self.extent = None
         self.grids = None
-        self.velocity_field = None
-        self.vortity = None
-        self.pressure = None
 
     @property
     def a(self): return np.concatenate([c.a + 2 * i for i, c in enumerate(self.curves)])
@@ -108,15 +114,19 @@ class Pipe:
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
+        self.K1 = K1
+        self.K2 = K2
+
+        def A(omega_sep):
+            assert len(omega_sep)%2 == 0
+            n = len(omega_sep) // 2
+            omega = omega_sep[:n] + 1j*omega_sep[n:]
+            h = omega + K1@omega + K2@omega
+            h_sep = np.concatenate([h.real,h.imag])
+            return h_sep
+
         n = len(self.a)
-
-        A = np.zeros((2*n, 2*n))
-        A[:n, :n] = np.identity(n) + (K1+K2).real
-        A[:n, n:] = (-K1+K2).imag
-        A[n:, :n] = (K1+K2).imag
-        A[n:, n:] = np.identity(n) + (K1-K2).real
-
-        self.A = aslinearoperator(A)
+        self.A = LinearOperator(dtype=np.float64, shape=(2*n,2*n),matvec=A)
 
 
     def compute_omega(self,U,tol=1e-12):
@@ -129,6 +139,35 @@ class Pipe:
             warnings.warn("gmres is not converging to tolerance. ")
 
         return omega
+
+    def get_bounadry_velocity_condition(self,i):
+        inlet,outlet = self.flows[i]
+        ret = []
+        for j,c in enumerate(self.curves):
+            if j == inlet:
+                ret.append(-c.boundary_velocity())
+            if j == outlet:
+                ret.append(c.boundary_velocity())
+            else:
+                ret.append(np.zeros_like(c.a))
+        return np.concatenate(ret)
+
+    def solve(self,tol=None):
+
+        tol = 1e-12 if tol is None else tol
+
+        for i in self.flows:
+            U = self.get_bounadry_velocity_condition(i)
+            omega = self.compute_omega(U,tol)
+            self.omegas.append(omega)
+
+        # the above can be computed parallel.
+
+    def compute_pressure_drops(self):
+
+        for i in self.flows:
+
+
 
     def compute_velocity(self,x,y,omega):
         t = self.t
