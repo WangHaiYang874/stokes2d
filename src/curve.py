@@ -22,6 +22,11 @@ class Panel:
         self.ddx_dda = None
         self.ddy_dda = None
 
+    def distance(self, pts):
+        a = pt(self.x[0], self.y[0])
+        b = pt(self.x[-1], self.y[-1])
+        return distance(pts, a, b)
+
     @property
     def t(self):
         return self.x + 1j * self.y
@@ -67,7 +72,7 @@ class Curve:
 
         assert np.linalg.norm(start_pt - end_pt) > 1e-15
 
-        self.panels = []
+        self.panels: [Panel] = []
         self.start_pt = start_pt
         self.end_pt = end_pt
 
@@ -134,7 +139,14 @@ class Curve:
         return p1, p2
 
     def boundary_velocity(self):
+
         return np.zeros_like(self.a)
+
+    def distance(self, pts):
+        return [(i, self.p.distance(pts)) for i, p in enumerate(self.panels)]
+
+    def contour_polygon(self):
+        pass
 
     @property
     def a(self):
@@ -192,10 +204,14 @@ class Line(Curve):
     ddx_dda_fn = lambda _, a: np.zeros_like(a)
     ddy_dda_fn = lambda _, a: np.zeros_like(a)
 
-    def __init__(self, start_pt=pt(-1,0), end_pt=pt(1,0)) -> None:
+    def __init__(self, start_pt=pt(-1, 0), end_pt=pt(1, 0)) -> None:
         super().__init__(start_pt, end_pt)
         self.mid_pt = (start_pt + end_pt) / 2
         self.build_affine_transform()
+
+    def contour_polygon(self):
+        return np.array([self.start_pt])
+
 
 class Cap(Curve):
     standard_start_pt = pt(1, 0)
@@ -208,18 +224,19 @@ class Cap(Curve):
     ddx_dda_fn = lambda _, a: -8 * _d_psi(a)
     ddy_dda_fn = lambda _, a: -2 * _int_Psi_normalizer * _psi(a)
 
-    def __init__(self, start_pt=pt(1, 0), end_pt=pt(-1, 0), mid_pt=pt(0, 2)) -> None:
+    @property
+    def matching_point(self): return (self.start_pt + self.end_pt) / 2
 
+    def __init__(self, start_pt=pt(1, 0), end_pt=pt(-1, 0), mid_pt=pt(0, 2)) -> None:
         super(Cap, self).__init__(start_pt, end_pt)
         self.mid_pt = mid_pt
 
         self.build_affine_transform()
 
         # this provides conditions for matching
-        self.matching_pt = (start_pt + end_pt) / 2
         assert np.linalg.norm(self.matching_pt - mid_pt) > 1e-15
         out_vec = mid_pt - self.matching_pt
-        self.out_dir = np.arctan2(out_vec[1],out_vec[0])
+        self.out_dir = np.arctan2(out_vec[1], out_vec[0])
         self.width = np.linalg.norm(end_pt - start_pt)
         assert self.width > 1e-15
 
@@ -231,13 +248,15 @@ class Cap(Curve):
 
         r = self.width / 2
 
-        t = (self.t - self.matching_pt[0] - self.matching_pt[1]*1j)
-        t = t * np.exp(-1j*(self.out_dir - np.pi/2))
+        t = (self.t - self.matching_pt[0] - self.matching_pt[1] * 1j)
+        t = t * np.exp(-1j * (self.out_dir - np.pi / 2))
         x = t.real
-        h = (x**2 - r**2) * 3 / (4 * r ** 3)
-        h = np.exp(1j*(self.out_dir - np.pi/2)) * h
+        h = (x ** 2 - r ** 2) * 3 / (4 * r ** 3)
+        h = np.exp(1j * (self.out_dir - np.pi / 2)) * h
 
         return H2U(h)
+
+    def contour_polygon(self): return np.array([self.start_pt])
 
 
 class Corner(Curve):
@@ -256,3 +275,12 @@ class Corner(Curve):
         assert (np.abs(np.linalg.norm(start_pt - mid_pt) - np.linalg.norm(end_pt - mid_pt)) < 1e-15)
         super(Corner, self).__init__(start_pt, end_pt)
 
+    def contour_polygon(self):
+        n = len(self.a) // 16
+
+        if n < 2:
+            return np.array([self.start_pt, (self.start_pt + self.end_pt) / 2])
+
+        x = self.x[::n]
+        y = self.y[::n]
+        return np.array([x, y]).T

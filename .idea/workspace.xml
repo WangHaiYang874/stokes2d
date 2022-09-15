@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9db22aec-45bd-4cd9-b0e1-e69578760859" name="Changes" comment="" />
+    <list default="true" id="9db22aec-45bd-4cd9-b0e1-e69578760859" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/stokes2d.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/stokes2d.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/geometries.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/smooth corner.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/curve.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/curve.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/solver.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tubes copy.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/tubes copy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tubes.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/tubes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utility_and_spec.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utility_and_spec.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/temp.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/temp.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/testing legendre.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/testing legendre.ipynb" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -106,7 +119,13 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="CUSTOM_BOOLEAN_PROPERTIES">
+                <map>
+                  <entry key="Show.Git.Branches" value="true" />
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
