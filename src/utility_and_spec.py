@@ -44,3 +44,16 @@ def gauss_quad_rule(n=16,domain=(-1,1)):
     da = da * (right - left) / 2
     return a,da
 
+def line_intersect(p1,p2,p3,p4):
+    """
+    p5 is the intersection of line p1-p2 and line p3-p4. Therefore
+        p5 = p1 + t1*(p2-p1) = p3 + t2*(p4-p3)
+        p1 - p3 = t1*(p1-p2) + t2*(p4-p3)
+    we can use this to solve for (t1,t2)
+    """
+
+    t = np.linalg.solve(np.array([p1-p2,p4-p3]).T,p1-p3)
+    t1,t2 = t
+    return p1 + t1*(p2-p1)
+
+
