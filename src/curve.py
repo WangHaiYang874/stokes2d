@@ -1,7 +1,8 @@
+import numpy as np
+
 from utility_and_spec import *
 from linear_transform import affine_transformation
 from math_functions import *
-
 
 class Panel:
     """
@@ -42,13 +43,18 @@ class Panel:
     @property
     def legendre_coef_ratio(self):
         legendre_coef = np.polynomial.legendre.Legendre.fit(
-            self.a, self.t, deg=len(self.a) - 1, domain=self.domain).coef
+        self.a, self.t, deg=len(self.a) - 1, domain=self.domain).coef
         return np.sum(np.abs(legendre_coef[-2:])) / np.sum(np.abs(legendre_coef[:2]))
 
-    def good_enough(self, max_distance=None, legendre_ratio=None):
+
+    def good_enough(self, max_distance=None, legendre_ratio=None,domain_threhold=1e-8):
+
+        if self.domain[1] - self.domain[0] < domain_threhold:
+            return True
+
         max_distance = max_distance if max_distance else 1e-2
         legendre_ratio = legendre_ratio if legendre_ratio else 1e-14
-        # print(self.domain, '\t', self.max_distance,'\t',self.legendre_coef_ratio)
+
         return self.max_distance < max_distance and self.legendre_coef_ratio < legendre_ratio
 
 
@@ -63,15 +69,15 @@ class Curve:
     ddx_dda_fn = None
     ddy_dda_fn = None
 
-    def __init__(self, start_pt, end_pt) -> None:
+    def __init__(self, start_pt, end_pt, mid_pt) -> None:
 
         assert np.linalg.norm(start_pt - end_pt) > 1e-15
 
         self.panels = []
         self.start_pt = start_pt
         self.end_pt = end_pt
+        self.mid_pt = mid_pt
 
-        self.mid_pt = None
         self.aff_trans = None
 
     def build_affine_transform(self):
@@ -119,22 +125,22 @@ class Curve:
         domain1 = (left, mid)
         domain2 = (mid, right)
 
-        a1, da1 = gauss_quad_rule(domain=domain1)
-        x1 = self.x_fn(a1)
-        y1 = self.y_fn(a1)
-        x1, y1 = self.aff_trans(x1, y1, with_affine=True)
-        p1 = Panel(a1, da1, x1, y1, domain1)
+        ret = []
 
-        a2, da2 = gauss_quad_rule(domain=domain2)
-        x2 = self.x_fn(a2)
-        y2 = self.y_fn(a2)
-        x2, y2 = self.aff_trans(x2, y2, with_affine=True)
-        p2 = Panel(a2, da2, x2, y2, domain2)
+        for domain in [domain1, domain2]:
 
-        return p1, p2
+            a, da = gauss_quad_rule(domain=domain)
+            x = self.x_fn(a)
+            y = self.y_fn(a)
+            x, y = self.aff_trans(x, y, with_affine=True)
+            p = Panel(a, da, x, y, domain)
+
+            ret.append(p)
+
+        return ret
 
     def boundary_velocity(self):
-        return np.zeros_like(self.a)
+        return np.zeros((len(self.a),2))
 
     @property
     def a(self):
@@ -193,9 +199,8 @@ class Line(Curve):
     ddy_dda_fn = lambda _, a: np.zeros_like(a)
 
     def __init__(self, start_pt=pt(-1,0), end_pt=pt(1,0)) -> None:
-        super().__init__(start_pt, end_pt)
-        self.mid_pt = (start_pt + end_pt) / 2
-        self.build_affine_transform()
+        super().__init__(start_pt, end_pt, (start_pt + end_pt)/2)
+
 
 class Cap(Curve):
     standard_start_pt = pt(1, 0)
@@ -210,10 +215,7 @@ class Cap(Curve):
 
     def __init__(self, start_pt=pt(1, 0), end_pt=pt(-1, 0), mid_pt=pt(0, 2)) -> None:
 
-        super(Cap, self).__init__(start_pt, end_pt)
-        self.mid_pt = mid_pt
-
-        self.build_affine_transform()
+        super(Cap, self).__init__(start_pt, end_pt, mid_pt)
 
         # this provides conditions for matching
         self.matching_pt = (start_pt + end_pt) / 2
@@ -252,7 +254,7 @@ class Corner(Curve):
     ddy_dda_fn = lambda _, a: np.array([dd_convoluted_abs(x) for x in a])
 
     def __init__(self, start_pt, end_pt, mid_pt):
+
         assert (np.linalg.norm(start_pt - mid_pt) > 0)
         assert (np.abs(np.linalg.norm(start_pt - mid_pt) - np.linalg.norm(end_pt - mid_pt)) < 1e-15)
-        super(Corner, self).__init__(start_pt, end_pt)
-
+        super(Corner, self).__init__(start_pt, end_pt, mid_pt)
