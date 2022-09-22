@@ -26,30 +26,33 @@ sys.path.append('.')
 from curve import *
 from utility_and_spec import *
 from scipy.sparse.linalg import gmres, LinearOperator
+from typing import List, Tuple
 
 class Pipe:
+    # geometric data.
+    curves: List[Curve]
+
+    # graph data.
+    lets: List[int]  # stands for inlets and outlets
+    flows: List[Tuple[int,int]]
+    outlets: List[int]
+    inlet: int
+
+    # solver data
+    A: LinearOperator
+    omegas: List[np.ndarray]
+    pressure_drops: np.ndarray
+    velocity_field: List[np.ndarray]
+    pressure: List[np.ndarray]
+    vorticity: List[np.ndarray]
+
+    # drawing data
+    extent: Tuple[np.float64, np.float64, np.float64, np.float64]
+    grids = [np.ndarray, np.ndarray]
+
     def __init__(self) -> None:
-
-        # geometric data.
-        self.curves = None
-
-        # graph data.
-        self.lets  = None # stands for inlets and outlets
-        self.flows = None
-        self.outlets = None
-        self.inlet = None
-
-        # solver data
-        self.A = None
-        self.omegas = None
-        self.pressure_drops = None
-        self.velocity_field = None
-        self.pressure = None
-        self.vorticity = None
-
-        # drawing data
-        self.extent = None
-        self.grids = None
+        self.omegas = []
+        # nothing to do...
 
     @property
     def a(self): return np.concatenate([c.a + 2 * i for i, c in enumerate(self.curves)])
@@ -77,7 +80,9 @@ class Pipe:
 
     def build_geometry(self, max_distance=None, legendre_ratio=None):
 
-        self.curves = [c.build(max_distance,legendre_ratio) for c in self.curves]
+        for c in self.curves:
+            c.build_affine_transform()
+            c.build(max_distance,legendre_ratio)
 
     def build_graph(self):
         self.lets = [i for i,c in enumerate(self.curves) if isinstance(c,Cap)]
@@ -86,6 +91,7 @@ class Pipe:
         self.inlet = self.lets[0]
         self.outlets = self.lets[1:]
         self.flows = [(self.inlet,o) for o in self.outlets]
+        self.nflows = len(self.flows)
 
     # noinspection PyPep8Naming,DuplicatedCode
     def build_A(self):
@@ -127,15 +133,17 @@ class Pipe:
         n = len(self.a)
         self.A = LinearOperator(dtype=np.float64, shape=(2*n,2*n),matvec=A)
 
-
-    def compute_omega(self,U,tol=1e-12):
-        H = H2U(U)
+    def compute_omega(self,U,tol=1e-13):
+        H = U2H(U)
         b = np.concatenate((H.real,H.imag))
 
-        omega,_ = gmres(self.A, b,atol=0,tol=tol)
+        omega_sep,_ = gmres(self.A, b,atol=0,tol=tol)
 
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
+
+        n = len(omega_sep)
+        omega = omega_sep[:n//2] + 1j*omega_sep[n//2:]
 
         return omega
 
@@ -145,17 +153,17 @@ class Pipe:
         for j,c in enumerate(self.curves):
             if j == inlet:
                 ret.append(-c.boundary_velocity())
-            if j == outlet:
+            elif j == outlet:
                 ret.append(c.boundary_velocity())
             else:
-                ret.append(np.zeros_like(c.a))
+                ret.append(0*c.boundary_velocity())
         return np.concatenate(ret)
 
     def solve(self,tol=None):
 
         tol = 1e-12 if tol is None else tol
 
-        for i in self.flows:
+        for i in range(self.nflows):
             U = self.get_bounadry_velocity_condition(i)
             omega = self.compute_omega(U,tol)
             self.omegas.append(omega)
@@ -234,9 +242,6 @@ class Pipe:
     def build_velocity_fields(self):
         pass
     
-    def build_graph(self):
-        pass
-    
     def build(self):
         pass
     
@@ -302,10 +307,18 @@ class SmoothPipe(Pipe):
 
         n = len(lines)
         for i in range(n):
-            j = (i + 1) % len(lines)
-            self.curves.append(lines[i](points[i], points[j]))
 
-        self.smooth_corners(self.corner_size)
+            j = (i + 1) % len(lines)
+            if lines[i] == Line:
+                self.curves.append(lines[i](points[i], points[j]))
+            else: # I need to inference the mid point.
+
+                vec = points[i] - points[i-1]
+                vec = vec/np.linalg.norm(vec)
+                mid_pt = (points[i] + points[j])/2 + vec
+                self.curves.append(lines[i](points[i], points[j],mid_pt))
+
+        self.smooth_corners()
 
     def smooth_corners(self):
 
@@ -321,16 +334,13 @@ class SmoothPipe(Pipe):
             r = l2.end_pt
 
             corner_size = min(self.corner_size, np.linalg.norm(p - q) / 2, np.linalg.norm(r - q) / 2)
-
             assert (corner_size > 1e-2)
 
             start_pt = q + (((p - q) / np.linalg.norm(p - q)) * corner_size)
             end_pt = q + (((r - q) / np.linalg.norm(r - q)) * corner_size)
 
-            c = Corner(start_pt, end_pt, q)
-
             self.curves.insert(i,Line(end_pt,r))
-            self.curves.insert(i,c)
+            self.curves.insert(i,Corner(start_pt, end_pt, q))
             self.curves.insert(i,Line(p,start_pt))
 
             i = self.next_corner()
@@ -347,7 +357,7 @@ class SmoothPipe(Pipe):
                 return i
         return None
 
-class cross(SmoothPipe):
+class Cross(SmoothPipe):
     def __init__(self, length, radius, corner_size=0.2):
 
         p1 = np.array([-length, -radius])
@@ -371,52 +381,98 @@ class cross(SmoothPipe):
 
         super().__init__(points, curves, corner_size)
 
-    def build_solver(self, ):
-        self.omegas = []
-        pass
 
-    def get_flows(self):
-        self.caps_index = [i for i, j in enumerate(self.curves) if isinstance(j, cap)]
-        self.inflow = self.caps[0]
-        self.outflows = self.caps[1:]
+    # def get_flows(self):
+    #     self.caps_index = [i for i, j in enumerate(self.curves) if isinstance(j, Cap)]
+    #     self.inflow = self.caps[0]
+    #     self.outflows = self.caps[1:]
+    #
+    # def get_all_boundary_velocity_conditions(self):
+    #
+    #     velocities = []
+    #
+    #     for j in self.outflows:
+    #         velocity = []
+    #         for i, c in enumerate(self.curves):
+    #             if i == self.inflow:
+    #                 velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=1)))
+    #             elif i == j:
+    #                 velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=-1)))
+    #             else:
+    #                 velocity.append(np.zeros_like(c.a))
+    #         velocities.append(np.concatenate(velocity))
+    #
+    #     self.velocities = np.array(velocities)
+    #
+    # def compute_pressure_drops(self):
+    #     pressure_drops = []
+    #
+    #     for i, o in enumerate(self.outflows):
+    #         omega = self.omegas[i]
+    #         pressure_drop = []
+    #
+    #         p1 = Cross.curves[self.inflow].p
+    #         p1_cplx = p1[0] + 1j * p1[1]
+    #         p1_pressure = self.solver.compute_pressure(p1_cplx, omega)
+    #
+    #         for j, o2 in enumerate(self.outflows):
+    #             p2 = Cross.curves[o2].p
+    #             p2_cplx = p2[0] + 1j * p2[1]
+    #             p2_pressure = self.solver.compute_pressure(p2_cplx, omega)
+    #             pressure_drop.append(p2_pressure - p1_pressure)
+    #
+    #         pressure_drops.append(pressure_drop)
+    #
+    #     self.pressure_drops = pressure_drops
+    #
+    #
+    #
+    #
+    #
+    #
 
-    def get_all_boundary_velocity_conditions(self):
 
-        velocities = []
+class NLets(SmoothPipe):
+    def __init__(self,ls,rs, corner_size=1e-1):
 
-        for j in self.outflows:
-            velocity = []
-            for i, c in enumerate(self.curves):
-                if i == self.inflow:
-                    velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=1)))
-                elif i == j:
-                    velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=-1)))
-                else:
-                    velocity.append(np.zeros_like(c.a))
-            velocities.append(np.concatenate(velocity))
+        assert len(ls) == len(rs)
+        assert np.all(rs > 0)
 
-        self.velocities = np.array(velocities)
+        thetas = np.arctan2(ls[:,1], ls[:,0])
+        thetas[thetas==np.pi] = -np.pi
 
-    def compute_pressure_drops(self):
-        pressure_drops = []
+        assert np.all(np.diff(thetas) > 0)
 
-        for i, o in enumerate(self.outflows):
-            omega = self.omegas[i]
-            pressure_drop = []
+        n = len(ls)
 
-            p1 = cross.curves[self.inflow].p
-            p1_cplx = p1[0] + 1j * p1[1]
-            p1_pressure = self.solver.compute_pressure(p1_cplx, omega)
+        pts = []
+        curves = []
 
-            for j, o2 in enumerate(self.outflows):
-                p2 = cross.curves[o2].p
-                p2_cplx = p2[0] + 1j * p2[1]
-                p2_pressure = self.solver.compute_pressure(p2_cplx, omega)
-                pressure_drop.append(p2_pressure - p1_pressure)
+        for i in range(n):
+            j = (i + 1)%n
+            tangential_dir = (thetas[i] + np.pi/2)
+            x = np.cos(tangential_dir)
+            y = np.sin(tangential_dir)
+            tangential_unit = pt(x,y)
 
-            pressure_drops.append(pressure_drop)
+            p1 = ls[i] - tangential_unit*rs[i]
+            p2 = ls[i] + tangential_unit*rs[i]
 
-        self.pressure_drops = pressure_drops
+            tangential_dir = (thetas[j] + np.pi/2)
+            x = np.cos(tangential_dir)
+            y = np.sin(tangential_dir)
+            tangential_unit = pt(x, y)
+            q1 = ls[j] - tangential_unit*rs[j]
+
+            p3 = line_intersect(p2,p2+ls[i],q1,q1+ls[j])
+
+            pts = pts + [p1,p2,p3]
+            curves = curves + [Cap,Line,Line]
+
+        super().__init__(pts,curves, corner_size)
+
+
+
 
 
 
