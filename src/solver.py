@@ -5,6 +5,7 @@ from utility_and_spec import *
 import fmm2dpy as fmm
 from time import time
 
+
 class stokes2d:
     def __init__(self, geometry, gmres_tol=1e-12):
 
@@ -28,13 +29,13 @@ class stokes2d:
 
         # this ignore the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 = -da_ * np.imag(d/dt) / np.pi
-            K2 = -da_ * (-d/np.conjugate(dt) + np.conjugate(d)
-                         * dt/(np.conjugate(dt**2))) / (2j*np.pi)
+            K1 = -da_ * np.imag(d / dt) / np.pi
+            K2 = -da_ * (-d / np.conjugate(dt) + np.conjugate(d)
+                         * dt / (np.conjugate(dt ** 2))) / (2j * np.pi)
         # now we need to fill the diagonal elements
         d = dt_da
-        K1_diagonal = k*np.abs(d)*da/(2*np.pi)
-        K2_diagonal = -da*k*(d**2)/(np.abs(d)*2*np.pi)
+        K1_diagonal = k * np.abs(d) * da / (2 * np.pi)
+        K2_diagonal = -da * k * (d ** 2) / (np.abs(d) * 2 * np.pi)
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
@@ -43,11 +44,11 @@ class stokes2d:
         n = len(self.geometry.a)
         self.n = n
 
-        A = np.zeros((2*n, 2*n))
-        A[:n, :n] = np.identity(n) + (K1+K2).real
-        A[:n, n:] = (-K1+K2).imag
-        A[n:, :n] = (K1+K2).imag
-        A[n:, n:] = np.identity(n) + (K1-K2).real
+        A = np.zeros((2 * n, 2 * n))
+        A[:n, :n] = np.identity(n) + (K1 + K2).real
+        A[:n, n:] = (-K1 + K2).imag
+        A[n:, :n] = (K1 + K2).imag
+        A[n:, n:] = np.identity(n) + (K1 - K2).real
 
         self.A = aslinearoperator(A)
 
@@ -80,22 +81,17 @@ class stokes2d:
 
         # print('running gmres')
 
-        callback=None
+        callback = None
 
         if if_callback:
-            callback = gmres_callback(A,rhs)
+            callback = gmres_callback(A, rhs)
 
+        # lgmres does not help with the convergence.
 
-        ### lgmres does not help with the convergence. 
-
-        # if if_lgmres:
-            # omega, _ = lgmres(A, rhs, tol=self.gmres_tol, atol=0, maxiter=80,callback=callback)
-        # else:
-
-        omega, _ = gmres(A, rhs, 
-                            tol=self.gmres_tol, atol=0, 
-                            maxiter=100,restart=10,
-                            callback=callback,callback_type='x')
+        omega, _ = gmres(A, rhs,
+                         tol=self.gmres_tol, atol=0,
+                         maxiter=100, restart=10,
+                         callback=callback, callback_type='x')
 
         if _ > 0:
             print('gmres did not converge after', _, ' iterations')
@@ -103,7 +99,7 @@ class stokes2d:
             print('gmres breakdown')
 
         n = len(self.geometry.a)
-        omega = omega[:n] + 1j*omega[n:]
+        omega = omega[:n] + 1j * omega[n:]
 
         if if_callback:
             return omega, callback
@@ -115,16 +111,15 @@ class stokes2d:
         # compute the kernels
         _, da, _, dt_da, k = self.geometry.get_data()
 
-        self.K1_diagonal = k*np.abs(dt_da)*da/(2*np.pi)
-        self.K2_diagonal = -da*k*(dt_da**2)/(np.abs(dt_da)*2*np.pi)
+        self.K1_diagonal = k * np.abs(dt_da) * da / (2 * np.pi)
+        self.K2_diagonal = -da * k * (dt_da ** 2) / (np.abs(dt_da) * 2 * np.pi)
 
         def A_fmm(omega_sep):
-
             n = len(omega_sep)
             assert n % 2 == 0
-            n = n//2
+            n = n // 2
 
-            omega = omega_sep[:n] + 1j*omega_sep[n:]
+            omega = omega_sep[:n] + 1j * omega_sep[n:]
 
             K1 = self.K1_fmm(omega)
             K2 = self.K2_fmm(omega.conj())
@@ -138,51 +133,49 @@ class stokes2d:
         n = len(self.geometry.a)
 
         self.A_fmm = LinearOperator(
-            dtype=np.float64, shape=(2*n, 2*n), matvec=A_fmm)
+            dtype=np.float64, shape=(2 * n, 2 * n), matvec=A_fmm)
 
     def K1_fmm(self, omega):
 
         eps = 1e-17
         _, da, _, dt_da, _ = self.geometry.get_data()
         sources = np.array([self.geometry.x, self.geometry.y])
-        dt = dt_da*da
+        dt = dt_da * da
 
         K11 = fmm.cfmm2d(eps=eps,
                          sources=sources,
-                         dipstr=- dt*omega/(2j*np.pi),
+                         dipstr=- dt * omega / (2j * np.pi),
                          pg=1
                          ).pot
 
         K12 = fmm.cfmm2d(eps=eps,
                          sources=sources,
-                         dipstr=- dt * omega.conjugate()/(2j*np.pi),
+                         dipstr=- dt * omega.conjugate() / (2j * np.pi),
                          pg=1
                          ).pot.conjugate()
 
         # diagonal elements
-        K1_diag = self.K1_diagonal*omega
+        K1_diag = self.K1_diagonal * omega
 
         return K11 + K12 + K1_diag
-
-
 
         return K21 + K221 + K222 + K2_diag
 
     def compute_velocity_direct(self, z, omega):
 
         t = self.geometry.get_t()
-        dt = self.geometry.get_dt_da()*self.geometry.da
+        dt = self.geometry.get_dt_da() * self.geometry.da
 
         if isinstance(z, numbers.Number):
             t_minus_z = t - z
-            t_minus_z_sq = t_minus_z**2
+            t_minus_z_sq = t_minus_z ** 2
 
-            phi = np.sum(omega*dt/t_minus_z)/(2j*np.pi)
-            d_phi = np.sum(omega*dt/t_minus_z_sq)/(2j*np.pi)
+            phi = np.sum(omega * dt / t_minus_z) / (2j * np.pi)
+            d_phi = np.sum(omega * dt / t_minus_z_sq) / (2j * np.pi)
 
-            psi = (1/(2j*np.pi))*(
-                2*np.sum(np.real(np.conjugate(omega)*dt)/t_minus_z)
-                - np.sum(np.conjugate(t)*omega*dt/t_minus_z_sq))
+            psi = (1 / (2j * np.pi)) * (
+                    2 * np.sum(np.real(np.conjugate(omega) * dt) / t_minus_z)
+                    - np.sum(np.conjugate(t) * omega * dt / t_minus_z_sq))
 
         else:
             assert isinstance(z, np.ndarray)
@@ -190,19 +183,19 @@ class stokes2d:
             z = z.flatten()
 
             t_minus_z = t[np.newaxis, :] - z[:, np.newaxis]
-            t_minus_z_sq = t_minus_z**2
+            t_minus_z_sq = t_minus_z ** 2
 
-            phi = np.sum((omega*dt)[np.newaxis, :] /
-                         t_minus_z, axis=1)/(2j*np.pi)
-            d_phi = np.sum((omega*dt)[np.newaxis, :] /
-                           (t_minus_z_sq), axis=1)/(2j*np.pi)
+            phi = np.sum((omega * dt)[np.newaxis, :] /
+                         t_minus_z, axis=1) / (2j * np.pi)
+            d_phi = np.sum((omega * dt)[np.newaxis, :] /
+                           (t_minus_z_sq), axis=1) / (2j * np.pi)
 
-            psi = (1/(2j*np.pi))*(
-                2*np.sum(np.real((np.conjugate(omega)*dt)
-                         [np.newaxis, :])/t_minus_z, axis=1)
-                - np.sum((np.conjugate(t)*omega*dt)[np.newaxis, :]/t_minus_z_sq, axis=1))
+            psi = (1 / (2j * np.pi)) * (
+                    2 * np.sum(np.real((np.conjugate(omega) * dt)
+                                       [np.newaxis, :]) / t_minus_z, axis=1)
+                    - np.sum((np.conjugate(t) * omega * dt)[np.newaxis, :] / t_minus_z_sq, axis=1))
 
-        ret = phi + z*np.conjugate(d_phi) + np.conjugate(psi)
+        ret = phi + z * np.conjugate(d_phi) + np.conjugate(psi)
 
         ret = ret.reshape(shape)
 
@@ -215,7 +208,7 @@ class stokes2d:
 
         eps = 1e-17
         t = self.geometry.get_t()
-        dt = self.geometry.get_dt_da()*self.geometry.da
+        dt = self.geometry.get_dt_da() * self.geometry.da
         charges = np.zeros_like(t)
         sources = np.array([self.geometry.x, self.geometry.y])
 
@@ -227,29 +220,29 @@ class stokes2d:
         phi = fmm.cfmm2d(eps=eps,
                          sources=sources,
                          charges=charges,
-                         dipstr=omega*dt,
+                         dipstr=omega * dt,
                          targets=targets,
                          pgt=2)
 
-        phi, d_phi = phi.pottarg/(-2j*np.pi), phi.gradtarg/(-2j*np.pi)
+        phi, d_phi = phi.pottarg / (-2j * np.pi), phi.gradtarg / (-2j * np.pi)
 
         psi1 = fmm.cfmm2d(eps=eps,
                           sources=sources,
                           charges=charges,
-                          dipstr=np.real(omega.conjugate()*dt),
+                          dipstr=np.real(omega.conjugate() * dt),
                           targets=targets,
-                          pgt=1).pottarg/(-1j*np.pi)
+                          pgt=1).pottarg / (-1j * np.pi)
 
         psi2 = fmm.cfmm2d(eps=eps,
                           sources=sources,
                           charges=charges,
-                          dipstr=np.real(np.conjugate(t)*omega*dt),
+                          dipstr=np.real(np.conjugate(t) * omega * dt),
                           targets=targets,
-                          pgt=2).gradtarg/(2j*np.pi)
+                          pgt=2).gradtarg / (2j * np.pi)
 
         psi = psi1 + psi2
 
-        H = phi + (x+1j*y)*d_phi.conjugate() + psi.conjugate()
+        H = phi + (x + 1j * y) * d_phi.conjugate() + psi.conjugate()
 
         return H2U(H)
 
@@ -258,21 +251,20 @@ class stokes2d:
         # p = Im phi'(z), up to a constant factor.
 
         t = self.geometry.get_t()
-        dt = self.geometry.get_dt_da()*self.geometry.da
+        dt = self.geometry.get_dt_da() * self.geometry.da
 
         if isinstance(z, numbers.Number):
-
-            t_minus_z_sq = (t-z)**2
-            d_phi = np.sum(omega*dt/t_minus_z_sq)/(2j*np.pi)
+            t_minus_z_sq = (t - z) ** 2
+            d_phi = np.sum(omega * dt / t_minus_z_sq) / (2j * np.pi)
             return np.imag(d_phi)
 
         assert (isinstance(z, np.ndarray))
         shape = z.shape
         z = z.flatten()
 
-        t_minus_z_sq = (t[np.newaxis, :] - z[:, np.newaxis])**2
-        d_phi = np.sum((omega*dt)[np.newaxis, :] /
-                       (t_minus_z_sq), axis=1)/(2j*np.pi)
+        t_minus_z_sq = (t[np.newaxis, :] - z[:, np.newaxis]) ** 2
+        d_phi = np.sum((omega * dt)[np.newaxis, :] /
+                       (t_minus_z_sq), axis=1) / (2j * np.pi)
 
         pressure = np.imag(d_phi)
         return pressure.reshape(shape)
@@ -280,7 +272,7 @@ class stokes2d:
     def compute_pressure_fmm(self, z, omega):
         eps = 1e-17
         t = self.geometry.get_t()
-        dt = self.geometry.get_dt_da()*self.geometry.da
+        dt = self.geometry.get_dt_da() * self.geometry.da
         charges = np.zeros_like(t)
         sources = np.array([self.geometry.x, self.geometry.y])
 
@@ -292,26 +284,26 @@ class stokes2d:
         d_phi = fmm.cfmm2d(eps=eps,
                            sources=sources,
                            charges=charges,
-                           dipstr=omega*dt,
+                           dipstr=omega * dt,
                            targets=targets,
-                           pgt=2).gradtarg/(-2j*np.pi)
+                           pgt=2).gradtarg / (-2j * np.pi)
 
         return np.imag(d_phi)
 
+
 class gmres_callback:
-    def __init__(self,A,b):
+    def __init__(self, A, b):
         self.counter = 0
         self.pr_norm = []
-        self.A  = A
-        self.b  = b 
+        self.A = A
+        self.b = b
         self.norm = []
 
     def __call__(self, x):
         self.counter += 1
-        self.norm.append(np.linalg.norm(self.A.matvec(x)-self.b)/np.linalg.norm(self.b))
+        self.norm.append(np.linalg.norm(self.A.matvec(x) - self.b) / np.linalg.norm(self.b))
         if self.counter > 10:
             if np.mean(self.norm[-5:]) > np.mean(self.norm[-10:-5]): return True
-
 
 
 class stokes2dGlobal:

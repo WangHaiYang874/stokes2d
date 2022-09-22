@@ -22,7 +22,7 @@ Corner be, etc.
 import numpy as np
 import sys
 sys.path.append('.')
-from geometry import *
+from curve import *
 from utility_and_spec import *
 
 class pipe(geometry):

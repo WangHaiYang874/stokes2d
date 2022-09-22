@@ -23,6 +23,11 @@ class Panel:
         self.ddx_dda = None
         self.ddy_dda = None
 
+    def distance(self, pts):
+        a = pt(self.x[0], self.y[0])
+        b = pt(self.x[-1], self.y[-1])
+        return distance(pts, a, b)
+
     @property
     def t(self):
         return self.x + 1j * self.y
@@ -43,7 +48,7 @@ class Panel:
     @property
     def legendre_coef_ratio(self):
         legendre_coef = np.polynomial.legendre.Legendre.fit(
-        self.a, self.t, deg=len(self.a) - 1, domain=self.domain).coef
+            self.a, self.t, deg=len(self.a) - 1, domain=self.domain).coef
         return np.sum(np.abs(legendre_coef[-2:])) / np.sum(np.abs(legendre_coef[:2]))
 
 
@@ -221,7 +226,7 @@ class Cap(Curve):
         self.matching_pt = (start_pt + end_pt) / 2
         assert np.linalg.norm(self.matching_pt - mid_pt) > 1e-15
         out_vec = mid_pt - self.matching_pt
-        self.out_dir = np.arctan2(out_vec[1],out_vec[0])
+        self.out_dir = np.arctan2(out_vec[1], out_vec[0])
         self.width = np.linalg.norm(end_pt - start_pt)
         assert self.width > 1e-15
 
@@ -233,13 +238,15 @@ class Cap(Curve):
 
         r = self.width / 2
 
-        t = (self.t - self.matching_pt[0] - self.matching_pt[1]*1j)
-        t = t * np.exp(-1j*(self.out_dir - np.pi/2))
+        t = (self.t - self.matching_pt[0] - self.matching_pt[1] * 1j)
+        t = t * np.exp(-1j * (self.out_dir - np.pi / 2))
         x = t.real
-        h = (x**2 - r**2) * 3 / (4 * r ** 3)
-        h = np.exp(1j*(self.out_dir - np.pi/2)) * h
+        h = (x ** 2 - r ** 2) * 3 / (4 * r ** 3)
+        h = np.exp(1j * (self.out_dir - np.pi / 2)) * h
 
         return H2U(h)
+
+    def contour_polygon(self): return np.array([self.start_pt])
 
 
 class Corner(Curve):
