@@ -91,13 +91,16 @@ class Curve:
             self.start_pt, self.mid_pt, self.end_pt)
 
     def build(self, max_distance=None, legendre_ratio=None):
-        # initial Panel
-        a, da = gauss_quad_rule()
-        x = self.x_fn(a)
-        y = self.y_fn(a)
-        x, y = self.aff_trans(x, y, with_affine=True)
-        p = Panel(a, da, x, y, (-1, 1))
-        self.panels.append(p)
+        
+        if not len(self.panels):
+            
+            # initial Panel
+            a, da = gauss_quad_rule()
+            x = self.x_fn(a)
+            y = self.y_fn(a)
+            x, y = self.aff_trans(x, y, with_affine=True)
+            p = Panel(a, da, x, y, (-1, 1))
+            self.panels.append(p)
 
         i = 0
         while i < len(self.panels):

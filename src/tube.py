@@ -27,6 +27,7 @@ from curve import *
 from utility_and_spec import *
 from scipy.sparse.linalg import gmres, LinearOperator
 from typing import List, Tuple
+from itertools import chain
 
 class Pipe:
     # geometric data.
@@ -77,6 +78,10 @@ class Pipe:
     def dt_da(self): return np.concatenate([c.dt_da for c in self.curves])
     @property
     def k(self): return np.concatenate([c.k for c in self.curves])
+    @property
+    def panels(self): 
+        return chain(*([ c.panels for c in self.curves]))
+        
 
     def build_geometry(self, max_distance=None, legendre_ratio=None):
 
@@ -170,26 +175,6 @@ class Pipe:
 
         # the above can be computed parallel.
 
-    def compute_pressure_drops(self):
-        """
-        with n as the number of flows.
-        this should build a n*n matrix with
-        the columns indexed by fluxes and
-        the rows indexed by flow.
-        """
-
-        n = len(self.flows)
-
-        ret = np.zeros((n,n))
-
-        pts = np.array([self.curves[i] for i in self.lets])
-        x = pts[:,0]
-        y = pts[:,1]
-
-        for j,omega in enumerate(self.omegas):
-            pressures = self.compute_pressure_and_vorticity(x,y,omega)
-            pass
-    #     TODO
 
     # noinspection DuplicatedCode
     def compute_velocity(self,x,y,omega):
@@ -470,12 +455,3 @@ class NLets(SmoothPipe):
             curves = curves + [Cap,Line,Line]
 
         super().__init__(pts,curves, corner_size)
-
-
-
-
-
-
-
-
-
