@@ -28,6 +28,8 @@ from utility_and_spec import *
 from scipy.sparse.linalg import gmres, LinearOperator
 from typing import List, Tuple
 
+from joblib import Parallel, delayed, cpu_count
+
 class Pipe:
     # geometric data.
     curves: List[Curve]
@@ -78,11 +80,19 @@ class Pipe:
     @property
     def k(self): return np.concatenate([c.k for c in self.curves])
 
-    def build_geometry(self, max_distance=None, legendre_ratio=None):
-
-        for c in self.curves:
-            c.build_affine_transform()
-            c.build(max_distance,legendre_ratio)
+    def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
+        
+        n_jobs = min(n_jobs,cpu_count(),8, len(self.curves))
+        
+        if n_jobs == 1:
+            for c in self.curves:
+                c.build_affine_transform()
+                c.build(max_distance,legendre_ratio)
+        else:
+            Parallel(n_jobs=n_jobs) (
+                delayed(lambda c: c.build_affine_transform(), c.build(max_distance,legendre_ratio)) 
+            )
+            
 
     def build_graph(self):
         self.lets = [i for i,c in enumerate(self.curves) if isinstance(c,Cap)]
@@ -470,12 +480,3 @@ class NLets(SmoothPipe):
             curves = curves + [Cap,Line,Line]
 
         super().__init__(pts,curves, corner_size)
-
-
-
-
-
-
-
-
-
