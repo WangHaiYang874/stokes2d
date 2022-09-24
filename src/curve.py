@@ -85,16 +85,15 @@ class Curve:
 
         self.aff_trans = None
 
-    def build_affine_transform(self):
+    def build(self, max_distance=None, legendre_ratio=None):
+        
+        # building affine transformation
         self.aff_trans = affine_transformation(
             self.standard_start_pt, self.standard_mid_pt, self.standard_end_pt,
             self.start_pt, self.mid_pt, self.end_pt)
-
-    def build(self, max_distance=None, legendre_ratio=None):
         
+        # initialize panel
         if not len(self.panels):
-            
-            # initial Panel
             a, da = gauss_quad_rule()
             x = self.x_fn(a)
             y = self.y_fn(a)
@@ -102,18 +101,21 @@ class Curve:
             p = Panel(a, da, x, y, (-1, 1))
             self.panels.append(p)
 
+        # refine the panels. 
         i = 0
         while i < len(self.panels):
             if self.panels[i].good_enough(max_distance=max_distance, legendre_ratio=legendre_ratio):
                 i += 1
                 continue
+            
+            # the panel is not good enough, so we want to refine it. 
             p = self.panels.pop(i)
             p1, p2 = self.split_a_panel(p)
             self.panels.insert(i, p2)
             self.panels.insert(i, p1)
 
+        # calculating other needed quantities of the curve. 
         for p in self.panels:
-            # dx_da, ddx_dda, etc
             dx_da = self.dx_da_fn(p.a)
             dy_da = self.dy_da_fn(p.a)
             ddx_dda = self.ddx_dda_fn(p.a)
