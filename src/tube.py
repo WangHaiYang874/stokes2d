@@ -116,18 +116,12 @@ class Pipe:
         return chain(*([ c.panels for c in self.curves]))
         
 
-    def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
-        
-        n_jobs = min(n_jobs,cpu_count(),8, len(self.curves))
-        
-        if n_jobs == 1:
-            for c in self.curves:
-                c.build_affine_transform()
-                c.build(max_distance,legendre_ratio)
-        else:
-            Parallel(n_jobs=n_jobs) (
-                delayed(lambda c: c.build_affine_transform(), c.build(max_distance,legendre_ratio)) 
-            )
+    def build_geometry(self, max_distance=None, legendre_ratio=None):        
+        for c in self.curves:
+            # although this is an embarrassingly parallel for loop, there
+            # is no easy way in python to make it parallel...
+            # Python is just too stupid. 
+            c.build(max_distance,legendre_ratio)
             
 
     def build_graph(self):
