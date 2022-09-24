@@ -28,6 +28,7 @@ from utility_and_spec import *
 from scipy.sparse.linalg import gmres, LinearOperator
 from typing import List, Tuple
 from itertools import chain
+from joblib import Parallel, delayed
 
 class Pipe:
     # geometric data.
@@ -47,13 +48,43 @@ class Pipe:
     pressure: List[np.ndarray]
     vorticity: List[np.ndarray]
 
-    # drawing data
-    extent: Tuple[np.float64, np.float64, np.float64, np.float64]
-    grids = [np.ndarray, np.ndarray]
+    def __init__(self,grid_density=100) -> None:
+        self.grid_density = grid_density
 
-    def __init__(self) -> None:
-        self.omegas = []
-        # nothing to do...
+    @property
+    def boundary(self):
+        pts = []
+        for c in self.curves:
+            if isinstance(c,Cap):
+                pts += [c.start_pt, c.matching_pt]
+            elif isinstance(c,Line):
+                pts += [c.start_pt, c.mid_pt]
+            elif isinstance(c,Corner):
+                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
+        pts = np.array(pts)
+    
+    @property
+    def extent(self):
+        left = np.min(self.boundary[:,0])
+        right = np.max(self.boundary[:,0])
+        up = np.max(self.boundary[:,0])
+        down = np.min(self.boundary[:,0])
+        return (left,right,up,down)
+    
+    @property
+    def grid(self):
+        left,right,up,down = self.extent
+        n = np.sqrt(self.grid_density)
+        xs = np.linspace(left,right,np.ceil(n*(right-left)))
+        ys = np.linspace(down,up,np.ceil(n*(up-down)))
+        xs,ys = np.meshgrid(xs,ys)
+        
+        
+        
+    
+    @property
+    def grid(self):
+        pass
 
     @property
     def a(self): return np.concatenate([c.a + 2 * i for i, c in enumerate(self.curves)])
@@ -168,12 +199,10 @@ class Pipe:
 
         tol = 1e-12 if tol is None else tol
 
-        for i in range(self.nflows):
-            U = self.get_bounadry_velocity_condition(i)
-            omega = self.compute_omega(U,tol)
-            self.omegas.append(omega)
-
-        # the above can be computed parallel.
+        
+        self.omegas = Parallel(n_jobs=min(4,self.nflows))(delayed(
+            lambda i: self.compute_omega(self.get_bounadry_velocity_condition(i),tol)
+            )(i) for i in range(self.nflows))
 
 
     # noinspection DuplicatedCode
