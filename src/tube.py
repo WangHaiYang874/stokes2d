@@ -19,77 +19,43 @@ such as the radius, the length, the number of bifurcations, how large should the
 Corner be, etc.
 """
 
+from joblib import Parallel, delayed, cpu_count
+from itertools import chain
+from typing import List, Tuple
+from scipy.sparse.linalg import gmres, LinearOperator
+from utility_and_spec import *
+from curve import *
 import sys
 import warnings
 
-sys.path.append('.')
-from curve import *
-from utility_and_spec import *
-from scipy.sparse.linalg import gmres, LinearOperator
-from typing import List, Tuple
-from itertools import chain
-from joblib import Parallel, delayed
 
-from joblib import Parallel, delayed, cpu_count
+sys.path.append('.')
+nax = np.newaxis
 
 class Pipe:
     # geometric data.
     curves: List[Curve]
 
-    # graph data.
-    lets: List[int]  # stands for inlets and outlets
-    flows: List[Tuple[int,int]]
-    outlets: List[int]
-    inlet: int
-
     # solver data
+    lets: List[int]  # stands for inlets/outlets
+    flows: List[Tuple[int, int]]
     A: LinearOperator
     omegas: List[np.ndarray]
     pressure_drops: np.ndarray
+
+    # picture data
     velocity_field: List[np.ndarray]
     pressure: List[np.ndarray]
     vorticity: List[np.ndarray]
 
-    def __init__(self,grid_density=100) -> None:
-        self.grid_density = grid_density
-
-    @property
-    def boundary(self):
-        pts = []
-        for c in self.curves:
-            if isinstance(c,Cap):
-                pts += [c.start_pt, c.matching_pt]
-            elif isinstance(c,Line):
-                pts += [c.start_pt, c.mid_pt]
-            elif isinstance(c,Corner):
-                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        pts = np.array(pts)
-    
-    @property
-    def extent(self):
-        left = np.min(self.boundary[:,0])
-        right = np.max(self.boundary[:,0])
-        up = np.max(self.boundary[:,0])
-        down = np.min(self.boundary[:,0])
-        return (left,right,up,down)
-    
-    @property
-    def grid(self):
-        left,right,up,down = self.extent
-        n = np.sqrt(self.grid_density)
-        xs = np.linspace(left,right,np.ceil(n*(right-left)))
-        ys = np.linspace(down,up,np.ceil(n*(up-down)))
-        xs,ys = np.meshgrid(xs,ys)
-        
-        
-        
-    
-    @property
-    def grid(self):
+    def __init__(self) -> None:
+        # self.grid_density = grid_density
         pass
 
+    ### GEOMETRIC ###
+
     @property
-    def a(self): return np.concatenate([c.a + 2 * i for i, c in enumerate(self.curves)])
+    def a(self): return np.concatenate([c.a + 2*i for i,c in enumerate(self.curves)])
     @property
     def da(self): return np.concatenate([c.da for c in self.curves])
     @property
@@ -101,7 +67,6 @@ class Pipe:
     @property
     def dy_da(self): return np.concatenate([c.dy_da for c in self.curves])
     @property
-
     def ddx_dda(self): return np.concatenate([c.ddx_dda for c in self.curves])
     @property
     def ddy_dda(self): return np.concatenate([c.ddy_dda for c in self.curves])
@@ -110,41 +75,40 @@ class Pipe:
     @property
     def dt_da(self): return np.concatenate([c.dt_da for c in self.curves])
     @property
+    def dt(self): return self.dt_da * self.da
+    @property
     def k(self): return np.concatenate([c.k for c in self.curves])
     @property
-    def panels(self): 
-        return chain(*([ c.panels for c in self.curves]))
+    def panels(self): return chain(*([c.panels for c in self.curves]))
+
+    def build_geometry(self, max_distance=None, legendre_ratio=None,n_jobs=1):
         
-
-    def build_geometry(self, max_distance=None, legendre_ratio=None):        
-        for c in self.curves:
-            # although this is an embarrassingly parallel for loop, there
-            # is no easy way in python to make it parallel...
-            # Python is just too stupid. 
+        if n_jobs == 1:
+            for c in self.curves:
+                c.build(max_distance, legendre_ratio)
+            return 
+        
+        def build_curve(c):
             c.build(max_distance,legendre_ratio)
-            
+            return c
+        
+        self.curves = Parallel(n_jobs=min(n_jobs, len(self.curves), cpu_count()//2))(
+            delayed(build_curve)(c) for c in self.curves)
 
-    def build_graph(self):
-        self.lets = [i for i,c in enumerate(self.curves) if isinstance(c,Cap)]
-        assert len(self.lets) > 1
+    ### SINGLE SOLVER ###
 
-        self.inlet = self.lets[0]
-        self.outlets = self.lets[1:]
-        self.flows = [(self.inlet,o) for o in self.outlets]
-        self.nflows = len(self.flows)
+    def build_A(self, fmm=False):
 
-    # noinspection PyPep8Naming,DuplicatedCode
-    def build_A(self):
-        """not implementing fmm for now. """
+        if fmm: return NotImplemented
 
         da = self.da
         t = self.t
         dt_da = self.dt_da
         k = self.k
 
-        dt = t[:, np.newaxis] - t[np.newaxis, :]
-        d = dt_da[np.newaxis, :]
-        da_ = da[np.newaxis, :]
+        dt = t[:, nax] - t[nax, :]
+        d = dt_da[nax, :]
+        da_ = da[nax, :]
 
         # this ignores the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -161,36 +125,51 @@ class Pipe:
 
         self.K1 = K1
         self.K2 = K2
-
+        
+        n = len(self.a)
+        
         def A(omega_sep):
-            assert len(omega_sep)%2 == 0
-            n = len(omega_sep) // 2
+            assert len(omega_sep) == 2*n
             omega = omega_sep[:n] + 1j*omega_sep[n:]
-            h = omega + K1@omega + K2@omega
-            h_sep = np.concatenate([h.real,h.imag])
+            h = omega + K1@omega + K2@(omega.conjugate())
+            h_sep = np.concatenate([h.real, h.imag])
             return h_sep
 
-        n = len(self.a)
-        self.A = LinearOperator(dtype=np.float64, shape=(2*n,2*n),matvec=A)
+        self.A = LinearOperator(dtype=np.float64, shape=(2*n, 2*n), matvec=A)
 
-    def compute_omega(self,U,tol=1e-13):
+    def compute_omega(self, U, tol=None):
+
+        tol = 1e-12 if tol is None else tol
         H = U2H(U)
-        b = np.concatenate((H.real,H.imag))
+        b = np.concatenate((H.real, H.imag))
 
-        omega_sep,_ = gmres(self.A, b,atol=0,tol=tol)
+        omega_sep, _ = gmres(self.A, b, atol=0, tol=tol)
 
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
 
-        n = len(omega_sep)
-        omega = omega_sep[:n//2] + 1j*omega_sep[n//2:]
+        n = len(H)
+        omega = omega_sep[:n] + 1j*omega_sep[n:]
 
         return omega
 
-    def get_bounadry_velocity_condition(self,i):
-        inlet,outlet = self.flows[i]
+    ### SOLVE FOR FLOWS ###
+
+    @property
+    def lets(self):
+        ret = [i for i, c in enumerate(self.curves) if isinstance(c, Cap)]
+        if not ret:
+            raise ValueError("There is no flow for this pipe. ")
+        return ret
+    @property
+    def flows(self): return [(self.lets[0], o) for o in self.lets[1:]]
+    @property
+    def nflows(self): return len(self.flows)
+
+    def get_bounadry_velocity_condition(self, i):
+        inlet, outlet = self.flows[i]
         ret = []
-        for j,c in enumerate(self.curves):
+        for j, c in enumerate(self.curves):
             if j == inlet:
                 ret.append(-c.boundary_velocity())
             elif j == outlet:
@@ -199,72 +178,107 @@ class Pipe:
                 ret.append(0*c.boundary_velocity())
         return np.concatenate(ret)
 
-    def solve(self,tol=None):
+    def solve(self, tol=None, n_jobs=1):
 
-        tol = 1e-12 if tol is None else tol
+        self.omegas = Parallel(n_jobs=min(n_jobs, self.nflows, cpu_count()//2))(delayed(
+            lambda i:
+                self.compute_omega(self.get_bounadry_velocity_condition(i), tol))
+            (i) for i in range(self.nflows))
 
-        
-        self.omegas = Parallel(n_jobs=min(4,self.nflows))(delayed(
-            lambda i: self.compute_omega(self.get_bounadry_velocity_condition(i),tol)
-            )(i) for i in range(self.nflows))
+    ### COMPUTE PHYSICS QUANTITIES ###
 
+    def phi(self, z, omega):
+        assert z.ndim == 1
 
-    # noinspection DuplicatedCode
-    def compute_velocity(self,x,y,omega):
-        t = self.t
-        dt = self.dt_da * self.da
+        return np.sum((omega * self.dt)[nax, :] /
+                      (self.t[nax, :] - z[:, nax]), axis=1) / (2j * np.pi)
+
+    def d_phi(self, z, omega):
+        assert z.ndim == 1
+        return np.sum((omega * self.dt)[nax, :] /
+                      (self.t[nax, :] - z[:, nax])**2, axis=1) / (2j * np.pi)
+
+    def psi(self, z, omega):
+        assert z.ndim == 1
+
+        first_term = np.sum(
+            np.real((np.conjugate(omega) * self.dt)[nax, :])
+            / (self.t[nax, :] - z[:, nax]),
+            axis=1) / (1j*np.pi)
+
+        second_term = np.sum(
+            (np.conjugate(self.t) * omega * self.dt)[nax, :]
+            / (self.t[nax, :] - z[:, nax])**2,
+            axis=1) / (-2j * np.pi)
+
+        return first_term + second_term
+
+    def velocity(self, x, y, omega):
+
         z = x + 1j*y
         assert isinstance(z, np.ndarray)
         shape = z.shape
         z = z.flatten()
 
-        t_minus_z = t[np.newaxis, :] - z[:, np.newaxis]
-        t_minus_z_sq = t_minus_z ** 2
+        return H2U((self.phi(z) + z * np.conjugate(self.d_phi(self, z, omega)) + np.conjugate(self.psi(z, omega))).reshape(shape))
 
-        phi = np.sum((omega * dt)[np.newaxis, :] /
-                     t_minus_z, axis=1) / (2j * np.pi)
-        d_phi = np.sum((omega * dt)[np.newaxis, :] /
-                       t_minus_z_sq, axis=1) / (2j * np.pi)
-
-        psi = (1 / (2j * np.pi)) * (
-                2 * np.sum(np.real((np.conjugate(omega) * dt)
-                                   [np.newaxis, :]) / t_minus_z, axis=1)
-                - np.sum((np.conjugate(t) * omega * dt)[np.newaxis, :] / t_minus_z_sq, axis=1))
-
-        ret = phi + z * np.conjugate(d_phi) + np.conjugate(psi)
-        ret = ret.reshape(shape)
-        return H2U(ret)
-
-    # noinspection DuplicatedCode
-    def compute_pressure_and_vorticity(self,x,y,omega):
+    def pressure_and_vorticity(self, x, y, omega):
+        
         z = x + 1j*y
         assert (isinstance(z, np.ndarray))
         shape = z.shape
         z = z.flatten()
 
-        t = self.t
-        dt = self.dt_da * self.da
-
-        t_minus_z_sq = (t[np.newaxis, :] - z[:, np.newaxis]) ** 2
-        d_phi = np.sum((omega * dt)[np.newaxis, :] /
-                       t_minus_z_sq, axis=1) / (2j * np.pi)
-
+        d_phi = self.d_phi(z,omega)
         pressure = np.imag(d_phi)
         vorticity = np.real(d_phi)
         return pressure.reshape(shape), vorticity.reshape(shape)
-
-
+    
+    def pressure(self,x,y,omega):
+        return self.pressure(x,y,omega)[0]
+    
+    def vorticity(self,x,y,omega):
+        return self.pressure(x,y,omega)[1]
+    
+    
     def build_pressure_drops(self):
         pass
-    
+
     def build_velocity_fields(self):
         pass
-    
+
     def build(self):
         pass
-    
+
     def is_inside(self, z):
         pass
+
+    @property
+    def grid(self):
+        left, right, bottom, top = self.extent
+        n = np.sqrt(self.grid_density)
+        xs = np.linspace(left, right, np.ceil(n*(right-left)))
+        ys = np.linspace(bottom, top, np.ceil(n*(top-bottom)))
+        xs, ys = np.meshgrid(xs, ys)
+    @property
+    def boundary(self):
+        pts = []
+        for c in self.curves:
+            if isinstance(c, Cap):
+                pts += [c.start_pt, c.matching_pt]
+            elif isinstance(c, Line):
+                pts += [c.start_pt, c.mid_pt]
+            elif isinstance(c, Corner):
+                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
+        pts = np.array(pts)
+
+    @property
+    def extent(self):
+        left = np.min(self.boundary[:, 0])
+        right = np.max(self.boundary[:, 0])
+        bottom = np.min(self.boundary[:, 1])
+        top = np.max(self.boundary[:, 1])
+        return (left, right, bottom, top)
 #
 # class StraightPipe(Pipe):
 #     def __init__(self,p1,p2,r=1) -> None:
@@ -295,6 +309,7 @@ class Pipe:
 #         right = np.max(top_left[0],top_right[0],bottom_left[0],bottom_right[0])
 #
 
+
 class SmoothPipe(Pipe):
     """
     given points
@@ -318,7 +333,8 @@ class SmoothPipe(Pipe):
         assert len(points) == len(lines)
 
         if not np.all([i in [Line, Cap] for i in lines]):
-            raise TypeError('invalid Curve type, only Line and Cap are permitted here. ')
+            raise TypeError(
+                'invalid Curve type, only Line and Cap are permitted here. ')
 
         self.curves = []
         self.corner_size = corner_size
@@ -329,12 +345,12 @@ class SmoothPipe(Pipe):
             j = (i + 1) % len(lines)
             if lines[i] == Line:
                 self.curves.append(lines[i](points[i], points[j]))
-            else: # I need to inference the mid point.
+            else:  # I need to inference the mid point.
 
                 vec = points[i] - points[i-1]
                 vec = vec/np.linalg.norm(vec)
                 mid_pt = (points[i] + points[j])/2 + vec
-                self.curves.append(lines[i](points[i], points[j],mid_pt))
+                self.curves.append(lines[i](points[i], points[j], mid_pt))
 
         self.smooth_corners()
 
@@ -351,15 +367,16 @@ class SmoothPipe(Pipe):
             q = l1.end_pt
             r = l2.end_pt
 
-            corner_size = min(self.corner_size, np.linalg.norm(p - q) / 2, np.linalg.norm(r - q) / 2)
+            corner_size = min(self.corner_size, np.linalg.norm(
+                p - q) / 2, np.linalg.norm(r - q) / 2)
             assert (corner_size > 1e-2)
 
             start_pt = q + (((p - q) / np.linalg.norm(p - q)) * corner_size)
             end_pt = q + (((r - q) / np.linalg.norm(r - q)) * corner_size)
 
-            self.curves.insert(i,Line(end_pt,r))
-            self.curves.insert(i,Corner(start_pt, end_pt, q))
-            self.curves.insert(i,Line(p,start_pt))
+            self.curves.insert(i, Line(end_pt, r))
+            self.curves.insert(i, Corner(start_pt, end_pt, q))
+            self.curves.insert(i, Line(p, start_pt))
 
             i = self.next_corner()
 
@@ -374,6 +391,7 @@ class SmoothPipe(Pipe):
             if isinstance(self.curves[i], Line) and isinstance(self.curves[j], Line):
                 return i
         return None
+
 
 class Cross(SmoothPipe):
     def __init__(self, length, radius, corner_size=0.2):
@@ -398,7 +416,6 @@ class Cross(SmoothPipe):
                   Line, Line, Cap]
 
         super().__init__(points, curves, corner_size)
-
 
     # def get_flows(self):
     #     self.caps_index = [i for i, j in enumerate(self.curves) if isinstance(j, Cap)]
@@ -451,13 +468,13 @@ class Cross(SmoothPipe):
 
 
 class NLets(SmoothPipe):
-    def __init__(self,ls,rs, corner_size=1e-1):
+    def __init__(self, ls, rs, corner_size=1e-1):
 
         assert len(ls) == len(rs)
         assert np.all(rs > 0)
 
-        thetas = np.arctan2(ls[:,1], ls[:,0])
-        thetas[thetas==np.pi] = -np.pi
+        thetas = np.arctan2(ls[:, 1], ls[:, 0])
+        thetas[thetas == np.pi] = -np.pi
 
         assert np.all(np.diff(thetas) > 0)
 
@@ -467,11 +484,11 @@ class NLets(SmoothPipe):
         curves = []
 
         for i in range(n):
-            j = (i + 1)%n
+            j = (i + 1) % n
             tangential_dir = (thetas[i] + np.pi/2)
             x = np.cos(tangential_dir)
             y = np.sin(tangential_dir)
-            tangential_unit = pt(x,y)
+            tangential_unit = pt(x, y)
 
             p1 = ls[i] - tangential_unit*rs[i]
             p2 = ls[i] + tangential_unit*rs[i]
@@ -482,9 +499,9 @@ class NLets(SmoothPipe):
             tangential_unit = pt(x, y)
             q1 = ls[j] - tangential_unit*rs[j]
 
-            p3 = line_intersect(p2,p2+ls[i],q1,q1+ls[j])
+            p3 = line_intersect(p2, p2+ls[i], q1, q1+ls[j])
 
-            pts = pts + [p1,p2,p3]
-            curves = curves + [Cap,Line,Line]
+            pts = pts + [p1, p2, p3]
+            curves = curves + [Cap, Line, Line]
 
-        super().__init__(pts,curves, corner_size)
+        super().__init__(pts, curves, corner_size)
