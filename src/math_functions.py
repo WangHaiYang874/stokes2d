@@ -114,7 +114,7 @@ bump_def_int = quad(_bump, -1, 1, epsabs=ERR, epsrel=ERR)[0]
 
 def convoluted_abs(x):
     if np.abs(x) >= 1:
-        return 0
+        return np.abs(x)
     x = np.abs(x)
 
     a = quad(_bump,
@@ -129,10 +129,8 @@ def convoluted_abs(x):
 def d_convoluted_abs(x):
     if np.abs(x) >= 1:
         return np.sign(x)
-
-    def b(y): return _bump(y)
-    return +quad(b, -1, x, epsabs=ERR, epsrel=ERR, full_output=1)[0]\
-        - quad(b, x, 1, epsabs=ERR, epsrel=ERR, full_output=1)[0]
+    
+    return (quad(_bump, -1, x, epsabs=ERR, epsrel=ERR)[0] - quad(_bump, x, 1, epsabs=ERR, epsrel=ERR)[0])/bump_def_int
 
 def dd_convoluted_abs(x):
     if np.abs(x) >= 1:
