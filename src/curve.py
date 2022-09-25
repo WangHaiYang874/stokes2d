@@ -261,11 +261,11 @@ class Corner(Curve):
     x_fn = lambda _, a: a
     y_fn = lambda _, a: np.array([convoluted_abs(x) for x in a])
     dx_da_fn = lambda _, a: np.ones_like(a)
-    dy_da_fn = lambda _, a: np.array([convoluted_abs(x) for x in a])
+    dy_da_fn = lambda _, a: np.array([d_convoluted_abs(x) for x in a])
     ddx_dda_fn = lambda _, a: np.zeros_like(a)
     ddy_dda_fn = lambda _, a: np.array([dd_convoluted_abs(x) for x in a])
 
-    def __init__(self, start_pt, end_pt, mid_pt):
+    def __init__(self, start_pt=pt(-1,1), end_pt=pt(1,1), mid_pt=pt(0,0)):
 
         assert (np.linalg.norm(start_pt - mid_pt) > 0)
         assert (np.abs(np.linalg.norm(start_pt - mid_pt) - np.linalg.norm(end_pt - mid_pt)) < 1e-15)
