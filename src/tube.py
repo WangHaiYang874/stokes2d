@@ -18,18 +18,17 @@ numerical error.
 such as the radius, the length, the number of bifurcations, how large should the smoothed
 Corner be, etc.
 """
-
+import sys
+import warnings
 from joblib import Parallel, delayed, cpu_count
 from itertools import chain
 from typing import List, Tuple
 from scipy.sparse.linalg import gmres, LinearOperator
-from utility_and_spec import *
-from curve import *
-import sys
-import warnings
-
+from matplotlib.path import Path
 
 sys.path.append('.')
+from utility_and_spec import *
+from curve import *
 nax = np.newaxis
 
 class Pipe:
@@ -187,7 +186,6 @@ class Pipe:
 
     def phi(self, z, omega):
         assert z.ndim == 1
-
         return np.sum((omega * self.dt)[nax, :] /
                       (self.t[nax, :] - z[:, nax]), axis=1) / (2j * np.pi)
 
@@ -198,7 +196,7 @@ class Pipe:
 
     def psi(self, z, omega):
         assert z.ndim == 1
-
+        
         first_term = np.sum(
             np.real((np.conjugate(omega) * self.dt)[nax, :])
             / (self.t[nax, :] - z[:, nax]),
@@ -218,10 +216,11 @@ class Pipe:
         shape = z.shape
         z = z.flatten()
 
-        return H2U((self.phi(z) + z * np.conjugate(self.d_phi(self, z, omega)) + np.conjugate(self.psi(z, omega))).reshape(shape))
+        return H2U((self.phi(z,omega) + z * np.conjugate(self.d_phi(z, omega)) + np.conjugate(self.psi(z, omega))).reshape(shape))
 
     def pressure_and_vorticity(self, x, y, omega):
         
+        # TODO : not verified yet. 
         z = x + 1j*y
         assert (isinstance(z, np.ndarray))
         shape = z.shape
@@ -232,32 +231,21 @@ class Pipe:
         vorticity = np.real(d_phi)
         return pressure.reshape(shape), vorticity.reshape(shape)
     
+    
     def pressure(self,x,y,omega):
-        return self.pressure(x,y,omega)[0]
+        return self.pressure_and_vorticity(x,y,omega)[0]
     
     def vorticity(self,x,y,omega):
-        return self.pressure(x,y,omega)[1]
+        return self.pressure_and_vorticity(x,y,omega)[1]
     
+    ### CONNECTING SOLVER ###
     
-    def build_pressure_drops(self):
+    def build_pressure_drops(self):    
+        # TODO
         pass
-
-    def build_velocity_fields(self):
-        pass
-
-    def build(self):
-        pass
-
-    def is_inside(self, z):
-        pass
-
-    @property
-    def grid(self):
-        left, right, bottom, top = self.extent
-        n = np.sqrt(self.grid_density)
-        xs = np.linspace(left, right, np.ceil(n*(right-left)))
-        ys = np.linspace(bottom, top, np.ceil(n*(top-bottom)))
-        xs, ys = np.meshgrid(xs, ys)
+    
+    ### PLOTTING ###
+    
     @property
     def boundary(self):
         pts = []
@@ -268,7 +256,7 @@ class Pipe:
                 pts += [c.start_pt, c.mid_pt]
             elif isinstance(c, Corner):
                 pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        pts = np.array(pts)
+        return np.array(pts)
 
     @property
     def extent(self):
@@ -277,36 +265,38 @@ class Pipe:
         bottom = np.min(self.boundary[:, 1])
         top = np.max(self.boundary[:, 1])
         return (left, right, bottom, top)
-#
-# class StraightPipe(Pipe):
-#     def __init__(self,p1,p2,r=1) -> None:
-#         """
-#         this creates a simple tube. Why do I create it first? because it serves well as
-#         a template for other more sophisticated geometries.
-#         """
-#         super().__init__()
-#
-#
-#         self.angle = np.arctan2(p2[1]-p1[1],p2[0]-p1[0])
-#         theta = self.angle + np.pi/2
-#         top_left = p1 + r*np.array([np.cos(theta),np.sin(theta)])
-#         bottom_left = p1 - r*np.array([np.cos(theta),np.sin(theta)])
-#         top_right = p2 + r*np.array([np.cos(theta),np.sin(theta)])
-#         bottom_right = p2 - r*np.array([np.cos(theta),np.sin(theta)])
-#
-#         top_line = Line(top_left,top_right)
-#         right_line = Line(top_right,bottom_right)
-#         bottom_line = Line(bottom_right,bottom_left)
-#         left_line = Line(bottom_left,top_left)
-#
-#         self.curves = [top_line,right_line,bottom_line,left_line]
-#
-#         up = np.max(top_left[1],top_right[1],bottom_left[1],bottom_right[1])
-#         low = np.min(top_left[1],top_right[1],bottom_left[1],bottom_right[1])
-#         left = np.min(top_left[0],top_right[0],bottom_left[0],bottom_right[0])
-#         right = np.max(top_left[0],top_right[0],bottom_left[0],bottom_right[0])
-#
-
+    
+    @property
+    def as_polygon(self):
+        return Path(self.boundary)
+    
+    def contains_points(self,x,y):
+        return self.as_polygon.contains_points(np.array([x,y]).T)
+    
+    def grid(self,density=100):
+        left, right, bottom, top = self.extent
+        nx = np.ceil((right - left) * density).astype(int)
+        ny = np.ceil((top - bottom) * density).astype(int)
+        
+        xs = np.linspace(left, right, nx)
+        ys = np.linspace(bottom, top, ny)
+        shape = xs.shape
+        
+        xs, ys = np.meshgrid(xs, ys)
+        
+        mask = self.contains_points(np.column_stack((xs.flatten(),ys.flatten()))).reshape(shape)
+        
+        return xs, ys, mask
+    
+    def build_plotting_data(self):
+        xs,ys,mask = self.grid()
+        u,v = self.velocity(xs,ys,self.omegas[0])
+        # TODO
+        pass
+    
+class StraightPipe(Pipe):
+    # TODO
+    pass
 
 class SmoothPipe(Pipe):
     """
@@ -390,6 +380,44 @@ class SmoothPipe(Pipe):
                 return i
         return None
 
+class NLets(SmoothPipe):
+    def __init__(self, ls, rs, corner_size=1e-1):
+
+        assert len(ls) == len(rs)
+        assert np.all(rs > 0)
+
+        thetas = np.arctan2(ls[:, 1], ls[:, 0])
+        thetas[thetas == np.pi] = -np.pi
+
+        assert np.all(np.diff(thetas) > 0)
+
+        n = len(ls)
+
+        pts = []
+        curves = []
+
+        for i in range(n):
+            j = (i + 1) % n
+            tangential_dir = (thetas[i] + np.pi/2)
+            x = np.cos(tangential_dir)
+            y = np.sin(tangential_dir)
+            tangential_unit = pt(x, y)
+
+            p1 = ls[i] - tangential_unit*rs[i]
+            p2 = ls[i] + tangential_unit*rs[i]
+
+            tangential_dir = (thetas[j] + np.pi/2)
+            x = np.cos(tangential_dir)
+            y = np.sin(tangential_dir)
+            tangential_unit = pt(x, y)
+            q1 = ls[j] - tangential_unit*rs[j]
+
+            p3 = line_intersect(p2, p2+ls[i], q1, q1+ls[j])
+
+            pts = pts + [p1, p2, p3]
+            curves = curves + [Cap, Line, Line]
+
+        super().__init__(pts, curves, corner_size)
 
 class Cross(SmoothPipe):
     def __init__(self, length, radius, corner_size=0.2):
@@ -463,43 +491,3 @@ class Cross(SmoothPipe):
     #
     #
     #
-
-
-class NLets(SmoothPipe):
-    def __init__(self, ls, rs, corner_size=1e-1):
-
-        assert len(ls) == len(rs)
-        assert np.all(rs > 0)
-
-        thetas = np.arctan2(ls[:, 1], ls[:, 0])
-        thetas[thetas == np.pi] = -np.pi
-
-        assert np.all(np.diff(thetas) > 0)
-
-        n = len(ls)
-
-        pts = []
-        curves = []
-
-        for i in range(n):
-            j = (i + 1) % n
-            tangential_dir = (thetas[i] + np.pi/2)
-            x = np.cos(tangential_dir)
-            y = np.sin(tangential_dir)
-            tangential_unit = pt(x, y)
-
-            p1 = ls[i] - tangential_unit*rs[i]
-            p2 = ls[i] + tangential_unit*rs[i]
-
-            tangential_dir = (thetas[j] + np.pi/2)
-            x = np.cos(tangential_dir)
-            y = np.sin(tangential_dir)
-            tangential_unit = pt(x, y)
-            q1 = ls[j] - tangential_unit*rs[j]
-
-            p3 = line_intersect(p2, p2+ls[i], q1, q1+ls[j])
-
-            pts = pts + [p1, p2, p3]
-            curves = curves + [Cap, Line, Line]
-
-        super().__init__(pts, curves, corner_size)
