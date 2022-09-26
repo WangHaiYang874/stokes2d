@@ -102,12 +102,10 @@ class Pipe:
         if fmm: return NotImplemented
 
         da = self.da
-        t = self.t
-        dt_da = self.dt_da
         k = self.k
 
-        dt = t[:, nax] - t[nax, :]
-        d = dt_da[nax, :]
+        dt = self.t[:, nax] - self.t[nax, :]
+        d = self.dt_da[nax, :]
         da_ = da[nax, :]
 
         # this ignores the error for computing the diagonal elements with 0/0 error
@@ -117,7 +115,7 @@ class Pipe:
                          * dt/(np.conjugate(dt**2))) / (2j*np.pi)
 
         # now we need to fill the diagonal elements
-        d = dt_da
+        d = self.dt_da
         K1_diagonal = k*np.abs(d)*da/(2*np.pi)
         K2_diagonal = -da*k*(d**2)/(np.abs(d)*2*np.pi)
         np.fill_diagonal(K1, K1_diagonal)

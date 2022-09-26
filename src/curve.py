@@ -216,12 +216,13 @@ class Cap(Curve):
     standard_start_pt = pt(1, 0)
     standard_mid_pt = pt(0, 2)
     standard_end_pt = pt(-1, 0)
-    x_fn = lambda _, a: -8 * _Psi(a)
-    y_fn = lambda _, a: -2 * _int_Psi_normalizer * _int_Psi(a)
-    dx_da_fn = lambda _, a: -8 * _psi(a)
-    dy_da_fn = lambda _, a: -2 * _int_Psi_normalizer * _Psi(a)
-    ddx_dda_fn = lambda _, a: -8 * _d_psi(a)
-    ddy_dda_fn = lambda _, a: -2 * _int_Psi_normalizer * _psi(a)
+    x_fn = lambda _, a: _Psi(a)
+    dx_da_fn = lambda _, a:  _psi(a)
+    ddx_dda_fn = lambda _, a: _d_psi(a)
+    
+    y_fn = lambda _, a:  _int_Psi_normalized(a)
+    dy_da_fn = lambda _, a:  _Psi_normalized(a)
+    ddy_dda_fn = lambda _, a: _psi_normalized(a)
 
     def __init__(self, start_pt=pt(1, 0), end_pt=pt(-1, 0), mid_pt=pt(0, 2)) -> None:
 
@@ -252,7 +253,7 @@ class Cap(Curve):
         return H2U(h)
 
     def contour_polygon(self): return np.array([self.start_pt])
-
+    
 
 class Corner(Curve):
     standard_start_pt = pt(-1, 1)
@@ -269,4 +270,5 @@ class Corner(Curve):
 
         assert (np.linalg.norm(start_pt - mid_pt) > 0)
         assert (np.abs(np.linalg.norm(start_pt - mid_pt) - np.linalg.norm(end_pt - mid_pt)) < 1e-15)
+        
         super(Corner, self).__init__(start_pt, end_pt, mid_pt)
