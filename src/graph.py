@@ -1,18 +1,28 @@
 import numpy as np
 
+class let:
 
-class vertice:
-    def __init__(self,p,theta) -> None:
-        self.p = p
-        self.theta = theta
+    pos:  np.ndarray
+    dir:  np.float64
+    diam: np.float64
+    
+    def __init__(self,pos,dir,diam) -> None:
+
+        assert pos.shape == (2,)
+
+        self.pos  = pos
+        self.dir  = dir
+        self.diam = diam
         
-    def __eq__(self, __o: object) -> bool:
-        return self.p == __o.p and self.theta == __o.theta
-    def match(self,other):
-        return self.p == other.p and (self.theta + other.theta) % (2*np.pi) == 0
-    def __hash__(self):
-        return hash(self.p)
+    def __eq__(self, other) -> bool:    return self.pos == other.pos and self.dir == other.dir and self.diam == other.diam
+    def match(self,other):              return max(np.linalg.norm(self.pos - other.pos), np.abs((self.theta + other.theta) % (2*np.pi)), np.abs(self.diam - other.diam)) < 1e-10
 
+    # def __hash__(self):
+    #     return hash(self.p)
+
+class flow:
+    inlet: let
+    outlet: let
 class edge:
     def __init__(self,v1,v2,pressure_drop,fluxes) -> None:
         self.v1 = v1

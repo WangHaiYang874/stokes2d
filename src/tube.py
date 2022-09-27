@@ -330,9 +330,10 @@ class Pipe:
         xs, ys = np.meshgrid(xs, ys)
         shape = xs.shape
 
-        mask = self.contains_points(xs.flatten(), ys.flatten()).reshape(shape)
-
-        return xs, ys, mask
+        mask1 = self.contains_points(xs.flatten(), ys.flatten()).reshape(shape)
+        mask2 = self.contains_points_interior(xs.flatten(), ys.flatten()).reshape(shape)
+        
+        return xs, ys, mask1, mask2
 
     def build_plotting_data(self):
         xs, ys, mask = self.grid()
