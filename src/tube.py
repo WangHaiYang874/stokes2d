@@ -27,27 +27,29 @@ from itertools import chain
 from typing import List, Tuple
 from scipy.sparse.linalg import gmres, LinearOperator
 from matplotlib.path import Path
+from shapely.geometry import LineString
 
 sys.path.append('.')
 nax = np.newaxis
 
+
 class Pipe:
     # geometric data.
-    curves: List[Curve] # the parametrized curve. 
-    panels: List[Panel] # the panels of the parametric curve. 
+    curves: List[Curve]  # the parametrized curve.
+    panels: List[Panel]  # the panels of the parametric curve.
     n_pts: int  # number of points on the boundary curve
-    a: np.ndarray # the parameter of the boundary curve
-    da: np.ndarray # the quadrature weights
-    x: np.ndarray # x-coordinates of the points
-    y: np.ndarray # y-coordinates of the points
+    a: np.ndarray  # the parameter of the boundary curve
+    da: np.ndarray  # the quadrature weights
+    x: np.ndarray  # x-coordinates of the points
+    y: np.ndarray  # y-coordinates of the points
     dx_da: np.ndarray
     dy_da: np.ndarray
     dt_da: np.ndarray
     ddx_dda: np.ndarray
     ddy_dda: np.ndarray
-    t: np.ndarray # x + iy
+    t: np.ndarray  # x + iy
     dt_da: np.ndarray
-    k: np.ndarray # curvature of the boundary curve
+    k: np.ndarray  # curvature of the boundary curve
 
     # single solver
     A: LinearOperator
@@ -55,12 +57,14 @@ class Pipe:
     K2: np.ndarray
 
     # flows
-    lets: List[int] # index of the caps in self.curves
-    flows: List[Tuple[int, int]] # list of (inlet, outlet) of all (generating) flows
-    n_flows: int # number of flows
-    bdr_velocity_conditions: np.ndarray # shape=(n_flows, n_pts, 2), dtype=float64
-    omegas: np.ndarray # shape=(n_flows, n_pts), dtype=complex128
-    pressure_drops: np.ndarray # shape=(nfluxes=nflows, nflows), dtype=float64
+    lets: List[int]  # index of the caps in self.curves
+    # list of (inlet, outlet) of all (generating) flows
+    flows: List[Tuple[int, int]]
+    n_flows: int  # number of flows
+    # shape=(n_flows, n_pts, 2), dtype=float64
+    bdr_velocity_conditions: np.ndarray
+    omegas: np.ndarray  # shape=(n_flows, n_pts), dtype=complex128
+    pressure_drops: np.ndarray  # shape=(nfluxes=nflows, nflows), dtype=float64
 
     # picture data
     velocity_field: np.ndarray
@@ -74,8 +78,11 @@ class Pipe:
 
     @property
     def n_pts(self): return len(self.a)
+
     @property
-    def a(self): return np.concatenate([c.a + 2*i for i, c in enumerate(self.curves)])
+    def a(self): return np.concatenate(
+        [c.a + 2*i for i, c in enumerate(self.curves)])
+
     @property
     def da(self): return np.concatenate([c.da for c in self.curves])
     @property
@@ -203,21 +210,23 @@ class Pipe:
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
-        if n_jobs==1:
-            self.omegas = np.array([self.compute_omega(U, tol) for U in self.bdr_velocity_conditions])
-        else: 
+        if n_jobs == 1:
+            self.omegas = np.array([self.compute_omega(U, tol)
+                                   for U in self.bdr_velocity_conditions])
+        else:
             self.omegas = np.array(Parallel(n_jobs=min(n_jobs, self.n_flows, cpu_count()//2))(delayed(
-            lambda U: self.compute_omega(U, tol))
-            (U) for U in self.bdr_velocity_conditions))
+                lambda U: self.compute_omega(U, tol))
+                (U) for U in self.bdr_velocity_conditions))
 
     def build_pressure_drops(self):
-        
-        pts = np.array([self.curves[outflow].matching_pt for outflow in self.lets])
-        
-        pressure_drops = []        
+
+        pts = np.array(
+            [self.curves[outflow].matching_pt for outflow in self.lets])
+
+        pressure_drops = []
         for omega in self.omegas:
-            pressure = self.pressure(pts[:,0],pts[:,1], omega)
-            pressure_drops.append( pressure[1:] - pressure[0])
+            pressure = self.pressure(pts[:, 0], pts[:, 1], omega)
+            pressure_drops.append(pressure[1:] - pressure[0])
 
         self.pressure_drops = np.array(pressure_drops)
 
@@ -291,6 +300,12 @@ class Pipe:
         return np.array(pts)
 
     @property
+    def interior_boundary(self, distance=6e-2):
+        x, y = LineString(np.concatenate((self.boundary, self.boundary[:1]))).dilate(
+            distance).interiors[0].coords.xy
+        return np.array([x, y]).T[:-1]
+
+    @property
     def extent(self):
         left = np.min(self.boundary[:, 0])
         right = np.max(self.boundary[:, 0])
@@ -298,12 +313,11 @@ class Pipe:
         top = np.max(self.boundary[:, 1])
         return (left, right, bottom, top)
 
-    @property
-    def as_polygon(self):
-        return Path(self.boundary)
-
     def contains_points(self, x, y):
-        return self.as_polygon.contains_points(np.array([x, y]).T)
+        return Path(self.boundary).contains_points(np.array([x, y]).T)
+
+    def contains_points_interior(self, x, y, distance=6e-2):
+        return Path(self.interior_boundary(distance)).contains_points(np.array([x, y]).T)
 
     def grid(self, density=100):
         left, right, bottom, top = self.extent
@@ -316,7 +330,7 @@ class Pipe:
         xs, ys = np.meshgrid(xs, ys)
         shape = xs.shape
 
-        mask = self.contains_points(xs.flatten(),ys.flatten()).reshape(shape)
+        mask = self.contains_points(xs.flatten(), ys.flatten()).reshape(shape)
 
         return xs, ys, mask
 

@@ -32,7 +32,7 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
         - [x] radius
     - [ ] flows (fluxes) (lets[1:])
         - [x] the pressure drops
-        - [ ] fluxes
+        - [x] fluxes
     - each lets is a vertex, each flow is an edge.  
   - [ ] aggregate those pipes into a pipe system. 
 - [x] analytically explain the return to poiseuille behaviour.   
@@ -46,11 +46,8 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 - [ ] plotting
   - [x] give a specific criterion to check if a point is in that geometry.
   - [ ] the velocity field should be corrected near the boundary. 
-    - [ ] this essentially ask me to determine if a point is close to a curve, and such criterion should be 
+    - [x] this essentially ask me to determine if a point is close to a curve, and such criterion should be 
     implemented for each curve to have the best performance: 
-      - for line, we can have the easiest implementation
-      - for cap, we can calculate this using the panels on the ends
-      - for corner, we probably can only do a brute force... 
   - [ ] pressure and vorticity field as well? 
   - [ ] have a method for plotting the velocity field using perhaps imshow
   - [ ] have a method for plotting the actual boundary of the geometry using a not-so-thin balck line.
