@@ -25,3 +25,13 @@ make install PREFIX="somewhere that doesn't require sudo"
 make python
 ```
 now one should be able to use `fmm2dpy` as a python library in jupyter notebook, with the correct python environment. 
+
+# usage for this project
+
+for cauchy-type integrals use **cfmm2d**:
+
+$$
+u(x) = \sum_{j=1}^{N} c_{j} * log(|x-x_{j}|) + d_{j}/(x-x_{j})
+$$
+
+Or don't use fmm at all. Why bother using fmm when I can just run this whole thing on a huge server? 

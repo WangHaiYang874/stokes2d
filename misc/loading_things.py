@@ -1,5 +1,4 @@
 import sys
-from turtle import clear
 import numpy as np
 import pathlib 
 
@@ -32,5 +31,3 @@ try:
 except FileNotFoundError:
     print('Could not find gauss quadrature rules. Run the build script to generate them.')
     sys.exit(1)
-
-

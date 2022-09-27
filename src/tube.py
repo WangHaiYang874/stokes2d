@@ -18,6 +18,8 @@ numerical error.
 such as the radius, the length, the number of bifurcations, how large should the smoothed
 Corner be, etc.
 """
+from curve import *
+from utility_and_spec import *
 import sys
 import warnings
 from joblib import Parallel, delayed, cpu_count
@@ -27,34 +29,53 @@ from scipy.sparse.linalg import gmres, LinearOperator
 from matplotlib.path import Path
 
 sys.path.append('.')
-from utility_and_spec import *
-from curve import *
 nax = np.newaxis
 
 class Pipe:
     # geometric data.
-    curves: List[Curve]
+    curves: List[Curve] # the parametrized curve. 
+    panels: List[Panel] # the panels of the parametric curve. 
+    n_pts: int  # number of points on the boundary curve
+    a: np.ndarray # the parameter of the boundary curve
+    da: np.ndarray # the quadrature weights
+    x: np.ndarray # x-coordinates of the points
+    y: np.ndarray # y-coordinates of the points
+    dx_da: np.ndarray
+    dy_da: np.ndarray
+    dt_da: np.ndarray
+    ddx_dda: np.ndarray
+    ddy_dda: np.ndarray
+    t: np.ndarray # x + iy
+    dt_da: np.ndarray
+    k: np.ndarray # curvature of the boundary curve
 
-    # solver data
-    lets: List[int]  # stands for inlets/outlets
-    flows: List[Tuple[int, int]]
+    # single solver
     A: LinearOperator
-    omegas: List[np.ndarray]
-    pressure_drops: np.ndarray
+    K1: np.ndarray
+    K2: np.ndarray
+
+    # flows
+    lets: List[int] # index of the caps in self.curves
+    flows: List[Tuple[int, int]] # list of (inlet, outlet) of all (generating) flows
+    n_flows: int # number of flows
+    bdr_velocity_conditions: np.ndarray # shape=(n_flows, n_pts, 2), dtype=float64
+    omegas: np.ndarray # shape=(n_flows, n_pts), dtype=complex128
+    pressure_drops: np.ndarray # shape=(nfluxes=nflows, nflows), dtype=float64
 
     # picture data
-    velocity_field: List[np.ndarray]
-    pressure: List[np.ndarray]
-    vorticity: List[np.ndarray]
+    velocity_field: np.ndarray
+    pressure_field: np.ndarray
+    vorticity_field: np.ndarray
 
     def __init__(self) -> None:
-        # self.grid_density = grid_density
         pass
 
     ### GEOMETRIC ###
 
     @property
-    def a(self): return np.concatenate([c.a + 2*i for i,c in enumerate(self.curves)])
+    def n_pts(self): return len(self.a)
+    @property
+    def a(self): return np.concatenate([c.a + 2*i for i, c in enumerate(self.curves)])
     @property
     def da(self): return np.concatenate([c.da for c in self.curves])
     @property
@@ -80,17 +101,17 @@ class Pipe:
     @property
     def panels(self): return chain(*([c.panels for c in self.curves]))
 
-    def build_geometry(self, max_distance=None, legendre_ratio=None,n_jobs=1):
-        
+    def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
+
         if n_jobs == 1:
             for c in self.curves:
                 c.build(max_distance, legendre_ratio)
-            return 
-        
+            return
+
         def build_curve(c):
-            c.build(max_distance,legendre_ratio)
+            c.build(max_distance, legendre_ratio)
             return c
-        
+
         self.curves = Parallel(n_jobs=min(n_jobs, len(self.curves), cpu_count()//2))(
             delayed(build_curve)(c) for c in self.curves)
 
@@ -98,7 +119,8 @@ class Pipe:
 
     def build_A(self, fmm=False):
 
-        if fmm: return NotImplemented
+        if fmm:
+            return NotImplemented
 
         da = self.da
         k = self.k
@@ -122,9 +144,9 @@ class Pipe:
 
         self.K1 = K1
         self.K2 = K2
-        
+
         n = len(self.a)
-        
+
         def A(omega_sep):
             assert len(omega_sep) == 2*n
             omega = omega_sep[:n] + 1j*omega_sep[n:]
@@ -145,12 +167,10 @@ class Pipe:
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
 
-        n = len(H)
-        omega = omega_sep[:n] + 1j*omega_sep[n:]
-
+        omega = omega_sep[:self.n_pts] + 1j*omega_sep[self.n_pts:]
         return omega
 
-    ### SOLVE FOR FLOWS ###
+    ### FLOWS ###
 
     @property
     def lets(self):
@@ -158,12 +178,14 @@ class Pipe:
         if not ret:
             raise ValueError("There is no flow for this pipe. ")
         return ret
+
     @property
     def flows(self): return [(self.lets[0], o) for o in self.lets[1:]]
     @property
-    def nflows(self): return len(self.flows)
+    def n_flows(self): return len(self.flows)
 
     def get_bounadry_velocity_condition(self, i):
+        """Flow goes in the inlet and out the outlet. """
         inlet, outlet = self.flows[i]
         ret = []
         for j, c in enumerate(self.curves):
@@ -175,12 +197,29 @@ class Pipe:
                 ret.append(0*c.boundary_velocity())
         return np.concatenate(ret)
 
-    def solve(self, tol=None, n_jobs=1):
+    def build_all_boundary_velocity_conditions(self):
+        self.bdr_velocity_conditions = np.array([
+            self.get_bounadry_velocity_condition(i) for i in range(self.n_flows)])
 
-        self.omegas = Parallel(n_jobs=min(n_jobs, self.nflows, cpu_count()//2))(delayed(
-            lambda i:
-                self.compute_omega(self.get_bounadry_velocity_condition(i), tol))
-            (i) for i in range(self.nflows))
+    def build_omegas(self, tol=None, n_jobs=1):
+        assert n_jobs > 0
+        if n_jobs==1:
+            self.omegas = np.array([self.compute_omega(U, tol) for U in self.bdr_velocity_conditions])
+        else: 
+            self.omegas = np.array(Parallel(n_jobs=min(n_jobs, self.n_flows, cpu_count()//2))(delayed(
+            lambda U: self.compute_omega(U, tol))
+            (U) for U in self.bdr_velocity_conditions))
+
+    def build_pressure_drops(self):
+        
+        pts = np.array([self.curves[outflow].matching_pt for outflow in self.lets])
+        
+        pressure_drops = []        
+        for omega in self.omegas:
+            pressure = self.pressure(pts[:,0],pts[:,1], omega)
+            pressure_drops.append( pressure[1:] - pressure[0])
+
+        self.pressure_drops = np.array(pressure_drops)
 
     ### COMPUTE PHYSICS QUANTITIES ###
 
@@ -196,7 +235,7 @@ class Pipe:
 
     def psi(self, z, omega):
         assert z.ndim == 1
-        
+
         first_term = np.sum(
             np.real((np.conjugate(omega) * self.dt)[nax, :])
             / (self.t[nax, :] - z[:, nax]),
@@ -216,36 +255,29 @@ class Pipe:
         shape = z.shape
         z = z.flatten()
 
-        return H2U((self.phi(z,omega) + z * np.conjugate(self.d_phi(z, omega)) + np.conjugate(self.psi(z, omega))).reshape(shape))
+        return H2U((self.phi(z, omega) + z * np.conjugate(self.d_phi(z, omega)) + np.conjugate(self.psi(z, omega))).reshape(shape))
 
     def pressure_and_vorticity(self, x, y, omega):
-        
-        # TODO : not verified yet. 
+
+        # TODO : not verified yet.
         z = x + 1j*y
         assert (isinstance(z, np.ndarray))
         shape = z.shape
         z = z.flatten()
 
-        d_phi = self.d_phi(z,omega)
+        d_phi = self.d_phi(z, omega)
         pressure = np.imag(d_phi)
         vorticity = np.real(d_phi)
         return pressure.reshape(shape), vorticity.reshape(shape)
-    
-    
-    def pressure(self,x,y,omega):
-        return self.pressure_and_vorticity(x,y,omega)[0]
-    
-    def vorticity(self,x,y,omega):
-        return self.pressure_and_vorticity(x,y,omega)[1]
-    
-    ### CONNECTING SOLVER ###
-    
-    def build_pressure_drops(self):    
-        # TODO
-        pass
-    
+
+    def pressure(self, x, y, omega):
+        return self.pressure_and_vorticity(x, y, omega)[0]
+
+    def vorticity(self, x, y, omega):
+        return self.pressure_and_vorticity(x, y, omega)[1]
+
     ### PLOTTING ###
-    
+
     @property
     def boundary(self):
         pts = []
@@ -265,38 +297,40 @@ class Pipe:
         bottom = np.min(self.boundary[:, 1])
         top = np.max(self.boundary[:, 1])
         return (left, right, bottom, top)
-    
+
     @property
     def as_polygon(self):
         return Path(self.boundary)
-    
-    def contains_points(self,x,y):
-        return self.as_polygon.contains_points(np.array([x,y]).T)
-    
-    def grid(self,density=100):
+
+    def contains_points(self, x, y):
+        return self.as_polygon.contains_points(np.array([x, y]).T)
+
+    def grid(self, density=100):
         left, right, bottom, top = self.extent
         nx = np.ceil((right - left) * density).astype(int)
         ny = np.ceil((top - bottom) * density).astype(int)
-        
+
         xs = np.linspace(left, right, nx)
         ys = np.linspace(bottom, top, ny)
-        shape = xs.shape
-        
+
         xs, ys = np.meshgrid(xs, ys)
-        
-        mask = self.contains_points(np.column_stack((xs.flatten(),ys.flatten()))).reshape(shape)
-        
+        shape = xs.shape
+
+        mask = self.contains_points(xs.flatten(),ys.flatten()).reshape(shape)
+
         return xs, ys, mask
-    
+
     def build_plotting_data(self):
-        xs,ys,mask = self.grid()
-        u,v = self.velocity(xs,ys,self.omegas[0])
+        xs, ys, mask = self.grid()
+        u, v = self.velocity(xs[mask], ys[mask], self.omegas[0])
         # TODO
         pass
-    
+
+
 class StraightPipe(Pipe):
     # TODO
     pass
+
 
 class SmoothPipe(Pipe):
     """
@@ -380,6 +414,7 @@ class SmoothPipe(Pipe):
                 return i
         return None
 
+
 class NLets(SmoothPipe):
     def __init__(self, ls, rs, corner_size=1e-1):
 
@@ -419,75 +454,15 @@ class NLets(SmoothPipe):
 
         super().__init__(pts, curves, corner_size)
 
-class Cross(SmoothPipe):
+
+class Cross(NLets):
     def __init__(self, length, radius, corner_size=0.2):
 
-        p1 = np.array([-length, -radius])
-        p2 = np.array([-radius, -radius])
-        p3 = np.array([-radius, -length])
-        p4 = np.array([radius, -length])
-        p5 = np.array([radius, -radius])
-        p6 = np.array([length, -radius])
-        p7 = np.array([length, radius])
-        p8 = np.array([radius, radius])
-        p9 = np.array([radius, length])
-        p10 = np.array([-radius, length])
-        p11 = np.array([-radius, radius])
-        p12 = np.array([-length, radius])
+        l1 = pt(-length, 0)
+        l2 = pt(0, -length)
+        l3 = pt(length, 0)
+        l4 = pt(0, length)
+        ls = np.array([l1, l2, l3, l4])
+        rs = np.array([radius, radius, radius, radius])
 
-        points = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12]
-        curves = [Line, Line, Cap,
-                  Line, Line, Cap,
-                  Line, Line, Cap,
-                  Line, Line, Cap]
-
-        super().__init__(points, curves, corner_size)
-
-    # def get_flows(self):
-    #     self.caps_index = [i for i, j in enumerate(self.curves) if isinstance(j, Cap)]
-    #     self.inflow = self.caps[0]
-    #     self.outflows = self.caps[1:]
-    #
-    # def get_all_boundary_velocity_conditions(self):
-    #
-    #     velocities = []
-    #
-    #     for j in self.outflows:
-    #         velocity = []
-    #         for i, c in enumerate(self.curves):
-    #             if i == self.inflow:
-    #                 velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=1)))
-    #             elif i == j:
-    #                 velocity.append(c.get_boundary_velocity_condition(c.get_velocity(flux=-1)))
-    #             else:
-    #                 velocity.append(np.zeros_like(c.a))
-    #         velocities.append(np.concatenate(velocity))
-    #
-    #     self.velocities = np.array(velocities)
-    #
-    # def compute_pressure_drops(self):
-    #     pressure_drops = []
-    #
-    #     for i, o in enumerate(self.outflows):
-    #         omega = self.omegas[i]
-    #         pressure_drop = []
-    #
-    #         p1 = Cross.curves[self.inflow].p
-    #         p1_cplx = p1[0] + 1j * p1[1]
-    #         p1_pressure = self.solver.compute_pressure(p1_cplx, omega)
-    #
-    #         for j, o2 in enumerate(self.outflows):
-    #             p2 = Cross.curves[o2].p
-    #             p2_cplx = p2[0] + 1j * p2[1]
-    #             p2_pressure = self.solver.compute_pressure(p2_cplx, omega)
-    #             pressure_drop.append(p2_pressure - p1_pressure)
-    #
-    #         pressure_drops.append(pressure_drop)
-    #
-    #     self.pressure_drops = pressure_drops
-    #
-    #
-    #
-    #
-    #
-    #
+        super().__init__(ls, rs, corner_size)
