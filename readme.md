@@ -12,46 +12,55 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 # todo
 
+
+
 ## math-ish
 
 - [ ] create different geometries
-  - [ ] Y-shaped with varying parameter for optimization
-  - [ ] some bands with fixed angles
-  - [ ] pipes with different radius at inflow and outflow
-  - [ ] ask microfluids people what shape they are interested in.
   - [ ] a simple straight pipe. 
-  - [x] cross
-- [ ] a solver for a multiply connected domain.
-- [ ] think about particles. it is hard but think about it...
-- [ ] an algorithm that connecting the pipes. 
-  - [ ] for closed geometry, or the standard pieces
-    - [ ] nodes and edges
-      - [ ] nodes are the center of flows
-        - [ ] position of the nodes
-        - [ ] out_normal direction of the flow
-        - [ ] radius of the flow
-      - [ ] edges
-        - [ ] for $n $ nodes, there are going to be $n-1$ edges representing the flows that can generate all possible flows.
-        - [ ] the pressure drop for edges with unit flux should be computed. the pressure drop should actually be a $(n-1),(n-1)$ matrix, wtf. this is too complicated... 
-        - [ ] the velocity field should also be computed. for plotting the graph.
-        - [ ] the edges are undirected in the sense that $p_1\to p_2$ and $p_2\to p_1$ are two edges exists automatically, but the pressure drop will have a sign.
-    - [ ] give a specific criterion to check if a point is in that geometry.
-- [ ] analytically explain the return to poiseuille behaviour.   
+  - [ ] some bands with fixed angles. 
+  - [ ] pipes with different radius at inflow and outflow. 
+  - [x] Nlets
+    - [x] Y-shaped with varying parameter for optimization
+    - [x] cross. 
+    - [ ] Nlets 里面相临的两条线不能是平行的. 
+- [ ] an algorithm that connects the pipes. 
+  - [ ] data on a single pipe: 
+    - [x] lets
+        - [x] position: matching_pt
+        - [x] dir
+        - [x] radius
+    - [ ] flows (fluxes) (lets[1:])
+        - [x] the pressure drops
+        - [ ] fluxes
+    - each lets is a vertex, each flow is an edge.  
+  - [ ] aggregate those pipes into a pipe system. 
+- [x] analytically explain the return to poiseuille behaviour.   
+
 
 ## engineering-ish
  
 - [ ] store every data of the standard pieces. the data needs to include
 - [ ] removing scipy.
-- [ ] package the gaussian quadrature rules from scipy into something like a json file? Perhaps I need $n=16,32,64,\cdots 4096$.
+- [x] package the gaussian quadrature rules from scipy into something like a json file?.
 - [ ] plotting
+  - [x] give a specific criterion to check if a point is in that geometry.
+  - [ ] the velocity field should be corrected near the boundary. 
+  - [ ] pressure and vorticity field as well? 
   - [ ] have a method for plotting the velocity field using perhaps imshow
   - [ ] have a method for plotting the actual boundary of the geometry using a not-so-thin balck line.
   - [ ] i can also plot vector field and stream line with number. How surprising.
-  
+  - [ ] base points for each pipe. and when plotting, every coordinate needs to be shifted. 
+
+
 ## games
   - [X] how to use matplotlib with pygame
   - [ ] the coordinate system of pygame is stupid. Can I change that? [see stacks overflow](https://stackoverflow.com/questions/10167329/change-the-position-of-the-origin-in-pygame-coordinate-system#:~:text=Is%20it%20possible%20to%20change%20the%20coordinate%20system,and%20use%20it%20just%20before%20drawing%20any%20object.).
 
+## probably later. 
+- [ ] ask microfluids people what tube they are interested in.
+- [ ] a solver for a multiply connected domain.
+- [ ] think about particles. it is hard but think about it...
 
 
 ## done 
