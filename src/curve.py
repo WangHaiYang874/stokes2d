@@ -232,9 +232,9 @@ class Cap(Curve):
         self.matching_pt = (start_pt + end_pt) / 2
         assert np.linalg.norm(self.matching_pt - mid_pt) > 1e-15
         out_vec = mid_pt - self.matching_pt
-        self.out_dir = np.arctan2(out_vec[1], out_vec[0])
-        self.width = np.linalg.norm(end_pt - start_pt)
-        assert self.width > 1e-15
+        self.dir = np.arctan2(out_vec[1], out_vec[0])
+        self.diameter = np.linalg.norm(end_pt - start_pt)
+        assert self.diameter > 1e-15
 
     def boundary_velocity(self):
         """
@@ -242,13 +242,13 @@ class Cap(Curve):
         so this function returns the velocity condition of outward unit flux
         """
 
-        r = self.width / 2
+        r = self.diameter / 2
 
         t = (self.t - self.matching_pt[0] - self.matching_pt[1] * 1j)
-        t = t * np.exp(-1j * (self.out_dir - np.pi / 2))
+        t = t * np.exp(-1j * (self.dir - np.pi / 2))
         x = t.real
         h = (x ** 2 - r ** 2) * 3 / (4 * r ** 3)
-        h = np.exp(1j * (self.out_dir - np.pi / 2)) * h
+        h = np.exp(1j * (self.dir - np.pi / 2)) * h
 
         return H2U(h)
 
