@@ -36,7 +36,6 @@ nax = np.newaxis
 class Pipe:
     # geometric data.
     curves: List[Curve]  # the parametrized curve.
-    panels: List[Panel]  # the panels of the parametric curve.
     n_pts: int  # number of points on the boundary curve
     a: np.ndarray  # the parameter of the boundary curve
     da: np.ndarray  # the quadrature weights
@@ -106,8 +105,6 @@ class Pipe:
     def dt(self): return self.dt_da * self.da
     @property
     def k(self): return np.concatenate([c.k for c in self.curves])
-    @property
-    def panels(self): return chain(*([c.panels for c in self.curves]))
 
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
