@@ -67,6 +67,7 @@ class Pipe:
     pressure_drops: np.ndarray  # shape=(nfluxes=nflows, nflows), dtype=float64
 
     # picture data
+    boundary: np.ndarray  # shape=(n_pts, 2), dtype=float64
     velocity_field: np.ndarray
     pressure_field: np.ndarray
     vorticity_field: np.ndarray

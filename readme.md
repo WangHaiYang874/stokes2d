@@ -41,6 +41,7 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 ## engineering-ish
  
 - [ ] store every data of the standard pieces. the data needs to include
+- [ ] make sure that no two pipe intersects: this requires calculating intersection of two polygons, I am not sure how to do it for now. 
 - [ ] removing scipy.
 - [x] package the gaussian quadrature rules from scipy into something like a json file?.
 - [ ] plotting
