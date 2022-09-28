@@ -238,8 +238,8 @@ class Cap(Curve):
 
     def boundary_velocity(self):
         """
-        cap is the only thing that will be used at the inflow/outflow.
-        so this function returns the velocity condition of outward unit flux
+        tcap is the only thing that will be used as the inlet/outlet.
+        this function returns the velocity condition of outward unit flux. 
         """
 
         r = self.diameter / 2
