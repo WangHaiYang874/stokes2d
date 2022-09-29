@@ -106,6 +106,13 @@ class Pipe:
     @property
     def k(self): return np.concatenate([c.k for c in self.curves])
 
+    def build(self):
+        self.build_geometry()
+        self.build_A()
+        self.build_all_boundary_velocity_conditions()
+        self.build_omegas()
+        self.build_pressure_drops()
+
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
         if n_jobs == 1:
