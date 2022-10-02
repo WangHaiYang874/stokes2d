@@ -413,6 +413,7 @@ class SmoothPipe(Pipe):
 
 
 class NLets(SmoothPipe):
+    # TODO this cannot be used to create a T shaped pipe. 
     def __init__(self, ls, rs, corner_size=1e-1):
 
         assert len(ls) == len(rs)
