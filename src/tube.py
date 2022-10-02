@@ -20,56 +20,50 @@ Corner be, etc.
 """
 from curve import *
 from utility_and_spec import *
-import sys
 import warnings
 from joblib import Parallel, delayed, cpu_count
-from itertools import chain
 from typing import List, Tuple
 from scipy.sparse.linalg import gmres, LinearOperator
 from matplotlib.path import Path
 from shapely.geometry import LineString
-
-sys.path.append('.')
-nax = np.newaxis
+from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
+from numpy.linalg import norm
 
 
 class Pipe:
-    # geometric data.
+    ### geometric data ###
+
     curves: List[Curve]  # the parametrized curve.
-    n_pts: int  # number of points on the boundary curve
-    a: np.ndarray  # the parameter of the boundary curve
-    da: np.ndarray  # the quadrature weights
-    x: np.ndarray  # x-coordinates of the points
-    y: np.ndarray  # y-coordinates of the points
-    dx_da: np.ndarray
-    dy_da: np.ndarray
-    dt_da: np.ndarray
-    ddx_dda: np.ndarray
-    ddy_dda: np.ndarray
-    t: np.ndarray  # x + iy
-    dt_da: np.ndarray
-    k: np.ndarray  # curvature of the boundary curve
+    n_pts: int          # number of points on the boundary curve
+    a: ndarray          # the parameter of the boundary curve
+    da: ndarray         # the quadrature weights
+    t: ndarray          # the complex coordinates of boundary points
+    dt_da: ndarray      # the derivative of t with respect to the parameter
+    dt: ndarray         # dt = dt_da * da
+    k: ndarray          # the curvature of the boundary curve
 
-    # single solver
+    # single solver, Matrix from Nyestorm's discretization
     A: LinearOperator
-    K1: np.ndarray
-    K2: np.ndarray
 
-    # flows
-    lets: List[int]  # index of the caps in self.curves
-    # list of (inlet, outlet) of all (generating) flows
-    flows: List[Tuple[int, int]]
-    n_flows: int  # number of flows
-    # shape=(n_flows, n_pts, 2), dtype=float64
-    bdr_velocity_conditions: np.ndarray
-    omegas: np.ndarray  # shape=(n_flows, n_pts), dtype=complex128
-    pressure_drops: np.ndarray  # shape=(nfluxes=nflows, nflows), dtype=float64
+    ### flows ###
+
+    # the index of the inlet/outlet in the list of curves
+    let_index2curve_index: List[int]
+    flows: List[Tuple[int, int]]    # [(inlet_index,outlet_index),...]
+    n_flows: int            # number of flows
+    omegas: ndarray         # shape=(n_flows, n_pts), dtype=complex128
+    pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
     # picture data
-    boundary: np.ndarray  # shape=(n_pts, 2), dtype=float64
-    velocity_field: np.ndarray
-    pressure_field: np.ndarray
-    vorticity_field: np.ndarray
+    boundary: ndarray           # shape=(*, 2), dtype=float64.
+    interior_boundary: ndarray  # shape=(*, 2), dtype=float64.
+    closed_boundary: ndarray    # shape=(*, 2), dtype=float64.
+    closed_interior_boundary:ndarray     # shape=(*, 2), dtype=float64.
+    extent: Tuple[float,float,float,float] # (xmin, xmax, ymin, ymax)
+    
+    velocity_field: ndarray      # TODO
+    pressure_field: ndarray      # TODO
+    vorticity_field: ndarray     # TODO
 
     def __init__(self) -> None:
         pass
@@ -77,34 +71,21 @@ class Pipe:
     ### GEOMETRIC ###
 
     @property
-    def n_pts(self): return len(self.a)
-
-    @property
-    def a(self): return np.concatenate(
+    def a(self): return concatenate(
         [c.a + 2*i for i, c in enumerate(self.curves)])
 
     @property
-    def da(self): return np.concatenate([c.da for c in self.curves])
+    def n_pts(self): return len(self.a)
     @property
-    def x(self): return np.concatenate([c.x for c in self.curves])
+    def da(self): return concatenate([c.da for c in self.curves])
     @property
-    def y(self): return np.concatenate([c.y for c in self.curves])
+    def t(self): return concatenate([c.t for c in self.curves])
     @property
-    def dx_da(self): return np.concatenate([c.dx_da for c in self.curves])
-    @property
-    def dy_da(self): return np.concatenate([c.dy_da for c in self.curves])
-    @property
-    def ddx_dda(self): return np.concatenate([c.ddx_dda for c in self.curves])
-    @property
-    def ddy_dda(self): return np.concatenate([c.ddy_dda for c in self.curves])
-    @property
-    def t(self): return np.concatenate([c.t for c in self.curves])
-    @property
-    def dt_da(self): return np.concatenate([c.dt_da for c in self.curves])
+    def dt_da(self): return concatenate([c.dt_da for c in self.curves])
     @property
     def dt(self): return self.dt_da * self.da
     @property
-    def k(self): return np.concatenate([c.k for c in self.curves])
+    def k(self): return concatenate([c.k for c in self.curves])
 
     def build(self):
         self.build_geometry()
@@ -116,16 +97,13 @@ class Pipe:
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
         if n_jobs == 1:
-            for c in self.curves:
+            [c.build(max_distance, legendre_ratio) for c in self.curves]
+        else:
+            def build_curve(c):
                 c.build(max_distance, legendre_ratio)
-            return
-
-        def build_curve(c):
-            c.build(max_distance, legendre_ratio)
-            return c
-
-        self.curves = Parallel(n_jobs=min(n_jobs, len(self.curves), cpu_count()//2))(
-            delayed(build_curve)(c) for c in self.curves)
+                return c
+            self.curves = Parallel(n_jobs=min(n_jobs, len(self.curves), cpu_count()//2))(
+                delayed(build_curve)(c) for c in self.curves)
 
     ### SINGLE SOLVER ###
 
@@ -134,148 +112,139 @@ class Pipe:
         if fmm:
             return NotImplemented
 
-        da = self.da
-        k = self.k
-
-        dt = self.t[:, nax] - self.t[nax, :]
-        d = self.dt_da[nax, :]
-        da_ = da[nax, :]
+        # diff_t[i, j] = t[i] - t[j]
+        diff_t = self.t[:, newaxis] - self.t[newaxis, :]
+        # dt2[*,i] = dt[i] = dt_da[i] * da[i]
+        dt2 = self.dt[newaxis, :]
 
         # this ignores the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 = -da_ * np.imag(d/dt) / np.pi
-            K2 = -da_ * (-d/np.conjugate(dt) + np.conjugate(d)
-                         * dt/(np.conjugate(dt**2))) / (2j*np.pi)
+            K1 = np.imag(dt2/diff_t) / (-pi)
+            K2 = (dt2 / conjugate(diff_t) - conjugate(dt2)
+                  * diff_t/(conjugate(diff_t**2))) / (2j*pi)
 
         # now we need to fill the diagonal elements
-        d = self.dt_da
-        K1_diagonal = k*np.abs(d)*da/(2*np.pi)
-        K2_diagonal = -da*k*(d**2)/(np.abs(d)*2*np.pi)
+        K1_diagonal = self.k*np.abs(self.dt)/(2*pi)
+        K2_diagonal = (self.k*self.dt*self.dt_da) / \
+            (-2*pi*np.abs(self.dt_da)**2)
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
-        self.K1 = K1
-        self.K2 = K2
-
-        n = len(self.a)
-
         def A(omega_sep):
-            assert len(omega_sep) == 2*n
-            omega = omega_sep[:n] + 1j*omega_sep[n:]
+            omega = omega_sep[:self.n_pts] + 1j*omega_sep[self.n_pts:]
             h = omega + K1@omega + K2@(omega.conjugate())
-            h_sep = np.concatenate([h.real, h.imag])
-            return h_sep
+            return concatenate([h.real, h.imag])
 
-        self.A = LinearOperator(dtype=np.float64, shape=(2*n, 2*n), matvec=A)
+        self.A = LinearOperator(
+            matvec=A,
+            dtype=np.float64,
+            shape=(2*self.n_pts, 2*self.n_pts))
 
-    def compute_omega(self, U, tol=None):
+    def compute_omega(self, H, tol=None):
 
         tol = 1e-12 if tol is None else tol
-        H = U2H(U)
-        b = np.concatenate((H.real, H.imag))
+        b = concatenate((H.real, H.imag))
 
         omega_sep, _ = gmres(self.A, b, atol=0, tol=tol)
 
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
+            assert False
 
         omega = omega_sep[:self.n_pts] + 1j*omega_sep[self.n_pts:]
         return omega
 
     ### FLOWS ###
+    @property
+    def let_index2curve_index(self):
+        return [i for i, c in enumerate(self.curves) if isinstance(c, Cap)]
 
     @property
-    def lets(self):
-        ret = [i for i, c in enumerate(self.curves) if isinstance(c, Cap)]
-        if not ret:
-            raise ValueError("There is no flow for this pipe. ")
-        return ret
-
+    def lets(self): return [self.curves[i] for i in self.let_index2curve_index]
     @property
-    def flows(self): return [(self.lets[0], o) for o in self.lets[1:]]
+    def n_lets(self): return len(self.lets)
     @property
-    def n_flows(self): return len(self.flows)
+    def flows(self): return [(0, i) for i in range(self.n_lets - 1)]
+    @property
+    def n_flows(self): return self.n_lets - 1
 
-    def get_bounadry_velocity_condition(self, i):
+    def boundary_value(self, i):
         """Flow goes in the inlet and out the outlet. """
         inlet, outlet = self.flows[i]
+        i = self.let_index2curve_index[inlet]
+        o = self.let_index2curve_index[outlet]
         ret = []
         for j, c in enumerate(self.curves):
-            if j == inlet:
+            if j == i:
                 ret.append(-c.boundary_velocity())
-            elif j == outlet:
+            elif j == o:
                 ret.append(c.boundary_velocity())
             else:
-                ret.append(0*c.boundary_velocity())
-        return np.concatenate(ret)
-
-    def build_all_boundary_velocity_conditions(self):
-        self.bdr_velocity_conditions = np.array([
-            self.get_bounadry_velocity_condition(i) for i in range(self.n_flows)])
+                ret.append(np.zeros_like(c.a))
+        return U2H(concatenate(ret))
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
         if n_jobs == 1:
-            self.omegas = np.array([self.compute_omega(U, tol)
-                                   for U in self.bdr_velocity_conditions])
+            self.omegas = array(
+                [self.compute_omega(self.boundary_value(i), tol) for i in range(self.n_flows)])
         else:
-            self.omegas = np.array(Parallel(n_jobs=min(n_jobs, self.n_flows, cpu_count()//2))(delayed(
-                lambda U: self.compute_omega(U, tol))
-                (U) for U in self.bdr_velocity_conditions))
+            self.omegas = array(Parallel(n_jobs=min(n_jobs, self.n_flows, cpu_count()//2))(
+                delayed(lambda i: self.compute_omega(
+                    self.boundary_value(i), tol))(i)
+                for i in range(self.n_flows)))
 
     def build_pressure_drops(self):
-
-        pts = np.array(
-            [self.curves[outflow].matching_pt for outflow in self.lets])
-
+        pts = array(
+            [let.matching_pt for let in self.lets])
         pressure_drops = []
         for omega in self.omegas:
             pressure = self.pressure(pts[:, 0], pts[:, 1], omega)
             pressure_drops.append(pressure[1:] - pressure[0])
 
-        self.pressure_drops = np.array(pressure_drops)
+        self.pressure_drops = array(pressure_drops)
 
     ### COMPUTE PHYSICS QUANTITIES ###
 
     def phi(self, z, omega):
         assert z.ndim == 1
-        return np.sum((omega * self.dt)[nax, :] /
-                      (self.t[nax, :] - z[:, nax]), axis=1) / (2j * np.pi)
+        return np.sum((omega * self.dt)[newaxis, :] /
+                      (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
 
     def d_phi(self, z, omega):
         assert z.ndim == 1
-        return np.sum((omega * self.dt)[nax, :] /
-                      (self.t[nax, :] - z[:, nax])**2, axis=1) / (2j * np.pi)
+        return np.sum((omega * self.dt)[newaxis, :] /
+                      (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
 
     def psi(self, z, omega):
         assert z.ndim == 1
 
         first_term = np.sum(
-            np.real((np.conjugate(omega) * self.dt)[nax, :])
-            / (self.t[nax, :] - z[:, nax]),
-            axis=1) / (1j*np.pi)
+            np.real((conjugate(omega) * self.dt)[newaxis, :])
+            / (self.t[newaxis, :] - z[:, newaxis]),
+            axis=1) / (1j*pi)
 
         second_term = np.sum(
-            (np.conjugate(self.t) * omega * self.dt)[nax, :]
-            / (self.t[nax, :] - z[:, nax])**2,
-            axis=1) / (-2j * np.pi)
+            (conjugate(self.t) * omega * self.dt)[newaxis, :]
+            / (self.t[newaxis, :] - z[:, newaxis])**2,
+            axis=1) / (-2j * pi)
 
         return first_term + second_term
 
     def velocity(self, x, y, omega):
 
         z = x + 1j*y
-        assert isinstance(z, np.ndarray)
+        assert isinstance(z, ndarray)
         shape = z.shape
         z = z.flatten()
 
-        return H2U((self.phi(z, omega) + z * np.conjugate(self.d_phi(z, omega)) + np.conjugate(self.psi(z, omega))).reshape(shape))
+        return H2U((self.phi(z, omega) + z * conjugate(self.d_phi(z, omega)) + conjugate(self.psi(z, omega))).reshape(shape))
 
     def pressure_and_vorticity(self, x, y, omega):
 
         # TODO : not verified yet.
         z = x + 1j*y
-        assert (isinstance(z, np.ndarray))
+        assert (isinstance(z, ndarray))
         shape = z.shape
         z = z.flatten()
 
@@ -302,13 +271,20 @@ class Pipe:
                 pts += [c.start_pt, c.mid_pt]
             elif isinstance(c, Corner):
                 pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        return np.array(pts)
-
+        return array(pts)
+    
     @property
-    def interior_boundary(self, distance=6e-2):
-        x, y = LineString(np.concatenate((self.boundary, self.boundary[:1]))).dilate(
+    def closed_boundary(self):
+        return concatenate((self.boundary, self.boundary[:1]))
+
+    def interior_boundary(self, distance=None):
+        
+        distance = 0.06 if distance is None else distance
+        
+        x, y = LineString(concatenate((self.boundary, self.boundary[:1]))).buffer(
             distance).interiors[0].coords.xy
-        return np.array([x, y]).T[:-1]
+        return array([x, y]).T[:-1]
+
 
     @property
     def extent(self):
@@ -319,10 +295,10 @@ class Pipe:
         return (left, right, bottom, top)
 
     def contains_points(self, x, y):
-        return Path(self.boundary).contains_points(np.array([x, y]).T)
+        return Path(self.boundary).contains_points(array([x, y]).T)
 
-    def contains_points_interior(self, x, y, distance=6e-2):
-        return Path(self.interior_boundary(distance)).contains_points(np.array([x, y]).T)
+    def contains_points_interior(self, x, y, distance=None):
+        return Path(self.interior_boundary(distance)).contains_points(array([x, y]).T)
 
     def grid(self, density=100):
         left, right, bottom, top = self.extent
@@ -336,15 +312,16 @@ class Pipe:
         shape = xs.shape
 
         mask1 = self.contains_points(xs.flatten(), ys.flatten()).reshape(shape)
-        mask2 = self.contains_points_interior(xs.flatten(), ys.flatten()).reshape(shape)
-        
+        mask2 = self.contains_points_interior(
+            xs.flatten(), ys.flatten()).reshape(shape)
+
         return xs, ys, mask1, mask2
 
     def build_plotting_data(self):
-        xs, ys, mask = self.grid()
-        u, v = self.velocity(xs[mask], ys[mask], self.omegas[0])
         # TODO
         pass
+        xs, ys, mask = self.grid()
+        u, v = self.velocity(xs[mask], ys[mask], self.omegas[0])
 
 
 class StraightPipe(Pipe):
@@ -390,7 +367,7 @@ class SmoothPipe(Pipe):
             else:  # I need to inference the mid point.
 
                 vec = points[i] - points[i-1]
-                vec = vec/np.linalg.norm(vec)
+                vec = vec/norm(vec)
                 mid_pt = (points[i] + points[j])/2 + vec
                 self.curves.append(lines[i](points[i], points[j], mid_pt))
 
@@ -409,12 +386,12 @@ class SmoothPipe(Pipe):
             q = l1.end_pt
             r = l2.end_pt
 
-            corner_size = min(self.corner_size, np.linalg.norm(
-                p - q) / 2, np.linalg.norm(r - q) / 2)
+            corner_size = min(self.corner_size, norm(
+                p - q) / 2, norm(r - q) / 2)
             assert (corner_size > 1e-2)
 
-            start_pt = q + (((p - q) / np.linalg.norm(p - q)) * corner_size)
-            end_pt = q + (((r - q) / np.linalg.norm(r - q)) * corner_size)
+            start_pt = q + (((p - q) / norm(p - q)) * corner_size)
+            end_pt = q + (((r - q) / norm(r - q)) * corner_size)
 
             self.curves.insert(i, Line(end_pt, r))
             self.curves.insert(i, Corner(start_pt, end_pt, q))
@@ -442,7 +419,7 @@ class NLets(SmoothPipe):
         assert np.all(rs > 0)
 
         thetas = np.arctan2(ls[:, 1], ls[:, 0])
-        thetas[thetas == np.pi] = -np.pi
+        thetas[thetas == pi] = -pi
 
         assert np.all(np.diff(thetas) > 0)
 
@@ -453,7 +430,7 @@ class NLets(SmoothPipe):
 
         for i in range(n):
             j = (i + 1) % n
-            tangential_dir = (thetas[i] + np.pi/2)
+            tangential_dir = (thetas[i] + pi/2)
             x = np.cos(tangential_dir)
             y = np.sin(tangential_dir)
             tangential_unit = pt(x, y)
@@ -461,7 +438,7 @@ class NLets(SmoothPipe):
             p1 = ls[i] - tangential_unit*rs[i]
             p2 = ls[i] + tangential_unit*rs[i]
 
-            tangential_dir = (thetas[j] + np.pi/2)
+            tangential_dir = (thetas[j] + pi/2)
             x = np.cos(tangential_dir)
             y = np.sin(tangential_dir)
             tangential_unit = pt(x, y)
@@ -482,7 +459,7 @@ class Cross(NLets):
         l2 = pt(0, -length)
         l3 = pt(length, 0)
         l4 = pt(0, length)
-        ls = np.array([l1, l2, l3, l4])
-        rs = np.array([radius, radius, radius, radius])
+        ls = array([l1, l2, l3, l4])
+        rs = array([radius, radius, radius, radius])
 
         super().__init__(ls, rs, corner_size)
