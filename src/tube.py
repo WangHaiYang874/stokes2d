@@ -49,7 +49,6 @@ class Pipe:
 
     # the index of the inlet/outlet in the list of curves
     let_index2curve_index: List[int]
-    flows: List[Tuple[int, int]]    # [(inlet_index,outlet_index),...]
     n_flows: int            # number of flows
     omegas: ndarray         # shape=(n_flows, n_pts), dtype=complex128
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
@@ -164,15 +163,12 @@ class Pipe:
     @property
     def n_lets(self): return len(self.lets)
     @property
-    def flows(self): return [(0, i) for i in range(self.n_lets - 1)]
-    @property
     def n_flows(self): return self.n_lets - 1
 
-    def boundary_value(self, i):
+    def boundary_value(self, flow_index):
         """Flow goes in the inlet and out the outlet. """
-        inlet, outlet = self.flows[i]
-        i = self.let_index2curve_index[inlet]
-        o = self.let_index2curve_index[outlet]
+        o = self.let_index2curve_index[flow_index+1]  # outlet
+        i = self.let_index2curve_index[0]             # inlet
         ret = []
         for j, c in enumerate(self.curves):
             if j == i:
