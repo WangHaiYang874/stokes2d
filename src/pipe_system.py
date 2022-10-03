@@ -198,4 +198,4 @@ class PipeSystem:
         self.A = np.array(A)
         self.b = np.array(B)
 
-        # self.fluxes = np.linalg.solve(A, B)
+        self.fluxes = np.linalg.solve(A, B)

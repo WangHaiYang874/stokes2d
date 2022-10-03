@@ -16,6 +16,8 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 ## math-ish
 
+- [ ] organize my python files. 
+- [ ] test the matching, see if it really works well. 
 - [ ] create different geometries
   - [ ] a simple straight pipe. 
   - [ ] some bands with fixed angles. 
