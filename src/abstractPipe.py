@@ -16,11 +16,11 @@ class Let:
         return np.array([self.x, self.y])
 
     def almost_match(self, other: 'Let', threshold=1e-10):
-        return np.max(np.abs(
+        return np.max(np.abs([
             np.linalg.norm(self.pos - other.pos),       # same position
             self.dia - other.dia,                       # same diameter
             (self.dir-other.dir) % (2*np.pi) - np.pi    # opposite direction
-        )) <= threshold
+        ])) <= threshold
 
 
 @dataclass(frozen=True, repr=True, order=True)

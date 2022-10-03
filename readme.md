@@ -19,13 +19,9 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 - [ ] create different geometries
   - [ ] a simple straight pipe. 
   - [ ] some bands with fixed angles. 
-  - [ ] pipes with different radius at inflow and outflow. 
-  - [x] Nlets
-    - [x] Y-shaped with varying parameter for optimization
-    - [x] cross. 
-    - [ ] Nlets 里面相临的两条线不能是平行的. 
+  - [ ] Nlets 里面相临的两条线不能是平行的. 
 - [ ] an algorithm that connects the pipes. 
-  - [ ] data on a single pipe: 
+  - [ ] abstract pipe: 
     - [x] lets
         - [x] position: matching_pt
         - [x] dir
@@ -93,3 +89,6 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [x] check whether this provides an upper bound on how fast the return to Poiseuille happens. E.g., if you can fit one obstruction inside of another obstruction, will the return happen for the smaller, contained obstruction at least as fast as for the larger obstruction? Probably Fredrik or Leslie can weigh in and give some insight as to whether this is likely to be the case... I don't know, myself.
   - [x] set a tol for return to poiseuille, varying the obstruction height, and observe how fast it is returning.
   - [x] measure the difference of your flow to a Poiseuille flow at distance 7.5 from the obstruction (there you seem to reach the error imposed by the GMRES tolerance) as you increase N? Please plot this error vs the number of points on the boundary in log log scale.
+  - [x] Nlets
+    - [x] Y-shaped with varying parameter for optimization
+    - [x] cross. 

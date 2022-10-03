@@ -86,11 +86,10 @@ class Pipe:
     @property
     def k(self): return concatenate([c.k for c in self.curves])
 
-    def build(self):
-        self.build_geometry()
+    def build(self,max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
+        self.build_geometry(max_distance, legendre_ratio, n_jobs)
         self.build_A()
-        self.build_all_boundary_velocity_conditions()
-        self.build_omegas()
+        self.build_omegas(tol=tol, n_jobs=n_jobs)
         self.build_pressure_drops()
 
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
@@ -297,6 +296,7 @@ class Pipe:
         return Path(self.interior_boundary(distance)).contains_points(array([x, y]).T)
 
     def grid(self, density=100):
+        # TODO
         left, right, bottom, top = self.extent
         nx = np.ceil((right - left) * density).astype(int)
         ny = np.ceil((top - bottom) * density).astype(int)
@@ -460,3 +460,8 @@ class Cross(NLets):
         rs = array([radius, radius, radius, radius])
 
         super().__init__(ls, rs, corner_size)
+
+class Pipe_with_different_radius(SmoothPipe):
+    def __init__(self, points, lines, corner_size=1e-1) -> None:
+        # TODO. 
+        pass
