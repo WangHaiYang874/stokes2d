@@ -35,3 +35,104 @@ u(x) = \sum_{j=1}^{N} c_{j} * log(|x-x_{j}|) + d_{j}/(x-x_{j})
 $$
 
 Or don't use fmm at all. Why bother using fmm when I can just run this whole thing on a huge server? 
+
+# deleted code
+``` python
+# commit 73b89c1. 
+def build_A_fmm(da,dt_da,k):
+    
+    dt = dt_da * da
+    K1_diagonal = k * np.abs(dt)        / ( 2 * np.pi)
+    K2_diagonal = k * dt_da * dt        / (-2 * np.pi * np.abs(dt_da))
+    n = len(da)
+
+    def A_fmm(omega_sep):
+
+        omega = omega_sep[:n] + 1j * omega_sep[n:]
+        ret = omega + self.K1_fmm(omega) + self.K2_fmm(omega.conj())
+        return np.concatenate((ret.real(), ret.imag()))
+
+    self.A_fmm = LinearOperator(dtype=np.float64, shape=(2 * n, 2 * n), matvec=A_fmm)
+
+def K1_fmm(da, dt_da, t, omega):
+
+    sources = np.array([t.real, t.imag])
+    dt = dt_da * da
+    eps = 1e-16
+    K1_diagonal
+
+    K11 = fmm.cfmm2d(eps    =eps,
+                        sources=sources,
+                        dipstr =dt * omega / (-2j * np.pi),
+                        pg     =1
+                        ).pot
+
+    K12 = fmm.cfmm2d(eps    =eps,
+                        sources=sources,
+                        dipstr =dt * omega.conjugate()/(-2j * np.pi),
+                        pg=1
+                        ).pot.conjugate()
+
+    # ❗ K12 看其实是不是有bug. 为啥只对omega做conjugate? 我懒得回忆了....
+
+    return K11 + K12 + K1_diagonal * omega
+
+def K2_fmm(da,dt_da,t,omega):
+    
+    sources = np.array([t.real, t.imag])
+    dt = dt_da * da
+    eps = 1e-16
+    K2_diagonal
+
+    K21 = fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        dipstr=- np.conjugate(dt*omega)/(2j*np.pi),
+                        pg=1
+                        ).pot.conjugate()
+    K221 = t*fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        dipstr=- dt * omega.conjugate()/(2j*np.pi),
+                        pg=2
+                        ).grad.conjugate()
+    K222 = fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        dipstr=dt * omega.conjugate() * t.conjugate()/(2j*np.pi),
+                        pg=2).grad.conjugate()
+    # diagonal elements
+    return K21 + K221 + K222 + K2_diagonal * omega
+
+def compute_velocity_fmm(self, z, omega):
+    '''
+    this only support the case when z is a 1-d numpy array
+    '''
+
+
+def phi和d_phi(t,z,dt,omega):
+    result = fmm.cfmm2d(eps=eps,
+                sources=np.array([t.real(), t.imag()]),
+                charges=np.zeros_like(t),
+                dipstr=omega * dt,
+                targets=np.array([z.real(), z.imag()]),
+                pgt=2)
+
+    phi = phi.pottarg / (-2j * np.pi)
+    d_phi = phi.gradtarg / (-2j * np.pi)
+
+def psi(t,z,dt,omega)
+
+    psi1 = fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        charges=charges,
+                        dipstr=np.real(omega.conjugate() * dt),
+                        targets=targets,
+                        pgt=1).pottarg / (-1j * np.pi)
+
+    psi2 = fmm.cfmm2d(eps=eps,
+                        sources=sources,
+                        charges=charges,
+                        dipstr=np.real(np.conjugate(t) * omega * dt),
+                        targets=targets,
+                        pgt=2).gradtarg / (2j * np.pi)
+
+    psi = psi1 + psi2
+```
