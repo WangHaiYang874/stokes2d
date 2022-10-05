@@ -22,6 +22,7 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [ ] Nlets 里面相临的两条线不能是平行的. 
 
 ## engineering-ish
+- [ ] write a build script to be ran on a server. 
 - [ ] change some instance of `flatten` to `ravel`. 
 - [ ] store every data of the standard pieces. the data needs to include
 - [ ] removing scipy

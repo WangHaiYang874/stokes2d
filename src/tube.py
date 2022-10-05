@@ -8,7 +8,7 @@ from matplotlib.path import Path
 from shapely.geometry import LineString, Polygon
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
 from numpy.linalg import norm
-
+import pickle as pickle
 from scipy.interpolate import griddata, NearestNDInterpolator
 
 
@@ -40,11 +40,16 @@ class Pipe:
     interior_boundary: ndarray  # shape=(*, 2), dtype=float64.
     closed_boundary: ndarray    # shape=(*, 2), dtype=float64.
     closed_interior_boundary: ndarray     # shape=(*, 2), dtype=float64.
+    open_bdr: List[ndarray] # TODO: exclude the caps. 
     extent: Tuple[float, float, float, float]  # (xmin, xmax, ymin, ymax)
 
-    velocity_field: ndarray      # TODO
-    pressure_field: ndarray      # TODO
-    vorticity_field: ndarray     # TODO
+    xs: ndarray
+    ys: ndarray
+    inside: ndarray
+    u_fields: ndarray # shape=(n_flows, x, y)
+    v_fields: ndarray # shape=(n_flows, x, y)
+    pressure_field: ndarray # shape=(n_flows, x, y)
+    vorticity_field: ndarray # shape=(n_flows, x, y)
 
     def __init__(self) -> None:
         pass
@@ -75,6 +80,12 @@ class Pipe:
         self.A = None # free memory
         self.build_pressure_drops()
         self.build_plotting_data()
+        self.omegas = None # free memory
+        
+    def save(self, filename):
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
+        
 
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
@@ -398,6 +409,16 @@ class Pipe:
         self.v_fields = np.array(v_fields)
         self.pressure_fields = np.array(pressure_fields)
         self.vorticity_fields = np.array(vorticity_fields)
+    
+    def fields_with_fluxes(self,fluxes):
+        assert isinstance(fluxes,np.ndarray)
+        assert fluxes.ndim == 1
+        assert len(fluxes) == self.n_flows
+        
+        return  fluxes@self.u_fields, \
+                fluxes@self.v_fields, \
+                fluxes@self.pressure_fields, \
+                fluxes@self.vorticity_fields
 
 
 class StraightPipe(Pipe):
