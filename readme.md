@@ -24,8 +24,7 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 ## engineering-ish
 - [ ] change some instance of `flatten` to `ravel`. 
 - [ ] store every data of the standard pieces. the data needs to include
-- [ ] removing scipy.
-
+- [ ] removing scipy
 
 ## games
   - [ ] how to use matplotlib with pygame
