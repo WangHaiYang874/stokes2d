@@ -150,7 +150,7 @@ class Curve:
         return ret
 
     def boundary_velocity(self):
-        return np.zeros((len(self.a),2))
+        return np.zeros_like(self.a)
 
     @property
     def a(self):
@@ -250,7 +250,7 @@ class Cap(Curve):
         h = (x ** 2 - r ** 2) * 3 / (4 * r ** 3)
         h = np.exp(1j * (self.dir - np.pi / 2)) * h
 
-        return H2U(h)
+        return h
 
     def contour_polygon(self): return np.array([self.start_pt])
     

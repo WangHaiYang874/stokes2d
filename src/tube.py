@@ -1,23 +1,3 @@
-"""
-from the Curve, we have figured out how to draw stuff:
-the lines, obstructions, and caps, smoothed corners, etc.
-those are going to be just a Panel for a tube.
-
-In this file, I'll write the codes to automate the process of
-drawing tubes from the codes of the Curve. There are certain
-things I wish this file can do.
-
-1. a tube should be a sampler, instead of fixing number of points on
-the Panel, we should be able to sample points on the tube to make sure
-our stokes2d solver can have given tolerance and distance away from the
-boundary, as the main numerical error appears only near the boundary. In
-my previous experiements, 5h rule works out pretty well for controlling the
-numerical error.
-
-2. I also want to write a codes for several generic tubes with different specifications
-such as the radius, the length, the number of bifurcations, how large should the smoothed
-Corner be, etc.
-"""
 from curve import *
 from utility_and_spec import *
 import warnings
@@ -25,9 +5,11 @@ from joblib import Parallel, delayed, cpu_count
 from typing import List, Tuple
 from scipy.sparse.linalg import gmres, LinearOperator
 from matplotlib.path import Path
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
 from numpy.linalg import norm
+
+from scipy.interpolate import griddata, NearestNDInterpolator
 
 
 class Pipe:
@@ -57,9 +39,9 @@ class Pipe:
     boundary: ndarray           # shape=(*, 2), dtype=float64.
     interior_boundary: ndarray  # shape=(*, 2), dtype=float64.
     closed_boundary: ndarray    # shape=(*, 2), dtype=float64.
-    closed_interior_boundary:ndarray     # shape=(*, 2), dtype=float64.
-    extent: Tuple[float,float,float,float] # (xmin, xmax, ymin, ymax)
-    
+    closed_interior_boundary: ndarray     # shape=(*, 2), dtype=float64.
+    extent: Tuple[float, float, float, float]  # (xmin, xmax, ymin, ymax)
+
     velocity_field: ndarray      # TODO
     pressure_field: ndarray      # TODO
     vorticity_field: ndarray     # TODO
@@ -86,11 +68,13 @@ class Pipe:
     @property
     def k(self): return concatenate([c.k for c in self.curves])
 
-    def build(self,max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
+    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
         self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
+        self.A = None # free memory
         self.build_pressure_drops()
+        self.build_plotting_data()
 
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
@@ -108,6 +92,7 @@ class Pipe:
     def build_A(self, fmm=False):
 
         if fmm:
+            # TODO or Not TODO: probably we don't need fmm for this one.
             return NotImplemented
 
         # diff_t[i, j] = t[i] - t[j]
@@ -176,7 +161,7 @@ class Pipe:
                 ret.append(c.boundary_velocity())
             else:
                 ret.append(np.zeros_like(c.a))
-        return U2H(concatenate(ret))
+        return concatenate(ret)
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
@@ -230,23 +215,21 @@ class Pipe:
 
         z = x + 1j*y
         assert isinstance(z, ndarray)
-        shape = z.shape
-        z = z.flatten()
+        assert z.ndim == 1
 
-        return H2U((self.phi(z, omega) + z * conjugate(self.d_phi(z, omega)) + conjugate(self.psi(z, omega))).reshape(shape))
+        return H2U((self.phi(z, omega) + z * conjugate(self.d_phi(z, omega)) + conjugate(self.psi(z, omega))))
 
     def pressure_and_vorticity(self, x, y, omega):
 
         # TODO : not verified yet.
         z = x + 1j*y
         assert (isinstance(z, ndarray))
-        shape = z.shape
-        z = z.flatten()
+        assert (z.ndim == 1)
 
         d_phi = self.d_phi(z, omega)
         pressure = np.imag(d_phi)
         vorticity = np.real(d_phi)
-        return pressure.reshape(shape), vorticity.reshape(shape)
+        return pressure, vorticity
 
     def pressure(self, x, y, omega):
         return self.pressure_and_vorticity(x, y, omega)[0]
@@ -267,19 +250,41 @@ class Pipe:
             elif isinstance(c, Corner):
                 pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
         return array(pts)
-    
+
+    @property
+    def smooth_boundary(self):
+        pts = []
+        for c in self.curves:
+            if isinstance(c, Line):
+                pts += [c.start_pt, c.mid_pt]
+            elif isinstance(c, Corner) or isinstance(c, Cap):
+                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
+        return array(pts)
+
+    @property
+    def smooth__closed_boundary(self):
+        return concatenate((self.smooth_boundary, self.smooth_boundary[:1]))
+
     @property
     def closed_boundary(self):
         return concatenate((self.boundary, self.boundary[:1]))
 
-    def interior_boundary(self, distance=None):
-        
-        distance = 0.06 if distance is None else distance
-        
-        x, y = LineString(concatenate((self.boundary, self.boundary[:1]))).buffer(
-            distance).interiors[0].coords.xy
-        return array([x, y]).T[:-1]
+    @property
+    def h(self):
+        return np.max(np.abs(np.diff(self.t)))
 
+    def interior_boundary(self, h_mult=None):
+
+        distance = 4*self.h if h_mult is None else h_mult*self.h
+        # this constant 4 here is tested to be good.
+        # this is a heuristic similar to the 5h-rule for BIM of harmonic equation. 
+
+        p1 = Polygon(LineString(concatenate((self.smooth_boundary, self.smooth_boundary[:1]))).buffer(
+            distance).interiors[0])
+        p2 = Polygon(self.closed_boundary)
+        x, y = p1.intersection(p2).boundary.xy
+
+        return array([x, y]).T[:-1]
 
     @property
     def extent(self):
@@ -289,14 +294,22 @@ class Pipe:
         top = np.max(self.boundary[:, 1])
         return (left, right, bottom, top)
 
-    def contains_points(self, x, y):
-        return Path(self.boundary).contains_points(array([x, y]).T)
+    def masks(self, x, y, h_mult=None):
 
-    def contains_points_interior(self, x, y, distance=None):
-        return Path(self.interior_boundary(distance)).contains_points(array([x, y]).T)
+        shape = x.shape
 
-    def grid(self, density=100):
-        # TODO
+        inside = Path(self.boundary).contains_points(
+            array([x.ravel(), y.ravel()]).T).reshape(shape)
+        interior = Path(self.interior_boundary(h_mult)).contains_points(
+            array([x.ravel(), y.ravel()]).T).reshape(shape)
+        near_boundary = inside & ~interior
+
+        return inside, interior, near_boundary
+
+    def grid_pts(self, density=None):
+
+        density = 100 if density is None else density
+
         left, right, bottom, top = self.extent
         nx = np.ceil((right - left) * density).astype(int)
         ny = np.ceil((top - bottom) * density).astype(int)
@@ -304,24 +317,93 @@ class Pipe:
         xs = np.linspace(left, right, nx)
         ys = np.linspace(bottom, top, ny)
 
-        xs, ys = np.meshgrid(xs, ys)
-        shape = xs.shape
+        return np.meshgrid(xs, ys)
 
-        mask1 = self.contains_points(xs.flatten(), ys.flatten()).reshape(shape)
-        mask2 = self.contains_points_interior(
-            xs.flatten(), ys.flatten()).reshape(shape)
+    def build_plotting_data(self, h_mult=None, density=None, n_jobs=1):
 
-        return xs, ys, mask1, mask2
+        xs, ys = self.grid_pts(density)
 
-    def build_plotting_data(self):
-        # TODO
-        pass
-        xs, ys, mask = self.grid()
-        u, v = self.velocity(xs[mask], ys[mask], self.omegas[0])
+        xs = xs.ravel()
+        ys = ys.ravel()
+
+        inside, interior, near_boundary = self.masks(xs, ys, h_mult)
+        x_interior = xs[interior]
+        y_interior = ys[interior]
+
+        u_fields = []
+        v_fields = []
+        pressure_fields = []
+        vorticity_fields = []
+
+        # base point of pressure and vorticity
+        x,y = self.lets[0].matching_pt
+        base_x = np.array([x])
+        base_y = np.array([y])
+        
+        if n_jobs != 1:
+            # TODO parallel computing.
+            raise NotImplementedError(
+                "Parallel computation is not implemented yet.")
+        
+        for omega in self.omegas:
+
+            u_field = np.zeros_like(xs)
+            v_field = np.zeros_like(xs)
+            pressure_field = np.zeros_like(xs)
+            vorticity_field = np.zeros_like(xs)
+
+            # interior can be directly calculated
+
+            v = self.velocity(x_interior, y_interior, omega)
+            pressure, vorticity = self.pressure_and_vorticity(
+                x_interior, y_interior, omega)
+            base_pressure, base_vorticity = self.pressure_and_vorticity(
+                base_x, base_y, omega)
+            base_pressure = base_pressure[0]
+            base_vorticity = base_vorticity[0]
+            
+            pressure -= base_pressure
+            vorticity -= base_vorticity
+            
+            u_field[interior] = v[:, 0]
+            v_field[interior] = v[:, 1]
+            pressure_field[interior] = pressure
+            vorticity_field[interior] = vorticity
+
+            # near boundary need to be interpolated/extrapolated.
+
+            for field in [u_field, v_field, pressure_field, vorticity_field]:
+                field[near_boundary] = griddata(
+                    np.array([xs[interior], ys[interior]]).T, field[interior], 
+                    np.array([xs[near_boundary], ys[near_boundary]]).T, method='linear')
+                
+                if np.any(np.isnan(field[near_boundary])):
+                    nearest_extrapolate = NearestNDInterpolator(np.array([xs[interior],ys[interior]]).T,field[interior])
+                    nan_mask = np.isnan(field) & near_boundary
+                    field[nan_mask] = nearest_extrapolate(xs[nan_mask],ys[nan_mask])
+
+            # store the fields
+            
+            u_fields.append(u_field)
+            v_fields.append(v_field)
+            pressure_fields.append(pressure_field)
+            vorticity_fields.append(vorticity_field)
+
+        self.xs = xs
+        self.ys = ys
+
+        self.inside = inside
+
+        self.u_fields = np.array(u_fields)
+        self.v_fields = np.array(v_fields)
+        self.pressure_fields = np.array(pressure_fields)
+        self.vorticity_fields = np.array(vorticity_fields)
 
 
 class StraightPipe(Pipe):
+
     # TODO
+
     pass
 
 
@@ -409,7 +491,7 @@ class SmoothPipe(Pipe):
 
 
 class NLets(SmoothPipe):
-    # TODO this cannot be used to create a T shaped pipe. 
+    # TODO this cannot be used to create a T shaped pipe.
     def __init__(self, ls, rs, corner_size=1e-1):
 
         assert len(ls) == len(rs)
@@ -461,7 +543,8 @@ class Cross(NLets):
 
         super().__init__(ls, rs, corner_size)
 
+
 class Pipe_with_different_radius(SmoothPipe):
     def __init__(self, points, lines, corner_size=1e-1) -> None:
-        # TODO. 
+        # TODO.
         pass

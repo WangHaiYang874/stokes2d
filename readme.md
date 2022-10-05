@@ -12,8 +12,6 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 # todo
 
-
-
 ## math-ish
 
 - [ ] organize my python files. 
@@ -22,40 +20,15 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [ ] a simple straight pipe. 
   - [ ] some bands with fixed angles. 
   - [ ] Nlets 里面相临的两条线不能是平行的. 
-- [ ] an algorithm that connects the pipes. 
-  - [ ] abstract pipe: 
-    - [x] lets
-        - [x] position: matching_pt
-        - [x] dir
-        - [x] radius
-    - [ ] flows (fluxes) (lets[1:])
-        - [x] the pressure drops
-        - [x] fluxes
-    - each lets is a vertex, each flow is an edge.  
-  - [ ] aggregate those pipes into a pipe system. 
-- [x] analytically explain the return to poiseuille behaviour.   
-
 
 ## engineering-ish
- 
+- [ ] change some instance of `flatten` to `ravel`. 
 - [ ] store every data of the standard pieces. the data needs to include
-- [ ] make sure that no two pipe intersects: this requires calculating intersection of two polygons, I am not sure how to do it for now. 
 - [ ] removing scipy.
-- [x] package the gaussian quadrature rules from scipy into something like a json file?.
-- [ ] plotting
-  - [x] give a specific criterion to check if a point is in that geometry.
-  - [ ] the velocity field should be corrected near the boundary. 
-    - [x] this essentially ask me to determine if a point is close to a curve, and such criterion should be 
-    implemented for each curve to have the best performance: 
-  - [ ] pressure and vorticity field as well? 
-  - [ ] have a method for plotting the velocity field using perhaps imshow
-  - [ ] have a method for plotting the actual boundary of the geometry using a not-so-thin balck line.
-  - [ ] i can also plot vector field and stream line with number. How surprising.
-  - [ ] base points for each pipe. and when plotting, every coordinate needs to be shifted. 
 
 
 ## games
-  - [X] how to use matplotlib with pygame
+  - [ ] how to use matplotlib with pygame
   - [ ] the coordinate system of pygame is stupid. Can I change that? [see stacks overflow](https://stackoverflow.com/questions/10167329/change-the-position-of-the-origin-in-pygame-coordinate-system#:~:text=Is%20it%20possible%20to%20change%20the%20coordinate%20system,and%20use%20it%20just%20before%20drawing%20any%20object.).
 
 ## probably later. 
@@ -94,3 +67,27 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [x] Nlets
     - [x] Y-shaped with varying parameter for optimization
     - [x] cross. 
+- [x] an algorithm that connects the pipes. 
+  - [x] abstract pipe: 
+    - [x] lets
+        - [x] position: matching_pt
+        - [x] dir
+        - [x] radius
+    - [x] flows (fluxes) (lets[1:])
+        - [x] the pressure drops
+        - [x] fluxes
+    - each lets is a vertex, each flow is an edge.  
+  - [x] aggregate those pipes into a pipe system. 
+- [x] analytically explain the return to poiseuille behaviour.   
+- [x] plotting
+  - [x] give a specific criterion to check if a point is in that geometry.
+  - [x] the velocity field should be corrected near the boundary. 
+    - [x] this essentially ask me to determine if a point is close to a curve, and such criterion should be 
+    implemented for each curve to have the best performance: 
+  - [x] pressure and vorticity field as well? 
+  - [x] have a method for plotting the velocity field using perhaps imshow
+  - [x] have a method for plotting the actual boundary of the geometry using a not-so-thin balck line.
+  - [x] i can also plot vector field and stream line with number. How surprising.
+  - [x] base points for each pipe. and when plotting, every coordinate needs to be shifted. 
+- [x] make sure that no two pipe intersects: this requires calculating intersection of two polygons, I am not sure how to do it for now. 
+- [x] package the gaussian quadrature rules from scipy into something like a json file?.
