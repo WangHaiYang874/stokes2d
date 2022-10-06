@@ -2,7 +2,6 @@ from tube import *
 import numpy as np
 from dataclasses import dataclass
 
-
 @dataclass(frozen=True, repr=True, order=True)
 class Let:
 
@@ -37,10 +36,16 @@ class AbstractPipe:
 
 class RealPipe(AbstractPipe):
 
+    prototye: Pipe # TODO
+    shift: np.ndarray 
+    rotation: float = 0 # TODO
     boundary: np.ndarray  # shape = (_,2)
     pressure_drops: np.ndarray  # shape = (n_fluxes = n_lets-1, n_lets-1)
 
-    def __init__(self, p: Pipe, shift_x=0, shift_y=0) -> None:
+    def __init__(self, p: Pipe, shift_x=0, shift_y=0, rotation=0) -> None:
+
+        if rotation != 0:
+            raise NotImplementedError('Rotation not implemented yet')
 
         shift = np.array([shift_x, shift_y])
         self.lets = [Let(*l.matching_pt+shift, l.dir, l.diameter)
@@ -63,7 +68,7 @@ class RealPipe(AbstractPipe):
             return np.zeros(len(self.lets)-1)
         else:
             return self.pressure_drops[:, i-1]
-
+        
 
 class BoundaryPipe(AbstractPipe):
     lets: List[BoundaryLet]
