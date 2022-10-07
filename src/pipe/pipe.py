@@ -31,17 +31,22 @@ class Pipe:
 
     # the index of the inlet/outlet in the list of curves
     let_index2curve_index: List[int]
+    lets: List[Cap]
+    n_lets: int
     n_flows: int            # number of flows
     omegas: ndarray         # shape=(n_flows, n_pts), dtype=complex128
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
     # picture data
+    h: float
     boundary: ndarray           # shape=(*, 2), dtype=float64.
-    interior_boundary: ndarray  # shape=(*, 2), dtype=float64.
+    open_bdr: ndarray
+    smooth_boundary: ndarray
+    smooth_closed_boundary: ndarray
     closed_boundary: ndarray    # shape=(*, 2), dtype=float64.
+    interior_boundary: ndarray  # shape=(*, 2), dtype=float64.
     closed_interior_boundary: ndarray     # shape=(*, 2), dtype=float64.
     # list[ndarray with shape (*,2) and dtype float64].
-    open_bdr: List[ndarray]
     extent: Tuple[float, float, float, float]  # (xmin, xmax, ymin, ymax)
 
     xs: ndarray
@@ -81,6 +86,18 @@ class Pipe:
         self.build_pressure_drops()
         self.build_plotting_data()
         self.omegas = None  # free memory
+        """
+        # TODO: what fields should be kept?
+        - lets2curve_index,
+        - n_flows,
+        - pressure_drops,
+        - boundary, closed_boundary, open_bdr,
+        - extent,
+        - xs, ys
+        - u_fields, v_fields,
+        - pressure_field, voricity_field        
+        """
+        
 
     def save(self, filename):
         with open(filename, 'wb') as f:
@@ -300,7 +317,7 @@ class Pipe:
         return array(pts)
 
     @property
-    def smooth__closed_boundary(self):
+    def smooth_closed_boundary(self):
         return concatenate((self.smooth_boundary, self.smooth_boundary[:1]))
 
     @property
