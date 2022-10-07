@@ -1,5 +1,6 @@
 from utils import *
 
+
 class Panel:
     """
     each Panel is designed by
@@ -47,8 +48,7 @@ class Panel:
             self.a, self.t, deg=len(self.a) - 1, domain=self.domain).coef
         return np.sum(np.abs(legendre_coef[-2:])) / np.sum(np.abs(legendre_coef[:2]))
 
-
-    def good_enough(self, max_distance=None, legendre_ratio=None,domain_threhold=1e-8):
+    def good_enough(self, max_distance=None, legendre_ratio=None, domain_threhold=1e-8):
 
         if self.domain[1] - self.domain[0] < domain_threhold:
             return True

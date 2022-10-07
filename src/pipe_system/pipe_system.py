@@ -1,39 +1,8 @@
-from dataclasses import dataclass
-from abstractPipe import *
 import networkx as nx
-from typing import Dict
-
-
-@dataclass(order=True, repr=True, frozen=True)
-class LetIndex:
-
-    pipeIndex: int
-    letIndex:  int
-
-    def __getitem__(self, i: int):
-        return [self.pipeIndex, self.letIndex][i]
-
-    @property
-    def atBdr(self):
-        return self.pipeIndex == -1
-
-
-@dataclass(order=True, repr=True, frozen=True, init=False)
-class Vertex:
-
-    l1: LetIndex
-    l2: LetIndex
-
-    def __init__(self, l1, l2):
-        assert l1.pipeIndex != l2.pipeIndex
-
-        l1, l2 = sorted([l1, l2])
-        object.__setattr__(self, 'l1', l1)
-        object.__setattr__(self, 'l2', l2)
-
-    @property
-    def atBdr(self):
-        return self.l1.atBdr or self.l2.atBdr
+from abstract_pipe import *
+from utils import *
+from vertex import Vertex
+from let_index import LetIndex
 
 
 class PipeSystem:
@@ -150,7 +119,7 @@ class PipeSystem:
                 pipe_index, let_index = v.l2
 
                 for flow_index, sign in self.pipes[pipe_index].flux_indices_at_let(let_index):
-                    
+
                     a[self.flow2index[(pipe_index, flow_index)]] = sign
 
                 b = -self.boundaryPipe.lets[v.l1.letIndex].flux
@@ -191,11 +160,11 @@ class PipeSystem:
                         flow_index + 1)
                 for flow_index, coef in enumerate(pressure_coef):
                     a[self.flow2index[(pipe_index, flow_index)]] = coef
-            
+
             A.append(a)
             B.append(b)
-            
+
         self.A = np.array(A)
         self.b = np.array(B)
 
-        self.fluxes = np.linalg.lstsq(self.A,self.b,rcond=None)[0]
+        self.fluxes = np.linalg.lstsq(self.A, self.b, rcond=None)[0]
