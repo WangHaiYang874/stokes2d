@@ -135,7 +135,7 @@ class Pipe:
 
     def compute_omega(self, H, tol=None):
 
-        tol = 1e-12 if tol is None else tol
+        tol = GMRES_TOL if tol is None else tol
         b = concatenate((H.real, H.imag))
 
         omega_sep, _ = gmres(self.A, b, atol=0, tol=tol)

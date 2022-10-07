@@ -1,3 +1,4 @@
+from distutils.log import warn
 from utils import *
 
 
@@ -48,12 +49,15 @@ class Panel:
             self.a, self.t, deg=len(self.a) - 1, domain=self.domain).coef
         return np.sum(np.abs(legendre_coef[-2:])) / np.sum(np.abs(legendre_coef[:2]))
 
-    def good_enough(self, max_distance=None, legendre_ratio=None, domain_threhold=1e-8):
+    def good_enough(self, max_distance=None, legendre_ratio=None, domain_threhold=DOMAIN_THRESHOLD):
+
+        max_distance = max_distance if max_distance else MAX_DISTANCE
+        legendre_ratio = legendre_ratio if legendre_ratio else LEGENDRE_RATIO
+
+        ret = self.max_distance < max_distance and self.legendre_coef_ratio < legendre_ratio
 
         if self.domain[1] - self.domain[0] < domain_threhold:
+            warn(f"domain too small: {self.domain}")            
             return True
 
-        max_distance = max_distance if max_distance else 1e-2
-        legendre_ratio = legendre_ratio if legendre_ratio else 1e-14
-
-        return self.max_distance < max_distance and self.legendre_coef_ratio < legendre_ratio
+        return ret

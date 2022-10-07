@@ -25,10 +25,12 @@ class Cap(Curve):
 
         # this provides conditions for matching
         self.matching_pt = (start_pt + end_pt) / 2
-        assert np.linalg.norm(self.matching_pt - mid_pt) > 1e-15
         out_vec = mid_pt - self.matching_pt
         self.dir = np.arctan2(out_vec[1], out_vec[0])
         self.diameter = np.linalg.norm(end_pt - start_pt)
+        
+        # TODO: delete these two assert sentences?
+        assert np.linalg.norm(self.matching_pt - mid_pt) > 1e-15
         assert self.diameter > 1e-15
 
     def boundary_velocity(self):
