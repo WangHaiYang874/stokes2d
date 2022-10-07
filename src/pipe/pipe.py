@@ -1,15 +1,17 @@
 from curve import *
 from utils import *
+from .mat_vec import MatVec
+
+from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
+from scipy.sparse.linalg import gmres, LinearOperator
+from scipy.interpolate import griddata, NearestNDInterpolator
+from shapely.geometry import LineString, Polygon
+from matplotlib.path import Path
+
 import warnings
 from joblib import Parallel, delayed, cpu_count
 from typing import List, Tuple
-from scipy.sparse.linalg import gmres, LinearOperator
-from matplotlib.path import Path
-from shapely.geometry import LineString, Polygon
-from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
-from numpy.linalg import norm
-import pickle as pickle
-from scipy.interpolate import griddata, NearestNDInterpolator
+import pickle
 
 
 class Pipe:
@@ -84,7 +86,7 @@ class Pipe:
         self.build_omegas(tol=tol, n_jobs=n_jobs)
         # self.A = None  # free memory
         self.build_pressure_drops()
-        self.build_plotting_data(density, h_mult)
+        self.build_plotting_data(h_mult, density)
         # self.omegas = None  # free memory
         """
         # TODO: what fields should be kept?
@@ -97,7 +99,6 @@ class Pipe:
         - u_fields, v_fields,
         - pressure_field, voricity_field        
         """
-        
 
     def save(self, filename):
         with open(filename, 'wb') as f:
@@ -140,15 +141,9 @@ class Pipe:
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
-        def A(omega_sep):
-            omega = omega_sep[:self.n_pts] + 1j*omega_sep[self.n_pts:]
-            h = omega + K1@omega + K2@(omega.conjugate())
-            return concatenate([h.real, h.imag])
-
-        self.A = LinearOperator(
-            matvec=A,
-            dtype=np.float64,
-            shape=(2*self.n_pts, 2*self.n_pts))
+        self.A = LinearOperator(matvec=MatVec(K1, K2),
+                                dtype=np.float64,
+                                shape=(2*self.n_pts, 2*self.n_pts))
 
     def compute_omega(self, H, tol=None):
 

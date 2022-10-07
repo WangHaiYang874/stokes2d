@@ -47,6 +47,7 @@ shift6 = np.array([26,0])
 
 def build(pipe):
     pipe.build(density=65, h_mult=4,n_jobs=4)
+    pipe.A = None # free up memory
     return pipe
 
 pipes = Parallel(n_jobs=6) (delayed(build) (p) for p in [pipe1, pipe2, pipe3, pipe4, pipe5, pipe6])
