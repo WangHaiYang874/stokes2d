@@ -46,7 +46,7 @@ shift6 = np.array([26,0])
 # %%
 
 def build(pipe):
-    pipe.build(density=65, h_mult=4,n_jobs=4)
+    pipe.build(density=60, h_mult=4,n_jobs=4)
     pipe.A = None # free up memory
     return pipe
 
