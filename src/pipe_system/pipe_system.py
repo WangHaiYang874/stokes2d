@@ -1,8 +1,8 @@
 import networkx as nx
 from abstract_pipe import *
 from utils import *
-from vertex import Vertex
-from let_index import LetIndex
+from .vertex import Vertex
+from .let_index import LetIndex
 
 
 class PipeSystem:

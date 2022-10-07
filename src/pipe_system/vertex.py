@@ -1,4 +1,4 @@
-from let_index import LetIndex
+from .let_index import LetIndex
 from dataclasses import dataclass
 
 

@@ -1,6 +1,6 @@
 from .abstract_pipe import AbstractPipe
 from utils import *
-from let import BoundaryLet
+from .let import BoundaryLet
 
 class BoundaryPipe(AbstractPipe):
     lets: List[BoundaryLet]

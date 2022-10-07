@@ -1,5 +1,5 @@
 from .abstract_pipe import AbstractPipe
-from let import Let
+from .let import Let
 
 from pipe import *
 from utils import *

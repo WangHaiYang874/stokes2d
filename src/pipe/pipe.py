@@ -78,14 +78,14 @@ class Pipe:
     @property
     def k(self): return concatenate([c.k for c in self.curves])
 
-    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
+    def build(self, max_distance=None, legendre_ratio=None, tol=None, density=None, h_mult=None, n_jobs=1):
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
         self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
-        self.A = None  # free memory
+        # self.A = None  # free memory
         self.build_pressure_drops()
-        self.build_plotting_data()
-        self.omegas = None  # free memory
+        self.build_plotting_data(density, h_mult)
+        # self.omegas = None  # free memory
         """
         # TODO: what fields should be kept?
         - lets2curve_index,
