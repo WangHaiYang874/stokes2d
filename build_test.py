@@ -51,12 +51,12 @@ def build(pipe):
     return pipe
 
 pipes = Parallel(n_jobs=6) (delayed(build) (p) for p in [pipe1, pipe2, pipe3, pipe4, pipe5, pipe6])
-    
+
 
 
 # %%
 with open('dev_Pipes.pickle','wb') as f:
     pickle.dump([
-        [pipe1,pipe2,pipe3,pipe4,pipe5,pipe6],
+        pipes,
         [shift1,shift2,shift3,shift4,shift5,shift6]],
                 f,fix_imports=True,protocol=None)
