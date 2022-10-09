@@ -9,7 +9,7 @@ from shapely.geometry import LineString, Polygon
 from matplotlib.path import Path
 
 import warnings
-from joblib import Parallel, delayed, cpu_count
+from joblib import Parallel, delayed
 from typing import List, Tuple
 import pickle
 
@@ -112,7 +112,7 @@ class Pipe:
             def build_curve(c):
                 c.build(max_distance, legendre_ratio)
                 return c
-            self.curves = Parallel(n_jobs=min(n_jobs, len(self.curves), cpu_count()//2))(
+            self.curves = Parallel(n_jobs=n_jobs)(
                 delayed(build_curve)(c) for c in self.curves)
 
     ### SINGLE SOLVER ###
@@ -191,7 +191,7 @@ class Pipe:
             self.omegas = array(
                 [self.compute_omega(self.boundary_value(i), tol) for i in range(self.n_flows)])
         else:
-            self.omegas = array(Parallel(n_jobs=min(n_jobs, self.n_flows, cpu_count()//2))(
+            self.omegas = array(Parallel(n_jobs=n_jobs)(
                 delayed(lambda i: self.compute_omega(
                     self.boundary_value(i), tol))(i)
                 for i in range(self.n_flows)))

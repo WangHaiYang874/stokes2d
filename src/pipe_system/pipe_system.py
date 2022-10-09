@@ -159,7 +159,7 @@ class PipeSystem:
                     self.pipes[pipe_index].pressure_diff_coef_at_let(
                         flow_index + 1)
                 for flow_index, coef in enumerate(pressure_coef):
-                    a[self.flow2index[(pipe_index, flow_index)]] = coef
+                    a[self.flow2index[(pipe_index, flow_index)]] += coef
 
             A.append(a)
             B.append(b)
