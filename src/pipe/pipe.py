@@ -462,7 +462,7 @@ class Pipe:
         if base_let_index == 0:
             curr_pressure = 0
         else:
-            curr_pressure = fluxes@self.pressure_drops[base_let_index-1]
+            curr_pressure = (fluxes@self.pressure_drops)[base_let_index-1]
 
         p = p - curr_pressure + base_pressure
 

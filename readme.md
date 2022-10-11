@@ -12,31 +12,34 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 # todo
 
+## top of my todo. 
+
+- [ ] a solver for a multiply connected domain.
+
 ## math-ish
 
-- [ ] organize my python files. 
-- [ ] test the matching, see if it really works well. 
 - [ ] create different geometries
   - [ ] a simple straight pipe. 
-  - [ ] some bands with fixed angles. 
-  - [ ] Nlets 里面相临的两条线不能是平行的. 
+  - [x] some bands with fixed angles. 
+  - [x] Nlets 里面相临的两条线不能是平行的. 
 
 ## engineering-ish
 - [ ] write a build script to be ran on a server. 
 - [ ] change some instance of `flatten` to `ravel`. 
 - [ ] store every data of the standard pieces. the data needs to include
-- [ ] removing scipy
+- [ ] removing scipy, 主要的scipy的dependency在
+  - [ ] gmres
+  - [ ] quad
+  - [ ] LinearOperator
+  - [ ] interpolate
 
 ## games
   - [ ] how to use matplotlib with pygame
   - [ ] the coordinate system of pygame is stupid. Can I change that? [see stacks overflow](https://stackoverflow.com/questions/10167329/change-the-position-of-the-origin-in-pygame-coordinate-system#:~:text=Is%20it%20possible%20to%20change%20the%20coordinate%20system,and%20use%20it%20just%20before%20drawing%20any%20object.).
 
 ## probably later. 
-- [ ] ask microfluids people what tube they are interested in.
-- [ ] a solver for a multiply connected domain.
 - [ ] think about particles. it is hard but think about it...
-
-
+s
 ## done 
 - [X] extracting grad pressure
 - [x] extracting pressure difference across the tubes. this could be done with a path integral. More: it can be built into part of the solver. so in the web page we can simply take the pre-solved results easily and take a linear combination. the presolved idea applies to velocity field as well. We can simply store it, when using it we can simply take a linear combination.
@@ -91,3 +94,5 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [x] base points for each pipe. and when plotting, every coordinate needs to be shifted. 
 - [x] make sure that no two pipe intersects: this requires calculating intersection of two polygons, I am not sure how to do it for now. 
 - [x] package the gaussian quadrature rules from scipy into something like a json file?.
+- [x] organize my python files. 
+- [x] test the matching, see if it really works well. 

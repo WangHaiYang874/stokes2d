@@ -168,3 +168,7 @@ class PipeSystem:
         self.b = np.array(B)
 
         self.fluxes = np.linalg.lstsq(self.A, self.b, rcond=None)[0]
+
+    def fluxes_of_pipe(self, pipe_index):
+        return np.array(sorted([(flow_index, flux) for (pipe_index_, flow_index), flux in zip(
+            self.flows, self.fluxes) if pipe_index_ == pipe_index], key=lambda x: x[0]))[:, 1]

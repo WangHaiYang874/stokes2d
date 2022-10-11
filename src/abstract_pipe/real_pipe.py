@@ -55,6 +55,20 @@ class RealPipe(AbstractPipe):
         else:
             return self.pressure_drops[:, i-1]
 
+    def pressure_at_let(self, fluxes:np.ndarray, eval_let:int, base_let:int=0, base_pressure:float=0):
+        
+        assert eval_let in range(len(self.lets))
+        assert base_let in range(len(self.lets))
+        assert fluxes.shape == (len(self.lets)-1,)
+        assert fluxes.dtype == np.float64        
+        
+        if eval_let == base_let:
+            return base_pressure
+        
+        pressure_diff = np.concatenate([[0],fluxes@self.pressure_drops])
+        pressure_diff = pressure_diff[eval_let] - pressure_diff[base_let]
+        return base_pressure + pressure_diff
+
     def clean_prototype(self):
         # TODO: clean the unimportant fields of this prototype.
         pass
