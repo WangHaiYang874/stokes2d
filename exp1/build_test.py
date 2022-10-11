@@ -49,7 +49,7 @@ shift6 = np.array([26,0])
 # %%
 
 def build(pipe):
-    pipe.build(density=60, h_mult=4,n_jobs=4)
+    pipe.build(density=25, h_mult=4,n_jobs=4)
     pipe.A = None # free up memory
     return pipe
 
@@ -60,6 +60,5 @@ shifts = [shift1,shift2,shift3,shift4,shift5,shift6]
 # %%
 with open('dev_Pipes.pickle','wb') as f:
     pickle.dump([pipes, shifts],f,fix_imports=True,protocol=None)
-
 
 print(time() - start_time)

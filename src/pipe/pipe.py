@@ -86,10 +86,9 @@ class Pipe:
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
         self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
-        # self.A = None  # free memory
+        self.A = None  # free memory
         self.build_pressure_drops()
         self.build_plotting_data(h_mult, density)
-        # self.omegas = None  # free memory
         """
         # TODO: what fields should be kept?
         - lets2curve_index,
