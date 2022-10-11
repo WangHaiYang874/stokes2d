@@ -41,9 +41,9 @@ class Pipe:
 
     # picture data
     h: float
-    
+
     boundary: ndarray           # shape=(*, 2), dtype=float64.
-    smooth_closed_boundary: ndarray # smooth means with cap.
+    smooth_closed_boundary: ndarray  # smooth means with cap.
     closed_boundary: ndarray    # shape=(*, 2), dtype=float64.
 
     # List[np.ndarray with shape = (*, 2) and dtype = float64]
@@ -326,7 +326,7 @@ class Pipe:
         # this constant 4 here is tested to be good.
         # this is a heuristic similar to the 5h-rule for BIM of harmonic equation.
 
-        p1 = Polygon(LineString(concatenate((self.smooth_boundary, self.smooth_boundary[:1]))).buffer(
+        p1 = Polygon(LineString(self.smooth_closed_boundary).buffer(
             distance).interiors[0])
         p2 = Polygon(self.closed_boundary)
         x, y = p1.intersection(p2).boundary.xy
