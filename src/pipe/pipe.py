@@ -53,10 +53,11 @@ class Pipe:
 
     xs: ndarray
     ys: ndarray
-    u_fields: ndarray  # shape=(n_flows, x, y)
-    v_fields: ndarray  # shape=(n_flows, x, y)
-    pressure_field: ndarray  # shape=(n_flows, x, y)
-    vorticity_field: ndarray  # shape=(n_flows, x, y)
+    interior: ndarray  # a boolean array. tells if a point is near boundary or not. 
+    u_fields: ndarray  # shape=(n_flows, x, y), velocity in x-direction
+    v_fields: ndarray  # shape=(n_flows, x, y), velocity in y-direction
+    p_fields: ndarray  # shape=(n_flows, x, y), pressure
+    o_fields: ndarray  # shape=(n_flows, x, y), vorticity
 
     def __init__(self) -> None:
         pass
@@ -381,8 +382,8 @@ class Pipe:
 
         u_fields = []
         v_fields = []
-        pressure_fields = []
-        vorticity_fields = []
+        p_fields = []
+        o_fields = []
 
         # base point of pressure and vorticity
         base_x, base_y = self.lets[0].matching_pt
@@ -398,30 +399,27 @@ class Pipe:
 
             u_field = np.zeros_like(xs)
             v_field = np.zeros_like(xs)
-            pressure_field = np.zeros_like(xs)
-            vorticity_field = np.zeros_like(xs)
+            p_field = np.zeros_like(xs)
+            o_field = np.zeros_like(xs)
 
             # interior can be directly calculated
 
-            v = self.velocity(xs[interior], ys[interior], omega)
+            velocity = self.velocity(xs[interior], ys[interior], omega)
             pressure, vorticity = self.pressure_and_vorticity(
                 xs[interior], ys[interior], omega)
-            base_pressure, base_vorticity = self.pressure_and_vorticity(
-                base_x, base_y, omega)
-            base_pressure = base_pressure[0]
-            base_vorticity = base_vorticity[0]
+            base_pressure = self.pressure_and_vorticity(
+                base_x, base_y, omega)[0][0]
 
             pressure -= base_pressure
-            vorticity -= base_vorticity
 
-            u_field[interior] = v[:, 0]
-            v_field[interior] = v[:, 1]
-            pressure_field[interior] = pressure
-            vorticity_field[interior] = vorticity
+            u_field[interior] = velocity[:, 0]
+            v_field[interior] = velocity[:, 1]
+            p_field[interior] = pressure
+            o_field[interior] = vorticity
 
             # near boundary data need to be interpolated/extrapolated.
 
-            for field in [u_field, v_field, pressure_field, vorticity_field]:
+            for field in [u_field, v_field, p_field, o_field]:
                 field[near_boundary] = griddata(
                     np.array([xs[interior], ys[interior]]).T, field[interior],
                     np.array([xs[near_boundary], ys[near_boundary]]).T, method='linear')
@@ -437,27 +435,27 @@ class Pipe:
 
             u_fields.append(u_field)
             v_fields.append(v_field)
-            pressure_fields.append(pressure_field)
-            vorticity_fields.append(vorticity_field)
+            p_fields.append(p_field)
+            o_fields.append(o_field)
 
         self.xs = xs
         self.ys = ys
+        self.interior = interior
 
         self.u_fields = np.array(u_fields)
         self.v_fields = np.array(v_fields)
-        self.pressure_fields = np.array(pressure_fields)
-        self.vorticity_fields = np.array(vorticity_fields)
+        self.p_fields = np.array(p_fields)
+        self.o_fields = np.array(o_fields)
 
     def fields_with_fluxes(self, fluxes, base_let_index, base_pressure):
-        # TODO verify this is correct.
         assert isinstance(fluxes, np.ndarray)
         assert fluxes.ndim == 1
         assert len(fluxes) == self.n_flows
 
         u = fluxes@self.u_fields
         v = fluxes@self.v_fields
-        p = fluxes@self.pressure_fields
-        o = fluxes@self.vorticity_fields
+        p = fluxes@self.p_fields
+        o = fluxes@self.o_fields
 
         if base_let_index == 0:
             curr_pressure = 0

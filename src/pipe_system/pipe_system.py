@@ -172,3 +172,78 @@ class PipeSystem:
     def fluxes_of_pipe(self, pipe_index):
         return np.array(sorted([(flow_index, flux) for (pipe_index_, flow_index), flux in zip(
             self.flows, self.fluxes) if pipe_index_ == pipe_index], key=lambda x: x[0]))[:, 1]
+
+    def plotting_data(self):
+        """Return the flow velocity, pressure, vorticity. """
+        
+        u_field = []
+        v_field = []
+        p_field = []
+        o_field = []
+
+        xs = []
+        ys = []
+        interior = []
+
+        unexplored = set(range(len(self.pipes)))
+        open = []
+
+        pipe_index = 0
+        let_index = 0
+        pressure_at_let = 0
+
+        while True:
+
+            # taking data
+            
+            pipe = self.pipes[pipe_index]
+            fluxes = self.fluxes_of_pipe(pipe_index)
+            
+            xs.append(pipe.xs)
+            ys.append(pipe.ys)
+            interior.append(pipe.interior)
+
+            u, v, p, o = pipe.fields_with_fluxes(fluxes, let_index, pressure_at_let)
+            
+            u_field.append(u)
+            v_field.append(v)
+            p_field.append(p)
+            o_field.append(o)
+
+            # marking explored
+            unexplored.remove(pipe_index)
+
+            if not unexplored:
+                break
+            
+            # updating opens
+
+            for other_let_index in range(pipe.n_lets):
+                if other_let_index == let_index:
+                    continue
+                l1 = LetIndex(pipe_index, other_let_index)
+                v = self.let2vertex[l1]
+                l2 = v.l1 if v.l1 != l1 else v.l2
+                another_pipe_index = l2.pipeIndex
+                if another_pipe_index not in unexplored:
+                    continue
+                another_base_pressure = pipe.pressure_at_let(
+                    fluxes, other_let_index, let_index, pressure_at_let)
+                another_let_index = l2.letIndex
+
+                open.append((another_pipe_index, another_let_index, another_base_pressure))
+            
+            if not open:
+                raise Exception('No more open pipes')
+            
+            pipe_index, let_index, pressure_at_let = open.pop()
+
+        xs = np.concatenate(xs)
+        ys = np.concatenate(ys)
+        interior = np.concatenate(interior)
+        u_field = np.concatenate(u_field)
+        v_field = np.concatenate(v_field)
+        p_field = np.concatenate(p_field)
+        o_field = np.concatenate(o_field)
+        
+        return xs, ys, interior, u_field, v_field, p_field, o_field

@@ -7,17 +7,37 @@ from utils import *
 
 class RealPipe(AbstractPipe):
 
+    # basic data
     prototye: Pipe
+    n_lets: int
+    n_flows: int
+    
+    # affine data
     shift: np.ndarray
-    rotation: float = 0  # TODO, probably I need affine transformation here...
-    boundary: np.ndarray  # shape = (_,2)
+    rotation: float = 0     # TODO
+    
+    # solver data
     pressure_drops: np.ndarray  # shape = (n_fluxes = n_lets-1, n_lets-1)
 
+
+    # plotting data
+    boundary: np.ndarray    # shape = (_,2)
+    xs: np.ndarray
+    ys: np.ndarray
+    interior: np.ndarray 
+    u_fields: np.ndarray  # shape=(n_flows, x, y)
+    v_fields: np.ndarray  # shape=(n_flows, x, y)
+    p_fields: np.ndarray  # shape=(n_flows, x, y)
+    o_fields: np.ndarray  # shape=(n_flows, x, y)
+    
+    
     def __init__(self, p: Pipe, shift_x=0, shift_y=0, rotation=0) -> None:
 
         self.prototye = p
+        self.n_lets = len(p.lets)
+        self.n_flows = self.n_lets - 1
         self.shift = np.array([shift_x, shift_y])
-
+        
         if rotation != 0:
             raise NotImplementedError('Rotation not implemented yet')
 
@@ -34,6 +54,31 @@ class RealPipe(AbstractPipe):
         return self.prototye.pressure_drops
 
     @property
+    def xs(self):
+        return self.prototye.xs + self.shift[0]
+    
+    @property
+    def ys(self):
+        return self.prototye.ys + self.shift[1]
+    
+    @property
+    def interior(self):
+        return self.prototye.interior
+    
+    @property
+    def u_fields(self):
+        return self.prototye.u_fields
+    @property
+    def v_fields(self):
+        return self.prototye.v_fields
+    @property
+    def p_fields(self):
+        return self.prototye.p_fields
+    @property
+    def o_fields(self):
+        return self.prototye.o_fields
+    
+    
     def move(self,shift_x,shift_y,rotation):
         if rotation != 0:
             raise NotImplementedError('Rotation not implemented yet')
@@ -68,8 +113,28 @@ class RealPipe(AbstractPipe):
         pressure_diff = np.concatenate([[0],fluxes@self.pressure_drops])
         pressure_diff = pressure_diff[eval_let] - pressure_diff[base_let]
         return base_pressure + pressure_diff
+    
+    def fields_with_fluxes(self, fluxes, base_let_index, base_pressure):
+        
+        assert isinstance(fluxes, np.ndarray)
+        assert fluxes.ndim == 1
+        assert len(fluxes) == self.n_flows
 
+        u = fluxes@self.u_fields
+        v = fluxes@self.v_fields
+        p = fluxes@self.p_fields
+        o = fluxes@self.o_fields
+
+        if base_let_index == 0:
+            curr_pressure = 0
+        else:
+            curr_pressure = (fluxes@self.pressure_drops)[base_let_index-1]
+
+        p = p - curr_pressure + base_pressure
+
+        return u, v, p, o
+    
     def clean_prototype(self):
         # TODO: clean the unimportant fields of this prototype.
         pass
-        
+    
