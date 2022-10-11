@@ -19,9 +19,13 @@ class RealPipe(AbstractPipe):
     # solver data
     pressure_drops: np.ndarray  # shape = (n_fluxes = n_lets-1, n_lets-1)
 
-
     # plotting data
-    boundary: np.ndarray    # shape = (_,2)
+    
+    # List[np.ndarray with shape = (*, 2) and dtype = float64]
+    open_bdr: np.ndarray
+    closed_boundary: np.ndarray    # shape=(*, 2), dtype=float64.
+    extent: Tuple[float, float, float, float]  # (xmin, xmax, ymin, ymax)
+        
     xs: np.ndarray
     ys: np.ndarray
     interior: np.ndarray 
@@ -29,7 +33,6 @@ class RealPipe(AbstractPipe):
     v_fields: np.ndarray  # shape=(n_flows, x, y)
     p_fields: np.ndarray  # shape=(n_flows, x, y)
     o_fields: np.ndarray  # shape=(n_flows, x, y)
-    
     
     def __init__(self, p: Pipe, shift_x=0, shift_y=0, rotation=0) -> None:
 
@@ -46,8 +49,15 @@ class RealPipe(AbstractPipe):
         return [Let(*l.matching_pt+self.shift, l.dir, l.diameter)for l in self.prototye.lets]
 
     @property
-    def boundary(self):
-        return self.prototye.boundary + self.shift
+    def closed_boundary(self):
+        return self.prototye.closed_boundary + self.shift
+
+    @property
+    def open_bdr(self):
+        return [i+self.shift for i in self.prototye.open_bdr]
+    @property
+    def extent(self):
+        return self.prototye.extent + self.shift
 
     @property
     def pressure_drops(self):
@@ -78,10 +88,7 @@ class RealPipe(AbstractPipe):
     def o_fields(self):
         return self.prototye.o_fields
     
-    
-    def move(self,shift_x,shift_y,rotation):
-        if rotation != 0:
-            raise NotImplementedError('Rotation not implemented yet')
+    def move(self,shift_x,shift_y):
         self.shift += np.array([shift_x, shift_y])
         
     def flux_indices_at_let(self, i: int):

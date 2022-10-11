@@ -41,19 +41,20 @@ class Pipe:
 
     # picture data
     h: float
+    
     boundary: ndarray           # shape=(*, 2), dtype=float64.
-    open_bdr: ndarray
-    smooth_boundary: ndarray
-    smooth_closed_boundary: ndarray
+    smooth_closed_boundary: ndarray # smooth means with cap.
     closed_boundary: ndarray    # shape=(*, 2), dtype=float64.
-    interior_boundary: ndarray  # shape=(*, 2), dtype=float64.
-    closed_interior_boundary: ndarray     # shape=(*, 2), dtype=float64.
-    # list[ndarray with shape (*,2) and dtype float64].
+
+    # List[np.ndarray with shape = (*, 2) and dtype = float64]
+    open_bdr: ndarray
+
     extent: Tuple[float, float, float, float]  # (xmin, xmax, ymin, ymax)
 
     xs: ndarray
     ys: ndarray
-    interior: ndarray  # a boolean array. tells if a point is near boundary or not. 
+    # a boolean array. tells if a point is near boundary or not.
+    interior: ndarray
     u_fields: ndarray  # shape=(n_flows, x, y), velocity in x-direction
     v_fields: ndarray  # shape=(n_flows, x, y), velocity in y-direction
     p_fields: ndarray  # shape=(n_flows, x, y), pressure
@@ -303,18 +304,14 @@ class Pipe:
         return bdrs
 
     @property
-    def smooth_boundary(self):
+    def smooth_closed_boundary(self):
         pts = []
         for c in self.curves:
             if isinstance(c, Line):
                 pts += [c.start_pt, c.mid_pt]
             elif isinstance(c, Corner) or isinstance(c, Cap):
                 pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        return array(pts)
-
-    @property
-    def smooth_closed_boundary(self):
-        return concatenate((self.smooth_boundary, self.smooth_boundary[:1]))
+        return concatenate([pts, [pts[0]]])
 
     @property
     def closed_boundary(self):
