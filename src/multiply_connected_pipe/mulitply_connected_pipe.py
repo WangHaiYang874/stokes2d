@@ -1,3 +1,4 @@
+from abstract_pipe.let import BoundaryLet
 from curve import *
 from utils import *
 from pipe.mat_vec import MatVec
@@ -11,9 +12,10 @@ import networkx as nx
 
 import warnings
 from joblib import Parallel, delayed
+from copy import deepcopy
 
 
-class PipeNonSimplyConnected:
+class MultiplyConnectedPipe:
     """interior stokes problem with multiply-connected domain"""
 
     ### geometric data ###
@@ -44,16 +46,24 @@ class PipeNonSimplyConnected:
     omegas: ndarray         # shape=(n_flows, n_pts), dtype=complex128
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
-    def __init__(self, pipe_sys) -> None:
+    def __init__(self, pipe_sys:PipeSystem) -> None:
         
+        caps_to_keep = []
+        for v in pipe_sys.vertices:
+            if v.atBdr:
+                l = v.l1 if isinstance(v.l1, BoundaryLet) else v.l2
+                caps_to_keep.append((l.pipeIndex,l.letIndex))
+
         curves = []
+
         for pipe_index, pipe in enumerate(pipe_sys.pipes):
             
             shift = pipe.shift
-            pipe = pipe.prototype
-            c_index2l_index = {c:l for l,c in enumerate(pipe.lets)}
+            pipe = pipe.prototye
+            c_index2l_index = {c:l for l,c in enumerate(pipe.let_index2curve_index)}
             
             for curve_index, curve in enumerate(pipe.curves):
+
                 if isinstance(curve, Cap):
                     let_index = c_index2l_index[curve_index]
                     if (pipe_index, let_index) not in caps_to_keep:
@@ -63,22 +73,53 @@ class PipeNonSimplyConnected:
                 for p in c.panels:
                     p.x += shift[0]
                     p.y += shift[1]
-                
+
                 c.start_pt += shift
                 c.end_pt += shift
                 c.mid_pt += shift
                 
                 if isinstance(c, Cap):
                     c.matching_pt += shift
+
                 curves.append(c)
-            
 
+        G = nx.Graph()
+
+        for c in curves:
+            G.add_edge(pt2tuple(c.start_pt),pt2tuple(c.end_pt), curve=c)
+
+        pts = np.array(list(G.nodes))
+        pts_cplx = pts[:,0] + 1j*pts[:,1]
+        distance = np.abs(pts_cplx[:,None] - pts_cplx[None,:])
+        need_to_merge = (distance < 1e-10) & (distance > 0)
+
+        while np.any(need_to_merge):
+            i,j = np.array(np.where(need_to_merge)).T[0]
             
-                
+            node1 = list(G.nodes)[i]
+            node2 = list(G.nodes)[j]
+
+            nx.contracted_nodes(G,node1,node2, self_loops=False, copy=False)
+            
+            pts = np.array(list(G.nodes))
+            pts_cplx = pts[:,0] + 1j*pts[:,1]
+            distance = np.abs(pts_cplx[:,None] - pts_cplx[None,:])
+            need_to_merge = (distance < 1e-9) & (distance > 0)
+            
+        assert len(G.nodes) == len(set(G.edges))
+
+        boundaries = []
         
-        pass
-
-
+        for c in nx.cycle_basis(G):
+            curves = []
+            for node1,node2 in zip(c, c[1:] + c[:1]):
+                curves.append(G.edges[node1,node2]['curve'])
+            boundaries.append(curves)
+            
+        boundaries = [Boundary(b) for b in boundaries]
+        self.boundaries = sorted(boundaries, key=lambda boundary: np.min(boundary.t.real))
+        
+                    
     @property
     def exterior_boundary(self):
         return self.boundaries[0]
@@ -199,7 +240,7 @@ class PipeNonSimplyConnected:
     ### FLOWS ###
     @property
     def let_index2curve_index(self):
-        return [i for i, c in enumerate(self.exterior_boundary) if isinstance(c, Cap)]
+        return [i for i, c in enumerate(self.exterior_boundary.curves) if isinstance(c, Cap)]
 
     @property
     def lets(self): return [self.exterior_boundary.curves[i]
@@ -388,3 +429,8 @@ class PipeNonSimplyConnected:
         p = p - curr_pressure + base_pressure
 
         return u, v, p, o
+
+
+def pt2tuple(pt):
+    assert pt.shape == (2,)
+    return (pt[0],pt[1])
