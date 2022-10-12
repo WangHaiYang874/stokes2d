@@ -151,7 +151,7 @@ class Pipe:
         tol = GMRES_TOL if tol is None else tol
         b = concatenate((H.real, H.imag))
 
-        omega_sep, _ = gmres(self.A, b, atol=0, tol=tol)
+        omega_sep, _ = gmres(self.A, b, atol=0, tol=tol, restart=RESTART)
 
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
