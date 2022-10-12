@@ -2,12 +2,12 @@ from curve import *
 from utils import *
 from pipe.mat_vec import MatVec
 from .boundary import Boundary
+from pipe_system import PipeSystem
 
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
 from scipy.sparse.linalg import gmres, LinearOperator
 from scipy.interpolate import griddata, NearestNDInterpolator
-from shapely.geometry import LineString, Polygon
-from matplotlib.path import Path
+import networkx as nx
 
 import warnings
 from joblib import Parallel, delayed
@@ -44,11 +44,40 @@ class PipeNonSimplyConnected:
     omegas: ndarray         # shape=(n_flows, n_pts), dtype=complex128
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
-    def __init__(self, curves) -> None:
-        # TODO: SEE THE NOTEBOOK.
+    def __init__(self, pipe_sys) -> None:
+        
+        curves = []
+        for pipe_index, pipe in enumerate(pipe_sys.pipes):
+            
+            shift = pipe.shift
+            pipe = pipe.prototype
+            c_index2l_index = {c:l for l,c in enumerate(pipe.lets)}
+            
+            for curve_index, curve in enumerate(pipe.curves):
+                if isinstance(curve, Cap):
+                    let_index = c_index2l_index[curve_index]
+                    if (pipe_index, let_index) not in caps_to_keep:
+                        continue
+                
+                c = deepcopy(curve)
+                for p in c.panels:
+                    p.x += shift[0]
+                    p.y += shift[1]
+                
+                c.start_pt += shift
+                c.end_pt += shift
+                c.mid_pt += shift
+                
+                if isinstance(c, Cap):
+                    c.matching_pt += shift
+                curves.append(c)
+            
+
+            
+                
+        
         pass
 
-    # boundaries
 
     @property
     def exterior_boundary(self):
@@ -87,13 +116,12 @@ class PipeNonSimplyConnected:
 
         return np.mean(self.t)
 
-    def build(self, max_distance=None, legendre_ratio=None, tol=None, density=None, h_mult=None, n_jobs=1):
+    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
-        self.build_A()  
+        self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
         self.A = None  # free memory
         self.build_pressure_drops()
-        self.build_plotting_data(h_mult, density)  # TODO
 
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
@@ -114,7 +142,7 @@ class PipeNonSimplyConnected:
         return [(index[i], index[i+1]) for i in range(len(index)-1)]
 
     def build_A(self):
-        # TODO: test this function. If this has a large condition number, then it's probably correct. 
+        # TODO: test this function. If this has a large condition number, then it's probably correct.
         # diff_t[i, j] = t[i] - t[j]
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
         # dt2[*,i] = dt[i] = dt_da[i] * da[i]
@@ -171,10 +199,12 @@ class PipeNonSimplyConnected:
     ### FLOWS ###
     @property
     def let_index2curve_index(self):
-        return [i for i, c in enumerate(self.curves) if isinstance(c, Cap)]
+        return [i for i, c in enumerate(self.exterior_boundary) if isinstance(c, Cap)]
 
     @property
-    def lets(self): return [self.curves[i] for i in self.let_index2curve_index]
+    def lets(self): return [self.exterior_boundary.curves[i]
+                            for i in self.let_index2curve_index]
+
     @property
     def n_lets(self): return len(self.lets)
     @property
@@ -185,14 +215,17 @@ class PipeNonSimplyConnected:
         o = self.let_index2curve_index[flow_index+1]  # outlet
         i = self.let_index2curve_index[0]             # inlet
         ret = []
-        for j, c in enumerate(self.curves):
+        for j, c in enumerate(self.exterior_boundary.curves):
             if j == i:
                 ret.append(-c.boundary_velocity())
             elif j == o:
                 ret.append(c.boundary_velocity())
             else:
                 ret.append(np.zeros_like(c.a))
-        return concatenate(ret)
+
+        ret = concatenate(ret)
+        rest = np.zeros(self.n_pts - len(ret))
+        return np.concatenate((ret, rest))
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
@@ -272,109 +305,7 @@ class PipeNonSimplyConnected:
     def vorticity(self, x, y, omega):
         return self.pressure_and_vorticity(x, y, omega)[1]
 
-    ### PLOTTING ###
-
-    @property
-    def boundary(self):
-        pts = []
-        for c in self.curves:
-            if isinstance(c, Cap):
-                pts += [c.start_pt, c.matching_pt]
-            elif isinstance(c, Line):
-                pts += [c.start_pt, c.mid_pt]
-            elif isinstance(c, Corner):
-                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        return array(pts)
-
-    @property
-    def open_bdr(self):
-
-        bdrs = []
-
-        for i in range(self.n_lets):
-            cap1 = self.let_index2curve_index[i]
-            cap2 = self.let_index2curve_index[(i+1) % self.n_lets]
-            cap1 = cap1 - len(self.curves) if cap1 > cap2 else cap1
-
-            bdr = []
-            for curve_index in range(cap1+1, cap2):
-                c = self.curves[curve_index % len(self.curves)]
-                if isinstance(c, Cap):
-                    assert False
-                elif isinstance(c, Line):
-                    bdr += [c.start_pt, c.mid_pt]
-                elif isinstance(c, Corner):
-                    bdr += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-            bdr.append(c.end_pt)
-            bdrs.append(array(bdr))
-
-        return bdrs
-
-    @property
-    def smooth_closed_boundary(self):
-        pts = []
-        for c in self.curves:
-            if isinstance(c, Line):
-                pts += [c.start_pt, c.mid_pt]
-            elif isinstance(c, Corner) or isinstance(c, Cap):
-                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        return concatenate([pts, [pts[0]]])
-
-    @property
-    def closed_boundary(self):
-        return concatenate((self.boundary, self.boundary[:1]))
-
-    @property
-    def h(self):
-        return np.max(np.abs(np.diff(self.t)))
-
-    def interior_boundary(self, h_mult=None):
-
-        distance = 4*self.h if h_mult is None else h_mult*self.h
-        # this constant 4 here is tested to be good.
-        # this is a heuristic similar to the 5h-rule for BIM of harmonic equation.
-
-        p1 = Polygon(LineString(concatenate((self.smooth_boundary, self.smooth_boundary[:1]))).buffer(
-            distance).interiors[0])
-        p2 = Polygon(self.closed_boundary)
-        x, y = p1.intersection(p2).boundary.xy
-
-        return array([x, y]).T[:-1]
-
-    @property
-    def extent(self):
-        left = np.min(self.boundary[:, 0])
-        right = np.max(self.boundary[:, 0])
-        bottom = np.min(self.boundary[:, 1])
-        top = np.max(self.boundary[:, 1])
-        return (left, right, bottom, top)
-
-    def masks(self, x, y, h_mult=None):
-
-        inside = Path(self.boundary).contains_points(
-            array([x, y]).T)
-        interior = Path(self.interior_boundary(h_mult)).contains_points(
-            array([x, y]).T)
-        near_boundary = inside & ~interior
-
-        return inside, interior, near_boundary
-
-    def grid_pts(self, density=None):
-
-        density = 100 if density is None else density
-
-        left, right, bottom, top = self.extent
-        nx = np.ceil((right - left) * density).astype(int)
-        ny = np.ceil((top - bottom) * density).astype(int)
-
-        xs = np.linspace(left, right, nx)
-        ys = np.linspace(bottom, top, ny)
-
-        xs, ys = np.meshgrid(xs, ys)
-        return xs.ravel(), ys.ravel()
-
     def build_plotting_data(self, xs, ys, interior):
-
 
         near_boundary = ~interior
 
