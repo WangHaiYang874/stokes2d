@@ -1,41 +1,39 @@
-"""
-this file is a copy of pipe.py, but for multiply-connected domain.  
-"""
-
-
+from abstract_pipe.let import BoundaryLet
 from curve import *
 from utils import *
-from .mat_vec import MatVec
+from pipe.mat_vec import MatVec
+from .boundary import Boundary
+from pipe_system import PipeSystem
 
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
 from scipy.sparse.linalg import gmres, LinearOperator
 from scipy.interpolate import griddata, NearestNDInterpolator
-from shapely.geometry import LineString, Polygon
-from matplotlib.path import Path
+import networkx as nx
 
 import warnings
 from joblib import Parallel, delayed
-from typing import List, Tuple
-import pickle
+from copy import deepcopy
 
 
-class PipeNonSimplyConnected:
+class MultiplyConnectedPipe:
+    """interior stokes problem with multiply-connected domain"""
+
     ### geometric data ###
-    
-    boundaries: List[List[Curve]] # boundaries[0] is the exterior boundary
-    exterior_boundary: List[Curve] 
-    interior_boundaries: List[List[Curve]]
-    
-    curves: List[Curve] # the parametrized curve.
+
+    boundaries: List[Boundary]
+    exterior_boundary: Boundary
+    interior_boundaries: List[Boundary]
+    n_boundaries: int
+    indices_of_boundary: List[Tuple[int, int]]
+
     n_pts: int          # number of points on the boundary curve
-    a: ndarray          # the parameter of the boundary curve
     da: ndarray         # the quadrature weights
     t: ndarray          # the complex coordinates of boundary points
     dt_da: ndarray      # the derivative of t with respect to the parameter
     dt: ndarray         # dt = dt_da * da
     k: ndarray          # the curvature of the boundary curve
-
-    # single solver, Matrix from Nyestorm's discretization
+    z: np.complex128    # this is just a point inside the domain.
+    # single solver, Matrix from Nyestorm's discretization. this is the unconstrained version. Implementing the constrained version can speed up the convergence of gmres. But I don't care that much about this...
     A: LinearOperator
 
     ### flows ###
@@ -48,91 +46,144 @@ class PipeNonSimplyConnected:
     omegas: ndarray         # shape=(n_flows, n_pts), dtype=complex128
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
-    # picture data
-    h: float
-    
-    boundary: ndarray           # shape=(*, 2), dtype=float64.
-    smooth_closed_boundary: ndarray # smooth means with cap.
-    closed_boundary: ndarray    # shape=(*, 2), dtype=float64.
+    def __init__(self, pipe_sys:PipeSystem) -> None:
+        
+        caps_to_keep = []
+        for v in pipe_sys.vertices:
+            if v.atBdr:
+                l = v.l1 if isinstance(v.l1, BoundaryLet) else v.l2
+                caps_to_keep.append((l.pipeIndex,l.letIndex))
 
-    # List[np.ndarray with shape = (*, 2) and dtype = float64]
-    open_bdr: ndarray
+        curves = []
 
-    extent: Tuple[float, float, float, float]  # (xmin, xmax, ymin, ymax)
+        for pipe_index, pipe in enumerate(pipe_sys.pipes):
+            
+            shift = pipe.shift
+            pipe = pipe.prototye
+            c_index2l_index = {c:l for l,c in enumerate(pipe.let_index2curve_index)}
+            
+            for curve_index, curve in enumerate(pipe.curves):
 
-    xs: ndarray
-    ys: ndarray
-    # a boolean array. tells if a point is near boundary or not.
-    interior: ndarray
-    u_fields: ndarray  # shape=(n_flows, x, y), velocity in x-direction
-    v_fields: ndarray  # shape=(n_flows, x, y), velocity in y-direction
-    p_fields: ndarray  # shape=(n_flows, x, y), pressure
-    o_fields: ndarray  # shape=(n_flows, x, y), vorticity
+                if isinstance(curve, Cap):
+                    let_index = c_index2l_index[curve_index]
+                    if (pipe_index, let_index) not in caps_to_keep:
+                        continue
+                
+                c = deepcopy(curve)
+                for p in c.panels:
+                    p.x += shift[0]
+                    p.y += shift[1]
 
-    def __init__(self) -> None:
-        pass
+                c.start_pt += shift
+                c.end_pt += shift
+                c.mid_pt += shift
+                
+                if isinstance(c, Cap):
+                    c.matching_pt += shift
+
+                curves.append(c)
+
+        G = nx.Graph()
+
+        for c in curves:
+            G.add_edge(pt2tuple(c.start_pt),pt2tuple(c.end_pt), curve=c)
+
+        pts = np.array(list(G.nodes))
+        pts_cplx = pts[:,0] + 1j*pts[:,1]
+        distance = np.abs(pts_cplx[:,None] - pts_cplx[None,:])
+        need_to_merge = (distance < 1e-10) & (distance > 0)
+
+        while np.any(need_to_merge):
+            i,j = np.array(np.where(need_to_merge)).T[0]
+            
+            node1 = list(G.nodes)[i]
+            node2 = list(G.nodes)[j]
+
+            nx.contracted_nodes(G,node1,node2, self_loops=False, copy=False)
+            
+            pts = np.array(list(G.nodes))
+            pts_cplx = pts[:,0] + 1j*pts[:,1]
+            distance = np.abs(pts_cplx[:,None] - pts_cplx[None,:])
+            need_to_merge = (distance < 1e-9) & (distance > 0)
+            
+        assert len(G.nodes) == len(set(G.edges))
+
+        boundaries = []
+        
+        for c in nx.cycle_basis(G):
+            curves = []
+            for node1,node2 in zip(c, c[1:] + c[:1]):
+                curves.append(G.edges[node1,node2]['curve'])
+            boundaries.append(curves)
+            
+        boundaries = [Boundary(b) for b in boundaries]
+        self.boundaries = sorted(boundaries, key=lambda boundary: np.min(boundary.t.real))
+        
+                    
+    @property
+    def exterior_boundary(self):
+        return self.boundaries[0]
+
+    @property
+    def interior_boundaries(self):
+        return self.boundaries[1:]
+
+    @property
+    def n_boundaries(self):
+        return len(self.boundaries)
 
     ### GEOMETRIC ###
-
     @property
-    def a(self): return concatenate(
-        [c.a + 2*i for i, c in enumerate(self.curves)])
-
+    def n_pts(self): return len(self.da)
     @property
-    def n_pts(self): return len(self.a)
+    def da(self): return concatenate([c.da for c in self.boundaries])
     @property
-    def da(self): return concatenate([c.da for c in self.curves])
+    def t(self): return concatenate([c.t for c in self.boundaries])
     @property
-    def t(self): return concatenate([c.t for c in self.curves])
-    @property
-    def dt_da(self): return concatenate([c.dt_da for c in self.curves])
+    def dt_da(self): return concatenate([c.dt_da for c in self.boundaries])
     @property
     def dt(self): return self.dt_da * self.da
     @property
-    def k(self): return concatenate([c.k for c in self.curves])
+    def k(self): return concatenate([c.k for c in self.boundaries])
 
-    def build(self, max_distance=None, legendre_ratio=None, tol=None, density=None, h_mult=None, n_jobs=1):
+    @property
+    def z(self):
+        # here I assume that the domain is convex,
+        # so I will simply take the average of points on the boundary.
+        # TODO: the more careful algorithm to handle non-convex domains is to use
+        # poles of inaccessibility.
+        # PIA has a convenient python implementation at
+        # https://github.com/shapely/shapely/blob/main/shapely/algorithms/polylabel.py
+
+        return np.mean(self.t)
+
+    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
         self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
         self.A = None  # free memory
         self.build_pressure_drops()
-        self.build_plotting_data(h_mult, density)
-        """
-        # TODO: what fields should be kept?
-        - lets2curve_index,
-        - n_flows,
-        - pressure_drops,
-        - boundary, closed_boundary, open_bdr,
-        - extent,
-        - xs, ys
-        - u_fields, v_fields,
-        - pressure_field, voricity_field        
-        """
-
-    def save(self, filename):
-        with open(filename, 'wb') as f:
-            pickle.dump(self, f)
 
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
         if n_jobs == 1:
-            [c.build(max_distance, legendre_ratio) for c in self.curves]
+            [b.build(max_distance, legendre_ratio) for b in self.boundaries]
         else:
-            def build_curve(c):
-                c.build(max_distance, legendre_ratio)
-                return c
-            self.curves = Parallel(n_jobs=n_jobs)(
-                delayed(build_curve)(c) for c in self.curves)
+            def build_boundary(b):
+                b.build(max_distance, legendre_ratio)
+                return b
+            self.boundaries = Parallel(n_jobs=n_jobs)(
+                delayed(build_boundary)(b) for b in self.boundaries)
 
     ### SINGLE SOLVER ###
 
-    def build_A(self, fmm=False):
+    @property
+    def indices_of_boundary(self):
+        index = np.insert(np.cumsum([b.n_pts for b in self.boundaries]), 0, 0)
+        return [(index[i], index[i+1]) for i in range(len(index)-1)]
 
-        if fmm:
-            # TODO Probably implement later.
-            return NotImplemented
-
+    def build_A(self):
+        # TODO: test this function. If this has a large condition number, then it's probably correct.
         # diff_t[i, j] = t[i] - t[j]
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
         # dt2[*,i] = dt[i] = dt_da[i] * da[i]
@@ -151,6 +202,23 @@ class PipeNonSimplyConnected:
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
+        for k, m in zip(range(self.n_boundaries), range(1, self.n_boundaries)):
+
+            k_start, k_end = self.indices_of_boundary[k]
+            m_start, m_end = self.indices_of_boundary[m]
+
+            t_minus_z = (self.boundaries[k].t -
+                         self.boundaries[m].z)[:, newaxis]
+            dt = self.boundaries[m].dt[newaxis, :]
+            da = self.boundaries[m].da[newaxis, :]
+
+            K1[k_start:k_end, m_start:m_end] += \
+                1j*np.conjugate(dt/(t_minus_z)) \
+                + 2*da*np.log(np.abs(t_minus_z))
+
+            K2[k_start:k_end, m_start:m_end] += \
+                (da*t_minus_z-1j*dt)/(np.conjugate(t_minus_z))
+
         self.A = LinearOperator(matvec=MatVec(K1, K2),
                                 dtype=np.float64,
                                 shape=(2*self.n_pts, 2*self.n_pts))
@@ -160,7 +228,7 @@ class PipeNonSimplyConnected:
         tol = GMRES_TOL if tol is None else tol
         b = concatenate((H.real, H.imag))
 
-        omega_sep, _ = gmres(self.A, b, atol=0, tol=tol)
+        omega_sep, _ = gmres(self.A, b, atol=0, tol=tol, restart=RESTART)
 
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
@@ -172,10 +240,12 @@ class PipeNonSimplyConnected:
     ### FLOWS ###
     @property
     def let_index2curve_index(self):
-        return [i for i, c in enumerate(self.curves) if isinstance(c, Cap)]
+        return [i for i, c in enumerate(self.exterior_boundary.curves) if isinstance(c, Cap)]
 
     @property
-    def lets(self): return [self.curves[i] for i in self.let_index2curve_index]
+    def lets(self): return [self.exterior_boundary.curves[i]
+                            for i in self.let_index2curve_index]
+
     @property
     def n_lets(self): return len(self.lets)
     @property
@@ -186,14 +256,17 @@ class PipeNonSimplyConnected:
         o = self.let_index2curve_index[flow_index+1]  # outlet
         i = self.let_index2curve_index[0]             # inlet
         ret = []
-        for j, c in enumerate(self.curves):
+        for j, c in enumerate(self.exterior_boundary.curves):
             if j == i:
                 ret.append(-c.boundary_velocity())
             elif j == o:
                 ret.append(c.boundary_velocity())
             else:
                 ret.append(np.zeros_like(c.a))
-        return concatenate(ret)
+
+        ret = concatenate(ret)
+        rest = np.zeros(self.n_pts - len(ret))
+        return np.concatenate((ret, rest))
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
@@ -273,132 +346,18 @@ class PipeNonSimplyConnected:
     def vorticity(self, x, y, omega):
         return self.pressure_and_vorticity(x, y, omega)[1]
 
-    ### PLOTTING ###
+    def build_plotting_data(self, xs, ys, interior):
 
-    @property
-    def boundary(self):
-        pts = []
-        for c in self.curves:
-            if isinstance(c, Cap):
-                pts += [c.start_pt, c.matching_pt]
-            elif isinstance(c, Line):
-                pts += [c.start_pt, c.mid_pt]
-            elif isinstance(c, Corner):
-                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        return array(pts)
-
-    @property
-    def open_bdr(self):
-
-        bdrs = []
-
-        for i in range(self.n_lets):
-            cap1 = self.let_index2curve_index[i]
-            cap2 = self.let_index2curve_index[(i+1) % self.n_lets]
-            cap1 = cap1 - len(self.curves) if cap1 > cap2 else cap1
-
-            bdr = []
-            for curve_index in range(cap1+1, cap2):
-                c = self.curves[curve_index % len(self.curves)]
-                if isinstance(c, Cap):
-                    assert False
-                elif isinstance(c, Line):
-                    bdr += [c.start_pt, c.mid_pt]
-                elif isinstance(c, Corner):
-                    bdr += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-            bdr.append(c.end_pt)
-            bdrs.append(array(bdr))
-
-        return bdrs
-
-    @property
-    def smooth_closed_boundary(self):
-        pts = []
-        for c in self.curves:
-            if isinstance(c, Line):
-                pts += [c.start_pt, c.mid_pt]
-            elif isinstance(c, Corner) or isinstance(c, Cap):
-                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        return concatenate([pts, [pts[0]]])
-
-    @property
-    def closed_boundary(self):
-        return concatenate((self.boundary, self.boundary[:1]))
-
-    @property
-    def h(self):
-        return np.max(np.abs(np.diff(self.t)))
-
-    def interior_boundary(self, h_mult=None):
-
-        distance = 4*self.h if h_mult is None else h_mult*self.h
-        # this constant 4 here is tested to be good.
-        # this is a heuristic similar to the 5h-rule for BIM of harmonic equation.
-
-        p1 = Polygon(LineString(concatenate((self.smooth_boundary, self.smooth_boundary[:1]))).buffer(
-            distance).interiors[0])
-        p2 = Polygon(self.closed_boundary)
-        x, y = p1.intersection(p2).boundary.xy
-
-        return array([x, y]).T[:-1]
-
-    @property
-    def extent(self):
-        left = np.min(self.boundary[:, 0])
-        right = np.max(self.boundary[:, 0])
-        bottom = np.min(self.boundary[:, 1])
-        top = np.max(self.boundary[:, 1])
-        return (left, right, bottom, top)
-
-    def masks(self, x, y, h_mult=None):
-
-        inside = Path(self.boundary).contains_points(
-            array([x, y]).T)
-        interior = Path(self.interior_boundary(h_mult)).contains_points(
-            array([x, y]).T)
-        near_boundary = inside & ~interior
-
-        return inside, interior, near_boundary
-
-    def grid_pts(self, density=None):
-
-        density = 100 if density is None else density
-
-        left, right, bottom, top = self.extent
-        nx = np.ceil((right - left) * density).astype(int)
-        ny = np.ceil((top - bottom) * density).astype(int)
-
-        xs = np.linspace(left, right, nx)
-        ys = np.linspace(bottom, top, ny)
-
-        xs, ys = np.meshgrid(xs, ys)
-        return xs.ravel(), ys.ravel()
-
-    def build_plotting_data(self, h_mult=None, density=None, n_jobs=1):
-
-        xs, ys = self.grid_pts(density)
-
-        inside, interior, near_boundary = self.masks(xs, ys, h_mult)
-
-        xs = xs[inside]
-        ys = ys[inside]
-        interior = interior[inside]
-        near_boundary = near_boundary[inside]
+        near_boundary = ~interior
 
         u_fields = []
         v_fields = []
         p_fields = []
         o_fields = []
 
-        # base point of pressure and vorticity
         base_x, base_y = self.lets[0].matching_pt
         base_x = np.array([base_x])
         base_y = np.array([base_y])
-
-        if n_jobs != 1:
-            # TODO Implement
-            raise NotImplementedError(
-                "Parallel computation is not implemented yet.")
 
         for omega in self.omegas:
 
@@ -470,3 +429,8 @@ class PipeNonSimplyConnected:
         p = p - curr_pressure + base_pressure
 
         return u, v, p, o
+
+
+def pt2tuple(pt):
+    assert pt.shape == (2,)
+    return (pt[0],pt[1])
