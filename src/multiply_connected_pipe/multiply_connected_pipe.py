@@ -1,4 +1,3 @@
-from abstract_pipe.let import BoundaryLet
 from curve import *
 from utils import *
 from pipe.mat_vec import MatVec
@@ -46,7 +45,7 @@ class MultiplyConnectedPipe:
 
     def __init__(self) -> None:
         return
-                     
+
     @property
     def exterior_boundary(self):
         return self.boundaries[0]
@@ -118,7 +117,7 @@ class MultiplyConnectedPipe:
 
         # this ignores the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 = np.imag(dt2/diff_t) / (-pi)
+            K1 = (np.imag(dt2/diff_t) / (-pi)).astype(np.complex128)
             K2 = (dt2 / conjugate(diff_t) - conjugate(dt2)
                   * diff_t/(conjugate(diff_t**2))) / (2j*pi)
 
@@ -140,7 +139,7 @@ class MultiplyConnectedPipe:
             da = self.boundaries[m].da[newaxis, :]
 
             K1[k_start:k_end, m_start:m_end] += \
-                1j*np.conjugate(dt/(t_minus_z)) \
+                1j*np.conjugate(dt/t_minus_z) \
                 + 2*da*np.log(np.abs(t_minus_z))
 
             K2[k_start:k_end, m_start:m_end] += \
@@ -219,13 +218,30 @@ class MultiplyConnectedPipe:
 
     def phi(self, z, omega):
         assert z.ndim == 1
-        return np.sum((omega * self.dt)[newaxis, :] /
-                      (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
+        ret = np.sum((omega * self.dt)[newaxis, :] /
+                     (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
+
+        for k in range(1, self.n_boundaries):
+            start, end = self.indices_of_boundary[k]
+            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
+            zk = self.boundaries[k].z
+            ret += Ck * np.log(z-zk)
+
+        return ret
 
     def d_phi(self, z, omega):
         assert z.ndim == 1
-        return np.sum((omega * self.dt)[newaxis, :] /
-                      (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
+
+        ret = np.sum((omega * self.dt)[newaxis, :] /
+                     (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
+
+        for k in range(1, self.n_boundaries):
+            start, end = self.indices_of_boundary[k]
+            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
+            zk = self.boundaries[k].z
+            ret += Ck/(z-zk) # this is not the buggy place. 
+
+        return ret
 
     def psi(self, z, omega):
         assert z.ndim == 1
@@ -240,7 +256,17 @@ class MultiplyConnectedPipe:
             / (self.t[newaxis, :] - z[:, newaxis])**2,
             axis=1) / (-2j * pi)
 
-        return first_term + second_term
+        ret = first_term + second_term
+
+        for k in range(1, self.n_boundaries):
+            start, end = self.indices_of_boundary[k]
+            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
+            zk = self.boundaries[k].z
+            bk = 1j*np.sum(omega[start:end] * np.conj(self.dt[start:end]) -
+                           np.conj(omega[start:end]) * self.dt[start:end])
+            ret += bk/(z-zk) + np.conj(Ck)*np.log(z-zk) - Ck*np.conj(zk)/(z-zk)
+
+        return ret
 
     def velocity(self, x, y, omega):
 

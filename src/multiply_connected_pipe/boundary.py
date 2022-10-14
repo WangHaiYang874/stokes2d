@@ -13,6 +13,7 @@ class Boundary:
     dt_da: np.ndarray
     dt: np.ndarray
     k: np.ndarray
+    z: np.complex128
     
     def __init__(self, curves):
         self.curves = curves
@@ -37,12 +38,15 @@ class Boundary:
         [c.dt_da for c in self.curves])
     
     @property
-    def dt(self): return np.concatenate(
-        [c.dt for c in self.curves])
+    def dt(self): return self.dt_da * self.da
     
     @property
     def k(self): return np.concatenate(
         [c.k for c in self.curves])
     
+    @property
+    def z(self): return np.mean(self.t)
+    
     def build(self, max_distance=None, legendre_ratio=None):
         [c.build(max_distance, legendre_ratio) for c in self.curves]
+        

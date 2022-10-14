@@ -19,7 +19,8 @@ The integral equation is of the following form
 
 $$
 (I+K_1+K_2\mathfrak C) \omega = h
-$$ where $\mathfrak C$ is a symbol for conjugation. 
+$$ 
+where $\mathfrak C$ is a symbol for conjugation. 
 
 This system can be discretized and solved using the Nystorm scheme. After that, we also need to separate it into real and complex parts to solve for it. 
 

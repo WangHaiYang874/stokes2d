@@ -3,7 +3,7 @@ from .curve import Curve
 
 class Circle(Curve):
     standard_start_pt = pt(1,0)
-    standard_end_pt   = pt(1,0)
+    standard_end_pt   = pt(0,1)
     standard_mid_pt   = pt(-1,0)
     def x_fn(_,a): return np.cos(a*np.pi)
     def y_fn(_,a): return np.sin(a*np.pi)
@@ -14,8 +14,9 @@ class Circle(Curve):
     
     def __init__(self, radius, center) -> None:
         
+        # TODO: this is absolutely bs to make the code runnning....
         start_pt = pt(radius,0) + center
-        end_pt = pt(radius,0) + center
+        end_pt = pt(0,radius) + center
         mid_pt = pt(-radius,0) + center
         
         super().__init__(start_pt, end_pt, mid_pt)
