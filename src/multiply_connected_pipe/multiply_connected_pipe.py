@@ -6,7 +6,6 @@ from .boundary import Boundary
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
 from scipy.sparse.linalg import gmres, LinearOperator
 from scipy.interpolate import griddata, NearestNDInterpolator
-import networkx as nx
 
 import warnings
 from joblib import Parallel, delayed
@@ -274,7 +273,30 @@ class MultiplyConnectedPipe:
         assert isinstance(z, ndarray)
         assert z.ndim == 1
 
-        return H2U((self.phi(z, omega) + z * conjugate(self.d_phi(z, omega)) + conjugate(self.psi(z, omega))))
+        return H2U((self.phi(z, omega) + z * np.conj(self.d_phi(z, omega)) + np.conj(self.psi(z, omega))))
+
+    def velocity2(self, x, y, omega):
+
+        z = x + 1j*y
+        assert isinstance(z, ndarray)
+        assert z.ndim == 1
+
+        t_minus_z = self.t[newaxis, :] - z[:, newaxis]
+        dt = self.dt[newaxis, :]
+
+        ret = np.sum(omega*dt/(t_minus_z) - (omega*np.conj(dt) + np.conj(omega)*dt) /
+                     np.conj(t_minus_z) - t_minus_z*np.conj(omega*dt/(t_minus_z**2)))
+
+        for k in range(1, self.n_boundaries):
+            start, end = self.indices_of_boundary[k]
+            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
+            zk = self.boundaries[k].z
+            bk = 1j*np.sum(omega[start:end] * np.conj(self.dt[start:end]) -
+                           np.conj(omega[start:end]) * self.dt[start:end])
+            ret += 2*Ck*np.log(np.abs(z-zk)) + np.conj(bk /
+                                                       (z-zk)) + np.conj(Ck)*(z-zk)/np.conj(z-zk)
+
+        return ret
 
     def pressure_and_vorticity(self, x, y, omega):
 
