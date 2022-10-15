@@ -108,7 +108,9 @@ class MultiplyConnectedPipe:
         return [(index[i], index[i+1]) for i in range(len(index)-1)]
 
     def build_A(self):
-        # TODO: test this function. If this has a large condition number, then it's probably correct.
+        
+        ### the first part is the non-singular part of the matrix. ### 
+        
         # diff_t[i, j] = t[i] - t[j]
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
         # dt2[*,i] = dt[i] = dt_da[i] * da[i]
@@ -127,23 +129,29 @@ class MultiplyConnectedPipe:
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
-        for k, m in zip(range(self.n_boundaries), range(1, self.n_boundaries)):
+        ### the second part is the singular part of the matrix. ###
 
+        for k in range(self.n_boundaries):
+            
             k_start, k_end = self.indices_of_boundary[k]
-            m_start, m_end = self.indices_of_boundary[m]
+            
+            for m in range(1, self.n_boundaries):
+            
+                m_start, m_end = self.indices_of_boundary[m]
+                
+                t_minus_z = (self.boundaries[k].t -
+                            self.boundaries[m].z)[:, newaxis]
+                dt_da = self.boundaries[m].dt_da[newaxis, :]
+                da = self.boundaries[m].da[newaxis, :]
 
-            t_minus_z = (self.boundaries[k].t -
-                         self.boundaries[m].z)[:, newaxis]
-            dt = self.boundaries[m].dt[newaxis, :]
-            da = self.boundaries[m].da[newaxis, :]
+                K1[k_start:k_end, m_start:m_end] += \
+                    1j*da*np.conj(dt_da)/np.conj(t_minus_z) + \
+                    2*da*np.log(np.abs(t_minus_z))
 
-            K1[k_start:k_end, m_start:m_end] += \
-                1j*np.conjugate(dt/t_minus_z) \
-                + 2*da*np.log(np.abs(t_minus_z))
-
-            K2[k_start:k_end, m_start:m_end] += \
-                (da*t_minus_z-1j*dt)/(np.conjugate(t_minus_z))
-
+                K2[k_start:k_end, m_start:m_end] += \
+                    -1j*da*dt_da/np.conj(t_minus_z) + \
+                    da*t_minus_z/np.conj(t_minus_z)
+                    
         self.A = LinearOperator(matvec=MatVec(K1, K2),
                                 dtype=np.float64,
                                 shape=(2*self.n_pts, 2*self.n_pts))
@@ -217,30 +225,37 @@ class MultiplyConnectedPipe:
 
     def phi(self, z, omega):
         assert z.ndim == 1
-        ret = np.sum((omega * self.dt)[newaxis, :] /
+        
+        regular_part = np.sum((omega * self.dt)[newaxis, :] /
                      (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
 
+        singular_part = np.zeros_like(regular_part,dtype=np.complex128)
+        
         for k in range(1, self.n_boundaries):
+            
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            ret += Ck * np.log(z-zk)
-
-        return ret
+            
+            singular_part += Ck * np.log(z-zk)
+            
+        return regular_part + singular_part
 
     def d_phi(self, z, omega):
         assert z.ndim == 1
 
-        ret = np.sum((omega * self.dt)[newaxis, :] /
+        regular_part = np.sum((omega * self.dt)[newaxis, :] /
                      (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
 
+        singular_part = np.zeros_like(regular_part,dtype=np.complex128)
+        
         for k in range(1, self.n_boundaries):
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            ret += Ck/(z-zk) # this is not the buggy place. 
+            singular_part += Ck/(z-zk) 
 
-        return ret
+        return regular_part + singular_part
 
     def psi(self, z, omega):
         assert z.ndim == 1
@@ -255,17 +270,18 @@ class MultiplyConnectedPipe:
             / (self.t[newaxis, :] - z[:, newaxis])**2,
             axis=1) / (-2j * pi)
 
-        ret = first_term + second_term
+        regular_part = first_term + second_term
+        
+        singular_part = np.zeros_like(regular_part,dtype=np.complex128)
 
         for k in range(1, self.n_boundaries):
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            bk = 1j*np.sum(omega[start:end] * np.conj(self.dt[start:end]) -
-                           np.conj(omega[start:end]) * self.dt[start:end])
-            ret += bk/(z-zk) + np.conj(Ck)*np.log(z-zk) - Ck*np.conj(zk)/(z-zk)
+            bk = -2*np.sum((omega[start:end] * np.conj(self.dt[start:end])).imag)
+            singular_part += np.conj(Ck)*np.log(z-zk) + (bk - Ck*np.conj(zk))/(z-zk)
 
-        return ret
+        return regular_part + singular_part
 
     def velocity(self, x, y, omega):
 
@@ -274,29 +290,6 @@ class MultiplyConnectedPipe:
         assert z.ndim == 1
 
         return H2U((self.phi(z, omega) + z * np.conj(self.d_phi(z, omega)) + np.conj(self.psi(z, omega))))
-
-    def velocity2(self, x, y, omega):
-
-        z = x + 1j*y
-        assert isinstance(z, ndarray)
-        assert z.ndim == 1
-
-        t_minus_z = self.t[newaxis, :] - z[:, newaxis]
-        dt = self.dt[newaxis, :]
-
-        ret = np.sum(omega*dt/(t_minus_z) - (omega*np.conj(dt) + np.conj(omega)*dt) /
-                     np.conj(t_minus_z) - t_minus_z*np.conj(omega*dt/(t_minus_z**2)))
-
-        for k in range(1, self.n_boundaries):
-            start, end = self.indices_of_boundary[k]
-            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
-            zk = self.boundaries[k].z
-            bk = 1j*np.sum(omega[start:end] * np.conj(self.dt[start:end]) -
-                           np.conj(omega[start:end]) * self.dt[start:end])
-            ret += 2*Ck*np.log(np.abs(z-zk)) + np.conj(bk /
-                                                       (z-zk)) + np.conj(Ck)*(z-zk)/np.conj(z-zk)
-
-        return ret
 
     def pressure_and_vorticity(self, x, y, omega):
 
