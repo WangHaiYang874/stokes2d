@@ -118,12 +118,14 @@ class MultiplyConnectedPipe:
 
         # this ignores the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 = (-np.imag(dt2/diff_t) /pi).astype(np.complex128)
-            K2 = np.imag(dt2*np.conj(diff_t)) / (np.conj(diff_t**2)*pi)
+            K1 = (np.imag(dt2/diff_t) / (-pi)).astype(np.complex128)
+            K2 = (dt2 / conjugate(diff_t) - conjugate(dt2)
+                  * diff_t/(conjugate(diff_t**2))) / (2j*pi)
+
         # now we need to fill the diagonal elements
         K1_diagonal = self.k*np.abs(self.dt)/(2*pi)
         K2_diagonal = (self.k*self.dt*self.dt_da) / \
-            (-2*pi*np.abs(self.dt_da))
+            (-2*pi*np.abs(self.dt_da)**2)
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
@@ -135,15 +137,16 @@ class MultiplyConnectedPipe:
             
             t_minus_z = (self.t -
                         self.boundaries[m].z)[:, newaxis]
-            dt = self.boundaries[m].dt[newaxis, :]
+            dt_da = self.boundaries[m].dt_da[newaxis, :]
+            da = self.boundaries[m].da[newaxis, :]
 
             K1[:, m_start:m_end] += \
-                1j*np.conj(dt)/np.conj(t_minus_z) + \
-                2*np.abs(dt)*np.log(np.abs(t_minus_z))
+                1j*da*np.conj(dt_da)/np.conj(t_minus_z) + \
+                2*da*np.log(np.abs(t_minus_z))
 
             K2[:, m_start:m_end] += \
-                -1j*dt/np.conj(t_minus_z) + \
-                np.abs(dt)*t_minus_z/np.conj(t_minus_z)
+                -1j*da*dt_da/np.conj(t_minus_z) + \
+                da*t_minus_z/np.conj(t_minus_z)
                     
         self.A = LinearOperator(matvec=MatVec(K1, K2),
                                 dtype=np.float64,

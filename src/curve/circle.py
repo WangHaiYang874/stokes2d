@@ -12,7 +12,9 @@ class Circle(Curve):
     def ddx_dda_fn(_,a): return -np.pi**2*np.cos(a*np.pi)
     def ddy_dda_fn(_,a): return -np.pi**2*np.sin(a*np.pi)
     
-    def __init__(self, radius, center) -> None:
+    def __init__(self, radius, center, orientation=-1) -> None:
+        
+        assert orientation == 1 or orientation == -1
         
         # TODO: this is absolutely bs to make the code runnning....
         start_pt = pt(radius,0) + center
@@ -21,5 +23,5 @@ class Circle(Curve):
         
         super().__init__(start_pt, end_pt, mid_pt)
         
-        self.aff_trans.A = np.array([[radius,0],[0,radius]])
+        self.aff_trans.A = np.array([[radius,0],[0,radius*orientation]])
         self.aff_trans.b = center

@@ -47,6 +47,26 @@ class Boundary:
     @property
     def z(self): return np.mean(self.t)
     
+    @property
+    def orientation(self):
+        orientation = np.sum(self.dt/(self.t-self.z))/(2j*np.pi)
+        if np.abs(orientation - 1) < 1e-10:
+            return 1
+        elif np.abs(orientation + 1) < 1e-10:
+            return -1
+        else:
+            assert False, "Unknown orientation"
+    
+    def reverse_orientation(self):
+        
+        for curve in self.curves:
+            
+            # TODO I should define this locally for each curve. 
+
+            pass
+        
+    
     def build(self, max_distance=None, legendre_ratio=None):
         [c.build(max_distance, legendre_ratio) for c in self.curves]
-        
+    
+    
