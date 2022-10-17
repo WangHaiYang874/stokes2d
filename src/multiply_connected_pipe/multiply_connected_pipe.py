@@ -116,10 +116,13 @@ class MultiplyConnectedPipe:
         # dt2[*,i] = dt[i] = dt_da[i] * da[i]
         dt2 = self.dt[newaxis, :]
 
+        K1 = np.zeros(shape=(self.n_pts, self.n_pts), dtype=np.complex128)
+        K2 = np.zeros(shape=(self.n_pts, self.n_pts), dtype=np.complex128)
+        
         # this ignores the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 = (-np.imag(dt2/diff_t) /pi).astype(np.complex128)
-            K2 = np.imag(dt2*np.conj(diff_t)) / (np.conj(diff_t**2)*pi)
+            K1 -= np.imag(dt2/diff_t) /pi
+            K2 += np.imag(dt2*np.conj(diff_t)) / (np.conj(diff_t**2)*pi)
         # now we need to fill the diagonal elements
         K1_diagonal = self.k*np.abs(self.dt)/(2*pi)
         K2_diagonal = (self.k*self.dt*self.dt_da) / \
