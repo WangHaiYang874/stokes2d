@@ -196,6 +196,10 @@ class MultiplyConnectedPipe:
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
+        
+        if self.n_flows == 1:
+            n_jobs = 1
+        
         if n_jobs == 1:
             self.omegas = array(
                 [self.compute_omega(self.boundary_value(i), tol) for i in range(self.n_flows)])
@@ -286,7 +290,6 @@ class MultiplyConnectedPipe:
 
     def pressure_and_vorticity(self, x, y, omega):
 
-        # TODO verify
         z = x + 1j*y
         assert (isinstance(z, ndarray))
         assert (z.ndim == 1)
@@ -308,6 +311,8 @@ class MultiplyConnectedPipe:
         return self.pressure_and_vorticity(x, y, omega)[1]
 
     def build_plotting_data(self, xs, ys, interior):
+
+        # TODO assert xs, ys are inside the domain. 
 
         near_boundary = ~interior
 

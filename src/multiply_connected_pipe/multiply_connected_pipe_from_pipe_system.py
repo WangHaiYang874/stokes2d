@@ -41,4 +41,4 @@ class MultiplyConnectedPipeFromPipeSystem(MultiplyConnectedPipeFromCurves):
 
                 curves.append(c)
 
-        super().__init__(pipe_sys.curves)
+        super().__init__(curves)
