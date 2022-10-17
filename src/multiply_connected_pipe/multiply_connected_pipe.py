@@ -2,6 +2,8 @@ from curve import *
 from utils import *
 from pipe.mat_vec import MatVec
 from .boundary import Boundary
+from .fmm import A_fmm
+
 
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
 from scipy.sparse.linalg import gmres, LinearOperator
@@ -31,6 +33,7 @@ class MultiplyConnectedPipe:
     z: np.complex128    # this is just a point inside the domain.
     # single solver, Matrix from Nyestorm's discretization. this is the unconstrained version. Implementing the constrained version can speed up the convergence of gmres. But I don't care that much about this...
     A: LinearOperator
+    fmm: A_fmm
 
     ### flows ###
 
@@ -43,7 +46,7 @@ class MultiplyConnectedPipe:
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
     def __init__(self) -> None:
-        return
+        pass
 
     @property
     def exterior_boundary(self):
@@ -82,13 +85,15 @@ class MultiplyConnectedPipe:
 
         return np.mean(self.t)
 
-    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
+    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1, fmm=True):
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
-        self.build_A()
+        self.build_A_fmm()
+        if not fmm:
+            self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
-        self.A = None  # free memory
-        self.build_pressure_drops()
-
+        if not fmm:
+            self.A = None # free up memory. 
+        
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
         if n_jobs == 1:
@@ -107,42 +112,52 @@ class MultiplyConnectedPipe:
         index = np.insert(np.cumsum([b.n_pts for b in self.boundaries]), 0, 0)
         return [(index[i], index[i+1]) for i in range(len(index)-1)]
 
+    def build_A_fmm(self):
+        self.fmm = A_fmm(self)
+        self.A = LinearOperator(matvec=self.fmm,
+                                dtype=np.float64,
+                                shape=(2*self.n_pts, 2*self.n_pts))
+
     def build_A(self):
-        # TODO: test this function. If this has a large condition number, then it's probably correct.
+
+        ### the first part is the non-singular part of the matrix. ###
+
         # diff_t[i, j] = t[i] - t[j]
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
         # dt2[*,i] = dt[i] = dt_da[i] * da[i]
         dt2 = self.dt[newaxis, :]
 
+        K1 = np.zeros(shape=(self.n_pts, self.n_pts), dtype=np.complex128)
+        K2 = np.zeros(shape=(self.n_pts, self.n_pts), dtype=np.complex128)
+
         # this ignores the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 = (np.imag(dt2/diff_t) / (-pi)).astype(np.complex128)
-            K2 = (dt2 / conjugate(diff_t) - conjugate(dt2)
-                  * diff_t/(conjugate(diff_t**2))) / (2j*pi)
-
+            K1 -= np.imag(dt2/diff_t) / pi
+            K2 += np.imag(dt2*np.conj(diff_t)) / (np.conj(diff_t**2)*pi)
         # now we need to fill the diagonal elements
         K1_diagonal = self.k*np.abs(self.dt)/(2*pi)
         K2_diagonal = (self.k*self.dt*self.dt_da) / \
-            (-2*pi*np.abs(self.dt_da)**2)
+            (-2*pi*np.abs(self.dt_da))
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 
-        for k, m in zip(range(self.n_boundaries), range(1, self.n_boundaries)):
+        ### the second part is the singular part of the matrix. ###
 
-            k_start, k_end = self.indices_of_boundary[k]
+        for m in range(1, self.n_boundaries):
+
             m_start, m_end = self.indices_of_boundary[m]
 
-            t_minus_z = (self.boundaries[k].t -
+            t_minus_z = (self.t -
                          self.boundaries[m].z)[:, newaxis]
             dt = self.boundaries[m].dt[newaxis, :]
-            da = self.boundaries[m].da[newaxis, :]
 
-            K1[k_start:k_end, m_start:m_end] += \
-                1j*np.conjugate(dt/t_minus_z) \
-                + 2*da*np.log(np.abs(t_minus_z))
+            K1[:, m_start:m_end] += \
+                1j*np.conj(dt)/np.conj(t_minus_z) + \
+                2*np.abs(dt)*np.log(np.abs(t_minus_z))
 
-            K2[k_start:k_end, m_start:m_end] += \
-                (da*t_minus_z-1j*dt)/(np.conjugate(t_minus_z))
+            K2[:, m_start:m_end] += \
+                -1j*dt/np.conj(t_minus_z) + \
+                np.abs(dt)*t_minus_z/np.conj(t_minus_z)
 
         self.A = LinearOperator(matvec=MatVec(K1, K2),
                                 dtype=np.float64,
@@ -195,6 +210,10 @@ class MultiplyConnectedPipe:
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
+
+        if self.n_flows == 1:
+            n_jobs = 1
+
         if n_jobs == 1:
             self.omegas = array(
                 [self.compute_omega(self.boundary_value(i), tol) for i in range(self.n_flows)])
@@ -215,36 +234,50 @@ class MultiplyConnectedPipe:
 
     ### COMPUTE PHYSICS QUANTITIES ###
 
-    def phi(self, z, omega):
+    def phi(self, z, omega, fmm=True):
         assert z.ndim == 1
-        ret = np.sum((omega * self.dt)[newaxis, :] /
-                     (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
+
+        if fmm: return self.fmm.phi(z.real, z.imag, omega)
+
+        regular_part = np.sum((omega * self.dt)[newaxis, :] /
+                            (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
+
+        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
+
+        for k in range(1, self.n_boundaries):
+
+            start, end = self.indices_of_boundary[k]
+            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
+            zk = self.boundaries[k].z
+
+            singular_part += Ck * np.log(z-zk)
+
+        return regular_part + singular_part
+        
+
+    def d_phi(self, z, omega, fmm=True):
+        assert z.ndim == 1
+
+        if fmm: return self.fmm.d_phi(z.real, z.imag, omega)
+        
+        regular_part = np.sum((omega * self.dt)[newaxis, :] /
+                              (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
+
+        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
 
         for k in range(1, self.n_boundaries):
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            ret += Ck * np.log(z-zk)
+            singular_part += Ck/(z-zk)
 
-        return ret
+        return regular_part + singular_part
 
-    def d_phi(self, z, omega):
+    def psi(self, z, omega, fmm=True):
         assert z.ndim == 1
 
-        ret = np.sum((omega * self.dt)[newaxis, :] /
-                     (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
-
-        for k in range(1, self.n_boundaries):
-            start, end = self.indices_of_boundary[k]
-            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
-            zk = self.boundaries[k].z
-            ret += Ck/(z-zk) # this is not the buggy place. 
-
-        return ret
-
-    def psi(self, z, omega):
-        assert z.ndim == 1
-
+        if fmm: return self.fmm.psi(z.real, z.imag, omega)
+        
         first_term = np.sum(
             np.real((conjugate(omega) * self.dt)[newaxis, :])
             / (self.t[newaxis, :] - z[:, newaxis]),
@@ -255,57 +288,36 @@ class MultiplyConnectedPipe:
             / (self.t[newaxis, :] - z[:, newaxis])**2,
             axis=1) / (-2j * pi)
 
-        ret = first_term + second_term
+        regular_part = first_term + second_term
+
+        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
 
         for k in range(1, self.n_boundaries):
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            bk = 1j*np.sum(omega[start:end] * np.conj(self.dt[start:end]) -
-                           np.conj(omega[start:end]) * self.dt[start:end])
-            ret += bk/(z-zk) + np.conj(Ck)*np.log(z-zk) - Ck*np.conj(zk)/(z-zk)
+            bk = -2*np.sum((omega[start:end] *
+                           np.conj(self.dt[start:end])).imag)
+            singular_part += np.conj(Ck)*np.log(z-zk) + \
+                (bk - Ck*np.conj(zk))/(z-zk)
 
-        return ret
+        return regular_part + singular_part
 
-    def velocity(self, x, y, omega):
-
-        z = x + 1j*y
-        assert isinstance(z, ndarray)
-        assert z.ndim == 1
-
-        return H2U((self.phi(z, omega) + z * np.conj(self.d_phi(z, omega)) + np.conj(self.psi(z, omega))))
-
-    def velocity2(self, x, y, omega):
+    def velocity(self, x, y, omega, fmm=True):
 
         z = x + 1j*y
         assert isinstance(z, ndarray)
         assert z.ndim == 1
 
-        t_minus_z = self.t[newaxis, :] - z[:, newaxis]
-        dt = self.dt[newaxis, :]
+        return H2U((self.phi(z, omega, fmm) + z * np.conj(self.d_phi(z, omega,fmm)) + np.conj(self.psi(z, omega, fmm))))
 
-        ret = np.sum(omega*dt/(t_minus_z) - (omega*np.conj(dt) + np.conj(omega)*dt) /
-                     np.conj(t_minus_z) - t_minus_z*np.conj(omega*dt/(t_minus_z**2)))
+    def pressure_and_vorticity(self, x, y, omega, fmm=True):
 
-        for k in range(1, self.n_boundaries):
-            start, end = self.indices_of_boundary[k]
-            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
-            zk = self.boundaries[k].z
-            bk = 1j*np.sum(omega[start:end] * np.conj(self.dt[start:end]) -
-                           np.conj(omega[start:end]) * self.dt[start:end])
-            ret += 2*Ck*np.log(np.abs(z-zk)) + np.conj(bk /
-                                                       (z-zk)) + np.conj(Ck)*(z-zk)/np.conj(z-zk)
-
-        return ret
-
-    def pressure_and_vorticity(self, x, y, omega):
-
-        # TODO verify
         z = x + 1j*y
         assert (isinstance(z, ndarray))
         assert (z.ndim == 1)
 
-        d_phi = self.d_phi(z, omega)
+        d_phi = self.d_phi(z, omega, fmm)
         d_phi_init = self.d_phi(
             array([self.lets[0].matching_pt[0]+1j*self.lets[0].matching_pt[1]]), omega)
 
@@ -315,13 +327,15 @@ class MultiplyConnectedPipe:
 
         return pressure, vorticity
 
-    def pressure(self, x, y, omega):
-        return self.pressure_and_vorticity(x, y, omega)[0]
+    def pressure(self, x, y, omega, fmm=True):
+        return self.pressure_and_vorticity(x, y, omega,fmm)[0]
 
-    def vorticity(self, x, y, omega):
-        return self.pressure_and_vorticity(x, y, omega)[1]
+    def vorticity(self, x, y, omega, fmm=True):
+        return self.pressure_and_vorticity(x, y, omega,fmm)[1]
 
-    def build_plotting_data(self, xs, ys, interior):
+    def build_plotting_data(self, xs, ys, interior,fmm=True):
+
+        # TODO assert xs, ys are inside the domain.
 
         near_boundary = ~interior
 
@@ -343,11 +357,10 @@ class MultiplyConnectedPipe:
 
             # interior can be directly calculated
 
-            velocity = self.velocity(xs[interior], ys[interior], omega)
-            pressure, vorticity = self.pressure_and_vorticity(
-                xs[interior], ys[interior], omega)
-            base_pressure = self.pressure_and_vorticity(
-                base_x, base_y, omega)[0][0]
+            velocity = self.velocity(xs[interior], ys[interior], omega, fmm)
+            pressure, vorticity = \
+                self.pressure_and_vorticity(xs[interior], ys[interior], omega, fmm)
+            base_pressure = self.pressure_and_vorticity(base_x, base_y, omega)[0][0]
 
             pressure -= base_pressure
 

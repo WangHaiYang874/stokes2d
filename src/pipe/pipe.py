@@ -138,7 +138,7 @@ class Pipe:
         # now we need to fill the diagonal elements
         K1_diagonal = self.k*np.abs(self.dt)/(2*pi)
         K2_diagonal = (self.k*self.dt*self.dt_da) / \
-            (-2*pi*np.abs(self.dt_da)**2)
+            (-2*pi*np.abs(self.dt_da))
         np.fill_diagonal(K1, K1_diagonal)
         np.fill_diagonal(K2, K2_diagonal)
 

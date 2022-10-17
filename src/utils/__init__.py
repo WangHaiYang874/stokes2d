@@ -8,8 +8,8 @@ THRESHOLD = 1e-10 # for matcthing let.
 DOMAIN_THRESHOLD = 1e-8 # The minimal size of interval of 16 pts gauss quad rule
 MAX_DISTANCE = 1E-2 # panel.good_enough test
 LEGENDRE_RATIO = 1e-14 # same as above
-GMRES_TOL = 1E-12
-RESTART = 100
+GMRES_TOL = 1E-13
+RESTART = 50
 
 
 def gauss_quad_rule(n=16, domain=(-1, 1)):

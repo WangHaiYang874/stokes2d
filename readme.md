@@ -14,7 +14,11 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 ## top of my todo. 
 
-- [ ] a solver for a multiply connected domain.
+- [x] a solver for a multiply connected domain.
+- [ ] add reverse_orientation method to the scheme: probably by simply rebuild the curves. 
+- [ ] finish the paper. 
+- [ ] add the finder for z.
+- [ ] merge multiply connected domain with simply connected domain. 
 
 ## math-ish
 

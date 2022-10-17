@@ -10,6 +10,9 @@ import pickle
 from joblib import Parallel, delayed
 from time import time
 
+import os
+curr_dir = os.path.dirname(__file__)
+
 start_time = time()
 
 # %%
@@ -58,7 +61,7 @@ pipes = Parallel(n_jobs=6) (delayed(build) (p) for p in [pipe1, pipe2, pipe3, pi
 shifts = [shift1,shift2,shift3,shift4,shift5,shift6]
 
 # %%
-with open('dev_Pipes.pickle','wb') as f:
+with open(curr_dir + '/dev_Pipes.pickle','wb') as f:
     pickle.dump([pipes, shifts],f,fix_imports=True,protocol=None)
 
 print(time() - start_time)
