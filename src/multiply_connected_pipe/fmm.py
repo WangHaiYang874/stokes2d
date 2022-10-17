@@ -2,7 +2,7 @@ from typing import List, Tuple
 import numpy as np
 from fmm2dpy import cfmm2d
 
-FMM_EPS = 5e-16
+from utils import FMM_EPS
 
 class A_fmm:
 
