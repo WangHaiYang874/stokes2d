@@ -114,8 +114,9 @@ class MultiplyConnectedPipe:
 
     def build_A_fmm(self):
         self.fmm = A_fmm(self)
-        self.A = LinearOperator(
-            self.fmm, dtype=np.float64, shape=(2*self.n_pts, 2*self.n_pts))
+        self.A = LinearOperator(matvec=self.fmm,
+                                dtype=np.float64,
+                                shape=(2*self.n_pts, 2*self.n_pts))
 
     def build_A(self):
 

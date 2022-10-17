@@ -4,7 +4,7 @@ from fmm2dpy import cfmm2d
 
 FMM_EPS = 5e-16
 
-class A_Fmm:
+class A_fmm:
 
     t: np.ndarray
     da: np.ndarray
