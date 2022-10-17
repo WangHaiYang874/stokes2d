@@ -36,7 +36,7 @@ $$
 
 Or don't use fmm at all. Why bother using fmm when I can just run this whole thing on a huge server? 
 
-# deleted code
+#### first implementation using fmm
 ``` python
 # commit 73b89c1. 
 def build_A_fmm(da,dt_da,k):
@@ -53,29 +53,6 @@ def build_A_fmm(da,dt_da,k):
         return np.concatenate((ret.real(), ret.imag()))
 
     self.A_fmm = LinearOperator(dtype=np.float64, shape=(2 * n, 2 * n), matvec=A_fmm)
-
-def K1_fmm(da, dt_da, t, omega):
-
-    sources = np.array([t.real, t.imag])
-    dt = dt_da * da
-    eps = 1e-16
-    K1_diagonal
-
-    K11 = fmm.cfmm2d(eps    =eps,
-                        sources=sources,
-                        dipstr =dt * omega / (-2j * np.pi),
-                        pg     =1
-                        ).pot
-
-    K12 = fmm.cfmm2d(eps    =eps,
-                        sources=sources,
-                        dipstr =dt * omega.conjugate()/(-2j * np.pi),
-                        pg=1
-                        ).pot.conjugate()
-
-    # ❗ K12 看其实是不是有bug. 为啥只对omega做conjugate? 我懒得回忆了....
-
-    return K11 + K12 + K1_diagonal * omega
 
 def K2_fmm(da,dt_da,t,omega):
     
@@ -135,4 +112,172 @@ def psi(t,z,dt,omega)
                         pgt=2).gradtarg / (2j * np.pi)
 
     psi = psi1 + psi2
+```
+
+#### Another implementation of fmm
+
+```python
+class k1_fmm:
+
+    dt: np.ndarray
+    t: np.ndarray
+    boundary_sources: np.ndarray
+
+    n_boundaries: int
+    indices_of_boundary: List[Tuple[int, int]]
+    singular_sources: np.ndarray
+
+    @property
+    def boundary_sources(self):
+        return np.array([self.t.real, self.t.imag])
+
+    @property
+    def n_boundaries(self):
+        return len(self.indices_of_boundary)
+
+    def __init__(self, t: np.array, da: np.ndarray, dt: np.ndarray, k: np.ndarray,
+                 singular_sources: np.ndarray,
+                 indices_of_boundary: List[Tuple[int, int]]) -> None:
+
+        self.t = t
+        self.da = da
+        self.dt = dt
+        self.diagonal = k * np.abs(dt) / (2 * np.pi)
+        self.singular_sources = singular_sources
+        self.indices_of_boundary = indices_of_boundary
+
+    def __call__(self, omega):
+
+        # here are the non-singualr terms
+        first_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources,
+                            dipstr=self.dt*omega/(-2j*np.pi), pg=1).pot
+        second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources,
+                             dipstr=self.dt*(omega.conj())/(-2j*np.pi), pg=1).pot.conj()
+        diagonal_term = self.diagonal*omega
+
+        non_singular_term = first_term + second_term + diagonal_term
+
+        if self.n_boundaries == 1:
+            return non_singular_term
+
+        # here are the singular source terms
+
+        third_term = cfmm2d(eps=FMM_EPS,
+                            sources=self.singular_sources,
+                            charges=self.singular_density(
+                                2*np.abs(self.dt)*omega),
+                            targets=self.boundary_sources,
+                            pgt=1).pottarg
+
+        fourth_term = cfmm2d(eps=FMM_EPS,
+                            sources=self.singular_sources,
+                            dipstr=self.singular_density(
+                                -1j*self.dt*omega.conj()),
+                            targets=self.boundary_sources,
+                            pgt=1).pottarg.conj()
+
+        singular_term = third_term + fourth_term
+
+        return non_singular_term + singular_term
+
+    def singular_density(self, a):
+
+        ret = []
+        for m in range(1, self.n_boundaries):
+            start, end = self.indices_of_boundary[m]
+            ret.append(np.sum(a[start:end]))
+
+        return np.array(ret)
+
+class k2_fmm:
+
+    dt: np.ndarray
+    t: np.ndarray
+    boundary_sources: np.ndarray
+
+    n_boundaries: int = 1
+    indices_of_boundary: List[Tuple[int, int]]
+    singular_sources: np.ndarray
+
+    @property
+    def boundary_sources(self):
+        return np.array([self.t.real, self.t.imag])
+
+    @property
+    def n_boundaries(self):
+        return len(self.indices_of_boundary)
+
+    def __init__(self, t: np.array, da: np.ndarray, dt: np.ndarray, dt_da: np.ndarray, k: np.ndarray,
+                 singular_sources: np.ndarray,
+                 indices_of_boundary: List[Tuple[int, int]]) -> None:
+
+        self.t = t
+        self.da = da
+        self.dt = dt
+        self.diagonal = -k*dt_da*dt/(2*np.pi*np.abs(dt_da))
+        self.singular_sources = singular_sources
+        self.indices_of_boundary = indices_of_boundary
+
+    def __call__(self, omega_conj):
+
+        # here are the non-singualr terms
+        
+        first_term = cfmm2d(eps=FMM_EPS,sources=self.boundary_sources,
+                        dipstr=-np.conjugate(self.dt*omega_conj)/(2j*np.pi),
+                        pg=1
+                        ).pot.conjugate()
+        second_term = self.t*cfmm2d(eps=FMM_EPS,
+                        sources=self.boundary_sources,
+                        dipstr=-self.dt*omega_conj.conj()/(2j*np.pi),
+                        pg=2
+                        ).grad.conjugate()
+        
+        third_term = cfmm2d(eps=FMM_EPS,
+                        sources=self.boundary_sources,
+                        dipstr=self.dt*omega_conj.conj()*self.t.conj()/(2j*np.pi),
+                        pg=2).grad.conjugate()
+        
+        diagonal_term = self.diagonal*omega_conj
+
+        non_singular_term = first_term + second_term + third_term + diagonal_term
+
+        if self.n_boundaries == 1:
+            return non_singular_term
+
+        # here are the singular source terms
+
+        fourth_term_dipstr = []
+        for m in range(1,self.n_boundaries):
+            start, end = self.indices_of_boundary[m]
+            zm = self.singular_sources[:,m-1]
+            zm = zm[0] + 1j*zm[1]
+            dt = self.dt[start:end]
+            omega = omega_conj[start:end].conj()
+            fourth_term_dipstr.append(np.sum(
+                (1j*dt.conj() - np.abs(dt)*np.conj(zm))*omega))
+        fourth_term_dipstr = np.array(fourth_term_dipstr)
+        fourth_term = cfmm2d(eps=FMM_EPS,
+                             sources=self.singular_sources,
+                             dipstr=fourth_term_dipstr,
+                             targets=self.boundary_sources,
+                             pgt=1).pottarg.conj()
+
+        fifth_term = cfmm2d(eps=FMM_EPS,
+                            sources=self.singular_sources,
+                            dipstr=self.singular_density(
+                                np.abs(self.dt)*omega_conj.conj()),
+                            targets=self.boundary_sources,
+                            pgt=1).pottarg.conj()*self.t
+
+        singular_term = fourth_term + fifth_term
+
+        return non_singular_term + singular_term
+    
+    def singular_density(self, a):
+
+        ret = []
+        for m in range(1, self.n_boundaries):
+            start, end = self.indices_of_boundary[m]
+            ret.append(np.sum(a[start:end]))
+        return np.array(ret)
 ```

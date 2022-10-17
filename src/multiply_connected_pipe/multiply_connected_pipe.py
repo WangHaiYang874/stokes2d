@@ -2,6 +2,8 @@ from curve import *
 from utils import *
 from pipe.mat_vec import MatVec
 from .boundary import Boundary
+from .fmm import A_fmm
+
 
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
 from scipy.sparse.linalg import gmres, LinearOperator
@@ -31,6 +33,7 @@ class MultiplyConnectedPipe:
     z: np.complex128    # this is just a point inside the domain.
     # single solver, Matrix from Nyestorm's discretization. this is the unconstrained version. Implementing the constrained version can speed up the convergence of gmres. But I don't care that much about this...
     A: LinearOperator
+    fmm: A_fmm
 
     ### flows ###
 
@@ -43,7 +46,7 @@ class MultiplyConnectedPipe:
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
     def __init__(self) -> None:
-        return
+        pass
 
     @property
     def exterior_boundary(self):
@@ -82,13 +85,15 @@ class MultiplyConnectedPipe:
 
         return np.mean(self.t)
 
-    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1):
+    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1, fmm=True):
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
-        self.build_A()
+        self.build_A_fmm()
+        if not fmm:
+            self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
-        self.A = None  # free memory
-        self.build_pressure_drops()
-
+        if not fmm:
+            self.A = None # free up memory. 
+        
     def build_geometry(self, max_distance=None, legendre_ratio=None, n_jobs=1):
 
         if n_jobs == 1:
@@ -107,10 +112,15 @@ class MultiplyConnectedPipe:
         index = np.insert(np.cumsum([b.n_pts for b in self.boundaries]), 0, 0)
         return [(index[i], index[i+1]) for i in range(len(index)-1)]
 
+    def build_A_fmm(self):
+        self.fmm = A_fmm(self)
+        self.A = LinearOperator(
+            self.fmm, dtype=np.float64, shape=(2*self.n_pts, 2*self.n_pts))
+
     def build_A(self):
-        
-        ### the first part is the non-singular part of the matrix. ### 
-        
+
+        ### the first part is the non-singular part of the matrix. ###
+
         # diff_t[i, j] = t[i] - t[j]
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
         # dt2[*,i] = dt[i] = dt_da[i] * da[i]
@@ -118,10 +128,10 @@ class MultiplyConnectedPipe:
 
         K1 = np.zeros(shape=(self.n_pts, self.n_pts), dtype=np.complex128)
         K2 = np.zeros(shape=(self.n_pts, self.n_pts), dtype=np.complex128)
-        
+
         # this ignores the error for computing the diagonal elements with 0/0 error
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 -= np.imag(dt2/diff_t) /pi
+            K1 -= np.imag(dt2/diff_t) / pi
             K2 += np.imag(dt2*np.conj(diff_t)) / (np.conj(diff_t**2)*pi)
         # now we need to fill the diagonal elements
         K1_diagonal = self.k*np.abs(self.dt)/(2*pi)
@@ -133,11 +143,11 @@ class MultiplyConnectedPipe:
         ### the second part is the singular part of the matrix. ###
 
         for m in range(1, self.n_boundaries):
-        
+
             m_start, m_end = self.indices_of_boundary[m]
-            
+
             t_minus_z = (self.t -
-                        self.boundaries[m].z)[:, newaxis]
+                         self.boundaries[m].z)[:, newaxis]
             dt = self.boundaries[m].dt[newaxis, :]
 
             K1[:, m_start:m_end] += \
@@ -147,7 +157,7 @@ class MultiplyConnectedPipe:
             K2[:, m_start:m_end] += \
                 -1j*dt/np.conj(t_minus_z) + \
                 np.abs(dt)*t_minus_z/np.conj(t_minus_z)
-                    
+
         self.A = LinearOperator(matvec=MatVec(K1, K2),
                                 dtype=np.float64,
                                 shape=(2*self.n_pts, 2*self.n_pts))
@@ -199,10 +209,10 @@ class MultiplyConnectedPipe:
 
     def build_omegas(self, tol=None, n_jobs=1):
         assert n_jobs > 0
-        
+
         if self.n_flows == 1:
             n_jobs = 1
-        
+
         if n_jobs == 1:
             self.omegas = array(
                 [self.compute_omega(self.boundary_value(i), tol) for i in range(self.n_flows)])
@@ -223,43 +233,50 @@ class MultiplyConnectedPipe:
 
     ### COMPUTE PHYSICS QUANTITIES ###
 
-    def phi(self, z, omega):
+    def phi(self, z, omega, fmm=True):
         assert z.ndim == 1
-        
-        regular_part = np.sum((omega * self.dt)[newaxis, :] /
-                     (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
 
-        singular_part = np.zeros_like(regular_part,dtype=np.complex128)
-        
+        if fmm: return self.fmm.phi(z.real, z.imag, omega)
+
+        regular_part = np.sum((omega * self.dt)[newaxis, :] /
+                            (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
+
+        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
+
         for k in range(1, self.n_boundaries):
-            
+
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            
+
             singular_part += Ck * np.log(z-zk)
-            
-        return regular_part + singular_part
 
-    def d_phi(self, z, omega):
+        return regular_part + singular_part
+        
+
+    def d_phi(self, z, omega, fmm=True):
         assert z.ndim == 1
 
-        regular_part = np.sum((omega * self.dt)[newaxis, :] /
-                     (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
-
-        singular_part = np.zeros_like(regular_part,dtype=np.complex128)
+        if fmm: return self.fmm.d_phi(z.real, z.imag, omega)
         
+        regular_part = np.sum((omega * self.dt)[newaxis, :] /
+                              (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
+
+        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
+
         for k in range(1, self.n_boundaries):
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            singular_part += Ck/(z-zk) 
+            singular_part += Ck/(z-zk)
 
         return regular_part + singular_part
 
-    def psi(self, z, omega):
+    def psi(self, z, omega, fmm=True):
         assert z.ndim == 1
 
+        if fmm: return self.fmm.psi(z.real, z.imag, omega)
+        
         first_term = np.sum(
             np.real((conjugate(omega) * self.dt)[newaxis, :])
             / (self.t[newaxis, :] - z[:, newaxis]),
@@ -271,33 +288,35 @@ class MultiplyConnectedPipe:
             axis=1) / (-2j * pi)
 
         regular_part = first_term + second_term
-        
-        singular_part = np.zeros_like(regular_part,dtype=np.complex128)
+
+        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
 
         for k in range(1, self.n_boundaries):
             start, end = self.indices_of_boundary[k]
             Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
             zk = self.boundaries[k].z
-            bk = -2*np.sum((omega[start:end] * np.conj(self.dt[start:end])).imag)
-            singular_part += np.conj(Ck)*np.log(z-zk) + (bk - Ck*np.conj(zk))/(z-zk)
+            bk = -2*np.sum((omega[start:end] *
+                           np.conj(self.dt[start:end])).imag)
+            singular_part += np.conj(Ck)*np.log(z-zk) + \
+                (bk - Ck*np.conj(zk))/(z-zk)
 
         return regular_part + singular_part
 
-    def velocity(self, x, y, omega):
+    def velocity(self, x, y, omega, fmm=True):
 
         z = x + 1j*y
         assert isinstance(z, ndarray)
         assert z.ndim == 1
 
-        return H2U((self.phi(z, omega) + z * np.conj(self.d_phi(z, omega)) + np.conj(self.psi(z, omega))))
+        return H2U((self.phi(z, omega, fmm) + z * np.conj(self.d_phi(z, omega,fmm)) + np.conj(self.psi(z, omega, fmm))))
 
-    def pressure_and_vorticity(self, x, y, omega):
+    def pressure_and_vorticity(self, x, y, omega, fmm=True):
 
         z = x + 1j*y
         assert (isinstance(z, ndarray))
         assert (z.ndim == 1)
 
-        d_phi = self.d_phi(z, omega)
+        d_phi = self.d_phi(z, omega, fmm)
         d_phi_init = self.d_phi(
             array([self.lets[0].matching_pt[0]+1j*self.lets[0].matching_pt[1]]), omega)
 
@@ -307,15 +326,15 @@ class MultiplyConnectedPipe:
 
         return pressure, vorticity
 
-    def pressure(self, x, y, omega):
-        return self.pressure_and_vorticity(x, y, omega)[0]
+    def pressure(self, x, y, omega, fmm=True):
+        return self.pressure_and_vorticity(x, y, omega,fmm)[0]
 
-    def vorticity(self, x, y, omega):
-        return self.pressure_and_vorticity(x, y, omega)[1]
+    def vorticity(self, x, y, omega, fmm=True):
+        return self.pressure_and_vorticity(x, y, omega,fmm)[1]
 
-    def build_plotting_data(self, xs, ys, interior):
+    def build_plotting_data(self, xs, ys, interior,fmm=True):
 
-        # TODO assert xs, ys are inside the domain. 
+        # TODO assert xs, ys are inside the domain.
 
         near_boundary = ~interior
 
@@ -337,11 +356,10 @@ class MultiplyConnectedPipe:
 
             # interior can be directly calculated
 
-            velocity = self.velocity(xs[interior], ys[interior], omega)
-            pressure, vorticity = self.pressure_and_vorticity(
-                xs[interior], ys[interior], omega)
-            base_pressure = self.pressure_and_vorticity(
-                base_x, base_y, omega)[0][0]
+            velocity = self.velocity(xs[interior], ys[interior], omega, fmm)
+            pressure, vorticity = \
+                self.pressure_and_vorticity(xs[interior], ys[interior], omega, fmm)
+            base_pressure = self.pressure_and_vorticity(base_x, base_y, omega)[0][0]
 
             pressure -= base_pressure
 

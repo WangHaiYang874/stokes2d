@@ -31,16 +31,8 @@ assert global_pipe.boundaries[1].orientation == -1
 
 xs, ys, interior, _, _, _, _ = ps.plotting_data()
 
-ps = None
-real_pipes = None
-bdr_pipe = None
-pipes = None
-shifts = None
-_ = None
-
 t = time()
 global_pipe.build()
-global_pipe.A = None
 print(time()-t)
 t = time()
 global_pipe.build_plotting_data(xs,ys,interior)
