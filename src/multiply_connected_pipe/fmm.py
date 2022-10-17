@@ -140,7 +140,7 @@ class A_fmm:
         for Ck, zk in zip(self.Ck(omega), self.zk):
             singular_term += Ck * np.log(z-zk)
         
-        return non_singular_term + singular_term            
+        return non_singular_term + singular_term
         
     def d_phi(self, x, y, omega):
         
@@ -171,7 +171,7 @@ class A_fmm:
                     dipstr=np.real(omega.conj() * self.dt)).pottarg / (-1j*np.pi)
         
         second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, targets=np.array([x, y]), pgt=2,
-                    dipstr=np.real(self.t.conj()*omega*self.dt)).gradtarg / (2j*np.pi)
+                    dipstr=self.t.conj()*omega*self.dt).gradtarg / (2j*np.pi)
         
         non_singular_term = fisrt_term + second_term
         
