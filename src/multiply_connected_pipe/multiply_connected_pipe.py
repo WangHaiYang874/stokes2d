@@ -73,17 +73,7 @@ class MultiplyConnectedPipe:
     def dt(self): return self.dt_da * self.da
     @property
     def k(self): return concatenate([c.k for c in self.boundaries])
-
-    @property
-    def z(self):
-        # here I assume that the domain is convex,
-        # so I will simply take the average of points on the boundary.
-        # TODO: the more careful algorithm to handle non-convex domains is to use
-        # poles of inaccessibility.
-        # PIA has a convenient python implementation at
-        # https://github.com/shapely/shapely/blob/main/shapely/algorithms/polylabel.py
-
-        return np.mean(self.t)
+    
 
     def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1, fmm=True):
         self.build_geometry(max_distance, legendre_ratio, n_jobs)
@@ -336,6 +326,8 @@ class MultiplyConnectedPipe:
     def build_plotting_data(self, xs, ys, interior,fmm=True):
 
         # TODO assert xs, ys are inside the domain.
+        # this could be waited on merging the multiply_connected_pipe with the regular pipe. 
+        
 
         near_boundary = ~interior
 
@@ -398,7 +390,7 @@ class MultiplyConnectedPipe:
         self.v_fields = np.array(v_fields)
         self.p_fields = np.array(p_fields)
         self.o_fields = np.array(o_fields)
-
+        
     def fields_with_fluxes(self, fluxes, base_let_index, base_pressure):
         assert isinstance(fluxes, np.ndarray)
         assert fluxes.ndim == 1

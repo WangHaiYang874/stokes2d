@@ -1,7 +1,10 @@
+from cProfile import label
 from utils import *
 from curve import *
 
 import numpy as np
+from shapely.ops import polylabel
+from shapely.geometry import LineString
 
 class Boundary:
     
@@ -45,8 +48,25 @@ class Boundary:
         [c.k for c in self.curves])
     
     @property
-    def z(self): return np.mean(self.t)
+    def z(self):
+        # here I assume that the domain is convex,
+        # so I will simply take the average of points on the boundary.
+        return np.mean(self.t)
     
+        # TODO: the more careful algorithm to handle non-convex domains is to use
+        # poles of inaccessibility.
+        # PIA has a convenient python implementation at
+        # https://github.com/shapely/shapely/blob/main/shapely/algorithms/polylabel.py
+        line = LineString(np.array((self.t.real, self.t.imag)).T)
+        line = line.buffer(5e-2)
+        label = polylabel(line, tolerance=1e-1)
+        x, y = label.wkt[0], label.wkt[1]
+        
+        
+
+    
+
+        
     @property
     def orientation(self):
         orientation = np.sum(self.dt/(self.t-self.z))/(2j*np.pi)
@@ -61,7 +81,7 @@ class Boundary:
         
         for curve in self.curves:
             
-            # TODO I should define this locally for each curve. 
+            # TODO REVERSE ORIENTATION
 
             pass
         

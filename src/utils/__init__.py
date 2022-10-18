@@ -10,7 +10,7 @@ MAX_DISTANCE = 1E-2 # panel.good_enough test
 LEGENDRE_RATIO = 1e-14 # same as above
 GMRES_TOL = 1E-10
 RESTART = 50
-FMM_EPS = 5e-16
+FMM_EPS = 1e-17
 
 
 def gauss_quad_rule(n=16, domain=(-1, 1)):
