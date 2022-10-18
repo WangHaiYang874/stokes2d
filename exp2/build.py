@@ -19,7 +19,7 @@ from time import time
 with open('./exp1/dev_Pipes.pickle','rb') as f:
     pipes, shifts = pickle.load(f)
 
-bdr_pipe = BoundaryPipe([BoundaryLet(-10,0,0,2,1),BoundaryLet(36,0,np.pi,2,-1)])
+bdr_pipe = BoundaryPipe([BoundaryLet(-5,0,0,1,-1),BoundaryLet(31,0,np.pi,1,1)])
 real_pipes = [RealPipe(p,shift_x=shift[0],shift_y=shift[1]) for p,shift in zip(pipes,shifts)]
 ps = PipeSystem(real_pipes,bdr_pipe)
 
@@ -32,7 +32,7 @@ assert global_pipe.boundaries[1].orientation == -1
 xs, ys, interior, _, _, _, _ = ps.plotting_data()
 
 t = time()
-global_pipe.build()
+global_pipe.build(tol=1E-8)
 print(time()-t)
 t = time()
 global_pipe.build_plotting_data(xs,ys,interior)
