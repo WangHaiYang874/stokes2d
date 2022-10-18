@@ -353,7 +353,7 @@ class MultiplyConnectedPipe:
             velocity = self.velocity(xs[interior], ys[interior], omega, fmm)
             pressure, vorticity = \
                 self.pressure_and_vorticity(xs[interior], ys[interior], omega, fmm)
-            base_pressure = self.pressure_and_vorticity(base_x, base_y, omega)[0][0]
+            base_pressure = self.pressure_and_vorticity(base_x, base_y, omega, fmm)[0][0]
 
             pressure -= base_pressure
 
@@ -391,6 +391,17 @@ class MultiplyConnectedPipe:
         self.v_fields = np.array(v_fields)
         self.p_fields = np.array(p_fields)
         self.o_fields = np.array(o_fields)
+
+    def build_pressure_drops(self):
+        pts = array([let.matching_pt for let in self.lets])
+        pressure_drops = []
+        for omega in self.omegas:
+            pressure = self.pressure(pts[:, 0], pts[:, 1], omega,fmm=False)
+            pressure_drops.append(pressure[1:] - pressure[0])
+
+        self.pressure_drops = array(pressure_drops)
+        
+
         
     def fields_with_fluxes(self, fluxes, base_let_index, base_pressure):
         assert isinstance(fluxes, np.ndarray)
