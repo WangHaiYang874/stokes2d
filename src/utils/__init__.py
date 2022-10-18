@@ -9,6 +9,7 @@ DOMAIN_THRESHOLD = 1e-8 # The minimal size of interval of 16 pts gauss quad rule
 MAX_DISTANCE = 1E-2 # panel.good_enough test
 LEGENDRE_RATIO = 1e-14 # same as above
 GMRES_TOL = 1E-10
+GMRES_MAX_ITER = 100
 RESTART = 50
 FMM_EPS = 1e-17
 

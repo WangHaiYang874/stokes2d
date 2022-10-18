@@ -153,12 +153,13 @@ class MultiplyConnectedPipe:
                                 dtype=np.float64,
                                 shape=(2*self.n_pts, 2*self.n_pts))
 
-    def compute_omega(self, H, tol=None):
+    def compute_omega(self, H, tol=None,max_iter=None):
 
         tol = GMRES_TOL if tol is None else tol
+        max_iter = GMRES_MAX_ITER if max_iter is None else max_iter
         b = concatenate((H.real, H.imag))
 
-        omega_sep, _ = gmres(self.A, b, atol=0, tol=tol, restart=RESTART)
+        omega_sep, _ = gmres(self.A, b, atol=0, tol=tol, restart=RESTART, maxiter=max_iter)
 
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
