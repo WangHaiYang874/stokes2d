@@ -3,10 +3,15 @@ in two dimensions where the interaction kernel is related to the
 biharmonic greens function $r^2 log (r)$ and its derivatives
 
 $$
-    u(x) = \sum_{j=1}^{N} c_{j} \log(|x-x_{j}|) + 
-    \overline{c_{j}} (x-x_{j})/(\overline{x-x_{j}}) + d_{j,1}/(x-x_{j}) - 
-    d_{j,2}/(\overline{x-x_{j}}) - 
+    u(x) = \sum_{j=1}^{N}2 c_{j}  \log(|x-x_{j}|) + 
+    \overline{c_{j}} (x-x_{j})/(\overline{x-x_{j}}) + d_{j,1}/(x-x_{j}) + d_{j,2}/(\overline{x-x_{j}}) - 
     \overline{d_{j,1}} (x-x_{j})/(\overline{x-x_{j}})^2
+$$
+
+$$
+        u(x) = \sum_{j=1}^{N} c_{j} * log(|x-x_{j}|) + 
+        \overline{c}_{j} (x-x_{j})/(\overline{x-x_{j}}) + d_{j,1}/(x-x_{j}) - d_{j,2}/(\overline{x-x_{j}}) - 
+        \overline{d_{j,1}} (x-x_{j})/(\overline{x-x_{j}})^2
 $$
 
 where $c_{j}$ are the charge densities, $d_{j,1}$, $d_{j,2}$ are the dipole strengths,
