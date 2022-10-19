@@ -53,11 +53,11 @@ class A_fmm:
         dj2 = 2*(self.dt*omega.conj()).real.astype(np.complex128)
         dipoles = np.array([dj1,dj2])
         bh_term = bhfmm2d(
-            eps=1e-16, pg=1, sources=self.boundary_sources, 
+            eps=FMM_EPS, pg=1, sources=self.boundary_sources, 
             dipoles=dipoles).pot/(2j*np.pi)
         
         c_term = cfmm2d(
-            eps=1e-16, pg=1, sources=self.boundary_sources, 
+            eps=FMM_EPS, pg=1, sources=self.boundary_sources, 
             dipstr=-2*self.dt*omega).pot/(2j*np.pi)
         
         return diagonal_term + bh_term + c_term
