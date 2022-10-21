@@ -10,7 +10,7 @@ class Preconditioner:
     def __init__(self, E, F) -> None:
         self.E = E
         self.F = F
-        self.S = -np.matmul(E,F)
+        self.S = -np.matmul(F,E)
         self.S_lu = lu_factor(self.S)
         self.n = E.shape[0]//2
         self.m = E.shape[1]//2

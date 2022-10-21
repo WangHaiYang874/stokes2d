@@ -2,7 +2,7 @@ from curve import *
 from utils import *
 from pipe.mat_vec import MatVec
 from .boundary import Boundary
-from .fmm import A_fmm
+from .fmm import A_fmm, Preconditioner
 
 
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
@@ -34,6 +34,7 @@ class MultiplyConnectedPipe:
     # single solver, Matrix from Nyestorm's discretization. this is the unconstrained version. Implementing the constrained version can speed up the convergence of gmres. But I don't care that much about this...
     A: LinearOperator
     fmm: A_fmm
+    preconditioner: LinearOperator
 
     ### flows ###
 
@@ -109,10 +110,12 @@ class MultiplyConnectedPipe:
 
     def build_A_fmm(self):
         self.fmm = A_fmm(self)
-        self.A = LinearOperator(matvec=self.fmm,
-                                dtype=np.float64,
-                                M=self.fmm.preconditioner,
-                                shape=(2*(self.n_pts+self.n_boundaries-1), 2*(self.n_pts+self.n_boundaries-1)))
+        self.A = LinearOperator(
+            matvec=self.fmm,dtype=np.float64,
+            shape=(2*(self.n_pts+self.n_boundaries-1), 2*(self.n_pts+self.n_boundaries-1)))
+        self.preconditioner = LinearOperator(
+            matvec=self.fmm.preconditioner,dtype=np.float64,
+            shape=(2*(self.n_pts+self.n_boundaries-1), 2*(self.n_pts+self.n_boundaries-1)))
 
     def build_A(self):
         
@@ -165,9 +168,8 @@ class MultiplyConnectedPipe:
         tol = GMRES_TOL if tol is None else tol
         max_iter = GMRES_MAX_ITER if max_iter is None else max_iter
         
-        c_sep = np.zeros(2*(self.n_boundaries-1))
-        b = concatenate((H.real, H.imag,c_sep))
-        omega_sep_and_c_sep, _ = gmres(self.A, b, atol=0, tol=tol, restart=RESTART, maxiter=max_iter)
+        b = concatenate((H.real, H.imag,np.zeros(2*(self.n_boundaries-1))))
+        omega_sep_and_c_sep, _ = gmres(self.A, b, M=self.preconditioner, atol=0, tol=tol, restart=RESTART, maxiter=max_iter)
         omega_sep = omega_sep_and_c_sep[:2*self.n_pts]
         c_sep = omega_sep_and_c_sep[2*self.n_pts:]
         
