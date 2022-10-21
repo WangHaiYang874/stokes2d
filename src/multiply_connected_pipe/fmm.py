@@ -1,7 +1,6 @@
 from typing import List, Tuple
 import numpy as np
-from fmm2dpy import cfmm2d
-
+from fmm2dpy import cfmm2d, bhfmm2d
 from utils import FMM_EPS
 
 class A_fmm:
@@ -47,72 +46,103 @@ class A_fmm:
 
         return np.array(ret)
 
-    def K1(self, omega: np.ndarray):
+    def K_non_singular_terms(self,omega):
         
-        # here are the non-singualr terms
-        first_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=1,
-                            dipstr=self.dt*omega/(-2j*np.pi)).pot
-        second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=1,
-                             dipstr=self.dt*(omega.conj())/(-2j*np.pi)).pot.conj()
-        diagonal_term = self.k1_diagonal*omega
+        diagonal_term = self.k1_diagonal*omega + (self.k2_diagonal)*omega.conj()
+        dj1 = self.dt*omega
+        dj2 = 2*(self.dt*omega.conj()).real.astype(np.complex128)
+        dipoles = np.array([dj1,dj2])
+        bh_term = bhfmm2d(
+            eps=FMM_EPS, pg=1, sources=self.boundary_sources, 
+            dipoles=dipoles).pot/(2j*np.pi)
+        
+        c_term = cfmm2d(
+            eps=FMM_EPS, pg=1, sources=self.boundary_sources, 
+            dipstr=-2*self.dt*omega).pot/(2j*np.pi)
+        
+        return diagonal_term + bh_term + c_term
 
-        non_singular_term = first_term + second_term + diagonal_term
+    def K_singular_terms(self,omega):
+        bh_term = bhfmm2d(
+            eps=FMM_EPS, pgt=1,
+            sources=self.singular_sources,
+            targets=self.boundary_sources,
+            charges=self.singular_density(np.abs(self.dt)*omega)).pottarg
 
-        if self.n_interior_boundaries == 0:
-            return non_singular_term
+        c_term = cfmm2d(
+            eps=FMM_EPS,pgt=1,
+            sources=self.singular_sources,
+            targets=self.boundary_sources,
+            dipstr=self.singular_density(-2*(np.imag(np.conjugate(self.dt)*omega)))).pottarg.conj()
+        return bh_term + c_term
 
-        # here are the singular source terms
 
-        third_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
-                            dipstr=self.singular_density(-1j*self.dt*omega.conj())).pottarg.conj()
+    # def K1(self, omega: np.ndarray):
+        
+    #     # here are the non-singualr terms
+    #     first_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=1,
+    #                         dipstr=self.dt*omega/(-2j*np.pi)).pot
+    #     second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=1,
+    #                          dipstr=self.dt*(omega.conj())/(-2j*np.pi)).pot.conj()
+    #     diagonal_term = self.k1_diagonal*omega
 
-        fourth_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
-                             charges=self.singular_density(2*np.abs(self.dt)*omega)).pottarg
+    #     non_singular_term = first_term + second_term + diagonal_term
 
-        singular_term = third_term + fourth_term
+    #     if self.n_interior_boundaries == 0:
+    #         return non_singular_term
 
-        return non_singular_term + singular_term
+    #     # here are the singular source terms
 
-    def K2(self, omega_conj: np.ndarray):
+    #     third_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
+    #                         dipstr=self.singular_density(-1j*self.dt*omega.conj())).pottarg.conj()
 
-        first_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=1,
-                            dipstr=-np.conjugate(self.dt*omega_conj)/(2j*np.pi),).pot.conj()
+    #     fourth_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
+    #                          charges=self.singular_density(2*np.abs(self.dt)*omega)).pottarg
 
-        second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=2,
-                             dipstr=-self.dt*omega_conj.conj()/(2j*np.pi)).grad.conj()*self.t
+    #     singular_term = third_term + fourth_term
 
-        third_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=2,
-                            dipstr=self.dt*omega_conj.conj()*self.t.conj()/(2j*np.pi)).grad.conj()
+    #     return non_singular_term + singular_term
 
-        diagonal_term = self.k2_diagonal*omega_conj
+    # def K2(self, omega_conj: np.ndarray):
 
-        non_singular_term = first_term + second_term + third_term + diagonal_term
+    #     first_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=1,
+    #                         dipstr=-np.conjugate(self.dt*omega_conj)/(2j*np.pi),).pot.conj()
 
-        if self.n_interior_boundaries == 0:
-            return non_singular_term
+    #     second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=2,
+    #                          dipstr=-self.dt*omega_conj.conj()/(2j*np.pi)).grad.conj()*self.t
 
-        # here are the singular source terms
+    #     third_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, pg=2,
+    #                         dipstr=self.dt*omega_conj.conj()*self.t.conj()/(2j*np.pi)).grad.conj()
 
-        fourth_term_dipstr = []
+    #     diagonal_term = self.k2_diagonal*omega_conj
 
-        for (start, end), zk in zip(self.indices_of_interior_boundary,self.zk):
-            dt = self.dt[start:end]
-            omega = omega_conj[start:end].conj()
-            fourth_term_dipstr.append(np.sum(
-                (1j*dt.conj() - np.abs(dt)*np.conj(zk))*omega
-            ))
+    #     non_singular_term = first_term + second_term + third_term + diagonal_term
 
-        fourth_term_dipstr = np.array(fourth_term_dipstr)
+    #     if self.n_interior_boundaries == 0:
+    #         return non_singular_term
 
-        fourth_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
-                             dipstr=fourth_term_dipstr,).pottarg.conj()
+    #     # here are the singular source terms
 
-        fifth_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
-                            dipstr=self.singular_density(np.abs(self.dt)*omega_conj.conj())).pottarg.conj()*self.t
+    #     fourth_term_dipstr = []
 
-        singular_term = fourth_term + fifth_term
+    #     for (start, end), zk in zip(self.indices_of_interior_boundary,self.zk):
+    #         dt = self.dt[start:end]
+    #         omega = omega_conj[start:end].conj()
+    #         fourth_term_dipstr.append(np.sum(
+    #             (1j*dt.conj() - np.abs(dt)*np.conj(zk))*omega
+    #         ))
 
-        return non_singular_term + singular_term
+    #     fourth_term_dipstr = np.array(fourth_term_dipstr)
+
+    #     fourth_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
+    #                          dipstr=fourth_term_dipstr,).pottarg.conj()
+
+    #     fifth_term = cfmm2d(eps=FMM_EPS, sources=self.singular_sources, targets=self.boundary_sources, pgt=1,
+    #                         dipstr=self.singular_density(np.abs(self.dt)*omega_conj.conj())).pottarg.conj()*self.t
+
+    #     singular_term = fourth_term + fifth_term
+
+    #     return non_singular_term + singular_term
 
     def Ck(self,omega):
         return [np.sum(omega[start:end]*np.abs(self.dt[start:end])) 
@@ -122,25 +152,25 @@ class A_fmm:
         return [-2*np.sum((omega[start:end]*np.conj(self.dt[start:end])).imag) 
                 for start, end in self.indices_of_interior_boundary]
 
-    def phi(self, x, y, omega):
+    # def phi(self, x, y, omega):
 
-        assert x.shape == y.shape
-        assert x.ndim == 1
+    #     assert x.shape == y.shape
+    #     assert x.ndim == 1
 
-        non_singular_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, targets=np.array([x, y]), pgt=1, 
-                    dipstr=omega * self.dt).pottarg / (-2j*np.pi)
+    #     non_singular_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, targets=np.array([x, y]), pgt=1, 
+    #                 dipstr=omega * self.dt).pottarg / (-2j*np.pi)
         
-        if self.n_interior_boundaries == 0:
-            return non_singular_term
+    #     if self.n_interior_boundaries == 0:
+    #         return non_singular_term
         
-        singular_term = np.zeros_like(non_singular_term, dtype=np.complex128)
+    #     singular_term = np.zeros_like(non_singular_term, dtype=np.complex128)
         
-        z = x + 1j*y
+    #     z = x + 1j*y
         
-        for Ck, zk in zip(self.Ck(omega), self.zk):
-            singular_term += Ck * np.log(z-zk)
+    #     for Ck, zk in zip(self.Ck(omega), self.zk):
+    #         singular_term += Ck * np.log(z-zk)
         
-        return non_singular_term + singular_term
+    #     return non_singular_term + singular_term
         
     def d_phi(self, x, y, omega):
         
@@ -162,34 +192,63 @@ class A_fmm:
         
         return non_singular_term + singular_term            
         
-    def psi(self, x,y, omega):
+    # def psi(self, x,y, omega):
+        
+    #     assert x.shape == y.shape
+    #     assert x.ndim == 1
+
+    #     fisrt_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, targets=np.array([x, y]), pgt=1,
+    #                 dipstr=np.real(omega.conj() * self.dt)).pottarg / (-1j*np.pi)
+        
+    #     second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, targets=np.array([x, y]), pgt=2,
+    #                 dipstr=self.t.conj()*omega*self.dt).gradtarg / (2j*np.pi)
+        
+    #     non_singular_term = fisrt_term + second_term
+        
+    #     if self.n_interior_boundaries == 0:
+    #         return non_singular_term
+        
+    #     singular_term = np.zeros_like(non_singular_term, dtype=np.complex128)
+        
+    #     z = x + 1j*y
+        
+    #     for Ck, zk, bk in zip(self.Ck(omega), self.zk, self.bk(omega)):
+    #         singular_term += np.conj(Ck) * np.log(z-zk) + (bk - Ck*np.conj(zk))/(z-zk)
+        
+    #     return non_singular_term + singular_term
+        
+    def velocity(self, x,y, omega):
         
         assert x.shape == y.shape
         assert x.ndim == 1
-
-        fisrt_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, targets=np.array([x, y]), pgt=1,
-                    dipstr=np.real(omega.conj() * self.dt)).pottarg / (-1j*np.pi)
         
-        second_term = cfmm2d(eps=FMM_EPS, sources=self.boundary_sources, targets=np.array([x, y]), pgt=2,
-                    dipstr=self.t.conj()*omega*self.dt).gradtarg / (2j*np.pi)
+        dipoles = np.array([
+            -omega*self.dt/(2j*np.pi),
+            (omega.conj()*self.dt).real/(1j*np.pi),
+        ])
         
-        non_singular_term = fisrt_term + second_term
+        non_singular_term = bhfmm2d(
+            eps=FMM_EPS, pgt=1,sources=self.boundary_sources, targets=np.array([x, y]),
+            dipoles=dipoles).pottarg
+        
         
         if self.n_interior_boundaries == 0:
             return non_singular_term
         
-        singular_term = np.zeros_like(non_singular_term, dtype=np.complex128)
-        
+        singular_terms = np.zeros_like(non_singular_term, dtype=np.complex128)
         z = x + 1j*y
         
         for Ck, zk, bk in zip(self.Ck(omega), self.zk, self.bk(omega)):
-            singular_term += np.conj(Ck) * np.log(z-zk) + (bk - Ck*np.conj(zk))/(z-zk)
+            
+            phi_singular = Ck * np.log(z-zk)
+            d_phi_singular = Ck/(z-zk)
+            psi_singular = np.conj(Ck) * np.log(z-zk) + (bk - Ck*np.conj(zk))/(z-zk)
+            
+            singular_terms += phi_singular + z*d_phi_singular.conjugate() + psi_singular.conjugate()
         
-        return non_singular_term + singular_term
-        
+        return non_singular_term + singular_terms
+
     def __call__(self, omega_sep):
-        # print('A_fmm called')
         omega = np.array(omega_sep[:len(self.t)] + 1j*omega_sep[len(self.t):])
-        ret = omega + self.K1(omega) + self.K2(omega.conj())
-        # print('A_fmm finished')
+        ret = omega + self.K_non_singular_terms(omega) + self.K_singular_terms(omega)
         return np.concatenate([ret.real, ret.imag])

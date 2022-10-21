@@ -5,6 +5,7 @@ from curve import *
 import numpy as np
 from shapely.ops import polylabel
 from shapely.geometry import LineString
+from matplotlib.path import Path
 
 class Boundary:
     
@@ -61,12 +62,7 @@ class Boundary:
         line = line.buffer(5e-2)
         label = polylabel(line, tolerance=1e-1)
         x, y = label.wkt[0], label.wkt[1]
-        
-        
 
-    
-
-        
     @property
     def orientation(self):
         orientation = np.sum(self.dt/(self.t-self.z))/(2j*np.pi)
@@ -89,4 +85,55 @@ class Boundary:
     def build(self, max_distance=None, legendre_ratio=None):
         [c.build(max_distance, legendre_ratio) for c in self.curves]
     
+    def clean_copy(self):
+        new_curves = [c.clean_copy() for c in self.curves]
+        return Boundary(new_curves)
     
+    
+    
+    def inside_mask(self,xs,ys):
+        pts = []
+        for c in self.curves:
+            if isinstance(c, Cap):
+                pts += [c.start_pt, c.matching_pt]
+            elif isinstance(c, Line):
+                pts += [c.start_pt, c.mid_pt]
+            elif isinstance(c, Corner):
+                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
+        polygon = np.array(pts)
+    
+        return Path(polygon).contains_points(np.array([xs, ys]).T)
+        
+    def near_mask(self,xs,ys,dist):
+        
+        pts = []
+        for c in self.curves:
+            if isinstance(c, Line):
+                pts += [c.start_pt, c.end_pt]
+            elif isinstance(c, Corner) or isinstance(c, Cap):
+                pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
+        
+        polygon = np.concatenate([pts, [pts[0]]])
+
+        linestring = LineString(polygon).buffer(dist)
+
+        exterior_bdr_pts = np.array(linestring.exterior.coords.xy).T
+        in_exterior = Path(np.concatenate((exterior_bdr_pts, [exterior_bdr_pts[0]]))).contains_points(np.array([xs, ys]).T)
+        
+        not_in_interior = np.full_like(xs, True, dtype=bool)
+        
+        for interior in linestring.interiors:
+            interior_bdr_pts = np.array(interior.coords.xy).T
+            
+            not_in_interior &= (~np.array(
+                Path(np.concatenate((interior_bdr_pts, [interior_bdr_pts[0]])))
+                .contains_points(np.array([xs, ys]).T), dtype=bool))
+
+        return in_exterior & not_in_interior
+        
+        
+        
+        
+        
+
+        

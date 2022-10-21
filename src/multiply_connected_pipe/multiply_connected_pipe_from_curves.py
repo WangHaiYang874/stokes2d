@@ -27,7 +27,7 @@ class MultiplyConnectedPipeFromCurves(MultiplyConnectedPipe):
             pts = np.array(list(G.nodes))
             pts_cplx = pts[:,0] + 1j*pts[:,1]
             distance = np.abs(pts_cplx[:,None] - pts_cplx[None,:])
-            need_to_merge = (distance < 1e-9) & (distance > 0)
+            need_to_merge = (distance < 1e-10) & (distance > 0)
             
         assert len(G.nodes) == len(set(G.edges))
 

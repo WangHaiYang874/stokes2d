@@ -1,3 +1,4 @@
+import copy
 from utils import *
 from .panel import Panel
 from curve.linear_transform import affine_transformation
@@ -23,8 +24,10 @@ class Curve:
         self.end_pt = end_pt
         self.mid_pt = mid_pt
 
-        self.aff_trans = None
+        self.build_aff_trans()
 
+
+    def build_aff_trans(self):
         self.aff_trans = affine_transformation(
             self.standard_start_pt, self.standard_mid_pt, self.standard_end_pt,
             self.start_pt, self.mid_pt, self.end_pt)
@@ -134,3 +137,10 @@ class Curve:
     @property
     def k(self):
         return (self.dx_da * self.ddy_dda - self.dy_da * self.ddx_dda) / ((self.dx_da ** 2 + self.dy_da ** 2) ** 1.5)
+
+    def clean_copy(self):
+        
+        ret = copy.deepcopy(self)
+        ret.panels = []
+        return ret
+        
