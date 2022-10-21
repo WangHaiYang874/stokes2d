@@ -1,8 +1,8 @@
 from curve import *
 from utils import *
 from pipe.mat_vec import MatVec
-from .boundary import Boundary
-from .fmm import A_fmm
+from ..boundary import Boundary
+from ..fmm import A_fmm
 
 
 from numpy import ndarray, concatenate, pi, conjugate, array, newaxis
@@ -460,6 +460,3 @@ class MultiplyConnectedPipe:
         
         return inside_mask, near_mask
             
-        
-        
-        
