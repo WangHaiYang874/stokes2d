@@ -144,3 +144,6 @@ class Curve:
         ret.panels = []
         return ret
         
+    def reversed(self):
+        pass # TODO
+        

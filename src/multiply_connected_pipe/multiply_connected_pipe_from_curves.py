@@ -1,4 +1,4 @@
-from ..boundary import Boundary
+from curve import Boundary
 from .multiply_connected_pipe import MultiplyConnectedPipe
 import networkx as nx
 import numpy as np

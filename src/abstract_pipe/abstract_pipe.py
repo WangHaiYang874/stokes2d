@@ -1,4 +1,4 @@
-from pipe import *
+from multiply_connected_pipe import *
 from .let import Let
 from utils import *
 

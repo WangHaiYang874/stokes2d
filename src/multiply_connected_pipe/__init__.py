@@ -2,4 +2,9 @@ from .multiply_connected_pipe import MultiplyConnectedPipe
 from .multiply_connected_pipe_from_boundary import MultiplyConnectedPipeFromBoundaries
 from .multiply_connected_pipe_from_curves import MultiplyConnectedPipeFromCurves
 from .multiply_connected_pipe_from_pipe_system import MultiplyConnectedPipeFromPipeSystem
-from boundary import Boundary
+from .cross import Cross
+from .n_lets import NLets
+from .pipe_with_diff_r import PipeWithDifferentRadius
+from .smooth_pipe import SmoothPipe
+from .straight_pipe import StraightPipe
+from .t_shaped import TShaped

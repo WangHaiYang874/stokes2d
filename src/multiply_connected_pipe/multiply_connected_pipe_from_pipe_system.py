@@ -1,11 +1,11 @@
 from copy import deepcopy
 from email.errors import BoundaryError
 from curve.cap import Cap
-from pipe_system.pipe_system import PipeSystem
+# from pipe_system.pipe_system import PipeSystem
 from .multiply_connected_pipe_from_curves import MultiplyConnectedPipeFromCurves
 
 class MultiplyConnectedPipeFromPipeSystem(MultiplyConnectedPipeFromCurves):
-    def __init__(self, pipe_sys: PipeSystem):
+    def __init__(self, pipe_sys: "PipeSystem"):
         caps_to_keep = []
         for v in pipe_sys.vertices:
             if v.atBdr:

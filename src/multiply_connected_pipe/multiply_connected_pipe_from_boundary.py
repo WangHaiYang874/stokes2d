@@ -1,5 +1,5 @@
 from .multiply_connected_pipe import MultiplyConnectedPipe
-from ..boundary import Boundary
+from curve import Boundary
 from utils import *
 
 class MultiplyConnectedPipeFromBoundaries(MultiplyConnectedPipe):

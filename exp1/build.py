@@ -3,16 +3,13 @@ sys.path.insert(0,'./src/')
 from curve import *
 from utils import *
 import numpy as np
-from pipe import *
+from multiply_connected_pipe import *
 import pickle
 
-from joblib import Parallel, delayed
 from time import time
 
 import os
 curr_dir = os.path.dirname(__file__)
-
-start_time = time()
 
 l1 = pt(-5,0)
 l2 = pt(4,-3)
@@ -42,15 +39,15 @@ pipe6 = NLets(np.array([[-4,-3],[5,0],[-4,3]]), np.array([0.5,0.5,0.5]))
 shift6 = np.array([26,0])
 
 
-def build(pipe):
-    pipe.build(density=25, h_mult=4,n_jobs=4)
-    pipe.A = None # free up memory
-    return pipe
-
-pipes = Parallel(n_jobs=6) (delayed(build) (p) for p in [pipe1, pipe2, pipe3, pipe4, pipe5, pipe6])
+pipes = [pipe1, pipe2, pipe3, pipe4, pipe5, pipe6]
 shifts = [shift1,shift2,shift3,shift4,shift5,shift6]
 
-with open(curr_dir + '/dev_Pipes.pickle','wb') as f:
-    pickle.dump([pipes, shifts],f,fix_imports=True,protocol=None)
 
-print(time() - start_time)
+t = time()
+for pipe in (pipes):
+    pipe.build()
+    print(time()-t)
+    t = time()
+
+with open(curr_dir + '/pipes_and_shifts.pickle','wb') as f:
+    pickle.dump([pipes, shifts],f,fix_imports=True,protocol=None)
