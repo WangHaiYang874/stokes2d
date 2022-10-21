@@ -22,12 +22,12 @@ class MatVec:
         return len(self.t)
     
     def Ck(self,omega):
-        return [np.sum(omega[start:end]*np.abs(self.dt[start:end])) 
-                for start, end in self.indices_of_interior_boundary]
+        arr = omega*np.abs(self.dt)
+        return self.singular_density(arr)
 
     def bk(self,omega):
-        return [-2*np.sum((omega[start:end]*np.conj(self.dt[start:end])).imag) 
-                for start, end in self.indices_of_interior_boundary]
+        arr = -2*(omega*np.conj(self.dt)).imag
+        return self.singular_density(arr)
     
     def singular_density(self, some_density):
 
@@ -38,9 +38,18 @@ class MatVec:
 
         return np.array(ret)
     
-    def __init__(self,) -> None:
-        pass
-    
+    def __init__(self,pipe:"MultiplyConnectedPipe") -> None:
+        
+        self.t = pipe.t
+        self.da = pipe.da
+        self.dt = pipe.dt
+        self.dt_da = pipe.dt_da
+        self.k1_diagonal = pipe.k * np.abs(pipe.dt) / (2*np.pi)
+        self.k2_diagonal = -pipe.k*pipe.dt_da * \
+            pipe.dt/(2*np.pi*np.abs(pipe.dt_da))
+        self.zk = np.array([b.z for b in pipe.boundaries[1:]])
+        self.indices_of_interior_boundary = pipe.indices_of_boundary[1:]
+        
     
     def __call__(self,omega_sep):
         
@@ -63,6 +72,7 @@ class MatVec:
 
         # return regular_part + singular_part
 
-    
+    def clean(self):
+        pass
     
     

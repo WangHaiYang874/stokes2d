@@ -98,16 +98,21 @@ class Boundary:
     def caps(self):
         return [c for c in self.curves if isinstance(c, Cap)]
 
+
     def reverse_orientation(self):
         pass # TODO
-
-    
-    def build(self, max_distance=None, legendre_ratio=None):
-        [c.build(max_distance, legendre_ratio) for c in self.curves]
     
     def clean_copy(self):
         new_curves = [c.clean_copy() for c in self.curves]
         return Boundary(new_curves)
+    
+    def transformed(self, shift, ):
+        ret = self.clean_copy()
+        ret.curves = [c.transformed(shift) for c in ret.curves]
+        return ret        
+    
+    def build(self, max_distance=None, legendre_ratio=None):
+        [c.build(max_distance, legendre_ratio) for c in self.curves]
     
     def near(self, xs,ys,dist):
         g = LineString(self.smth_plyg_bdr()).buffer(dist)

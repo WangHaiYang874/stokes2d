@@ -12,5 +12,6 @@ class Line(Curve):
     ddx_dda_fn = lambda _, a: np.zeros_like(a)
     ddy_dda_fn = lambda _, a: np.zeros_like(a)
 
-    def __init__(self, start_pt=pt(-1,0), end_pt=pt(1,0)) -> None:
+    def __init__(self, start_pt=pt(-1,0), end_pt=pt(1,0), mid_pt=None) -> None:
+        mid_pt = (start_pt + end_pt) / 2
         super().__init__(start_pt, end_pt, (start_pt + end_pt)/2)

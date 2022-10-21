@@ -15,16 +15,10 @@ class Fmm(MatVec):
         return np.array([self.t.real, self.t.imag])
 
     def __init__(self, pipe: "MultiplyConnectedPipe") -> None:
-        self.t = pipe.t
-        self.da = pipe.da
-        self.dt = pipe.dt
-        self.dt_da = pipe.dt_da
-        self.k1_diagonal = pipe.k * np.abs(pipe.dt) / (2*np.pi)
-        self.k2_diagonal = -pipe.k*pipe.dt_da * \
-            pipe.dt/(2*np.pi*np.abs(pipe.dt_da))
-        self.zk = np.array([b.z for b in pipe.boundaries[1:]])
+        
+        super().__init__(pipe)
         self.singular_sources = np.array([self.zk.real, self.zk.imag])
-        self.indices_of_interior_boundary = pipe.indices_of_boundary[1:]
+        
 
     def K_non_singular_terms(self, omega):
 
@@ -118,3 +112,6 @@ class Fmm(MatVec):
             ret += self.K_singular_terms(omega)
  
         return np.concatenate([ret.real, ret.imag])
+
+    def clean(self):
+        super().clean()

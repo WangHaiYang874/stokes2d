@@ -77,6 +77,7 @@ class MultiplyConnectedPipe:
         self.build_geometry(max_distance, legendre_ratio)
         self.build_A()
         self.build_omegas(tol=tol, n_jobs=n_jobs)
+        self.mat_vec.clean()
         self.build_pressure_drops()
         
     def build_geometry(self, max_distance=None, legendre_ratio=None):

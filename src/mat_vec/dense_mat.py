@@ -9,31 +9,27 @@ class DenseMat(MatVec):
     K2: np.ndarray
 
     def __init__(self, pipe: "MultiplyConnectedPipe") -> None:
+        super().__init__(pipe)
+        self.K1 = None
+        self.K2 = None
 
-        self.t = pipe.t
-        self.da = pipe.da
-        self.dt = pipe.dt
-        self.dt_da = pipe.dt_da
-        self.zk = np.array([b.z for b in pipe.boundaries[1:]])
-        self.indices_of_interior_boundary = pipe.indices_of_boundary[1:]
-
-        # Construct K1 and K2
+    def build_k(self):
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
-        dt2 = self.dt[newaxis, :]
-
+        dt = self.dt[newaxis, :]
         with np.errstate(divide='ignore', invalid='ignore'):
-            K1 = np.imag(dt2/diff_t) / (-pi)
-            K2 = (dt2 / conjugate(diff_t) - conjugate(dt2)
+            K1 = np.imag(dt/diff_t) / (-pi)
+            K2 = (dt / conjugate(diff_t) - conjugate(dt)
                   * diff_t/(conjugate(diff_t**2))) / (2j*pi)
 
-        K1_diagonal = pipe.k*np.abs(self.dt)/(2*pi)
-        K2_diagonal = -pipe.k*self.dt*self.dt_da / (2*pi*np.abs(self.dt_da))
-        np.fill_diagonal(K1, K1_diagonal)
-        np.fill_diagonal(K2, K2_diagonal)
+        np.fill_diagonal(K1, self.k1_diagonal)
+        np.fill_diagonal(K2, self.k2_diagonal)
         self.K1 = K1
         self.K2 = K2
 
     def __call__(self, omega_sep):
+        
+        if self.K1 is None or self.K2 is None:
+            self.build_k()
 
         assert omega_sep.shape == (2*self.n_pts,)
 
@@ -96,3 +92,8 @@ class DenseMat(MatVec):
             singular_term += Ck/(z-zk)
 
         return non_singular_term + singular_term
+
+    def clean(self):
+        self.K1 = None
+        self.K2 = None
+        super().clean()

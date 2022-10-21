@@ -6,10 +6,11 @@ import numpy as np
 class MultiplyConnectedPipeFromCurves(MultiplyConnectedPipe):
     def __init__(self, curves):
         super().__init__()
-        G = nx.Graph()
+        
+        G = nx.DiGraph()
 
-        for c in curves:
-            G.add_edge(pt2tuple(c.start_pt),pt2tuple(c.end_pt), curve=c)
+        edges = [(pt2tuple(c.start_pt),pt2tuple(c.end_pt), {'curve_index':i}) for i,c in enumerate(curves)]
+        G.add_edges_from(edges)
 
         pts = np.array(list(G.nodes))
         pts_cplx = pts[:,0] + 1j*pts[:,1]
@@ -33,16 +34,16 @@ class MultiplyConnectedPipeFromCurves(MultiplyConnectedPipe):
 
         boundaries = []
         
-        for c in nx.cycle_basis(G):
-            curves = []
+        for c in nx.recursive_simple_cycles(G):
+            boundary_curves = []
             for node1,node2 in zip(c, c[1:] + c[:1]):
-                curves.append(G.edges[node1,node2]['curve'])
-            boundaries.append(curves)
+                boundary_curves.append(curves[G.edges[node1,node2]['curve_index']])
+            boundaries.append(boundary_curves)
             
         boundaries = [Boundary(b) for b in boundaries]
+        [b.build() for b in boundaries]
         self.boundaries = sorted(boundaries, key=lambda boundary: np.min(boundary.t.real))
-    
-    
+
 def pt2tuple(pt):
     assert pt.shape == (2,)
     return (pt[0],pt[1])

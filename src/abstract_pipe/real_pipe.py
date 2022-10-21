@@ -35,15 +35,16 @@ class RealPipe(AbstractPipe):
     # o_fields: np.ndarray  # shape=(n_flows, x, y)
     
     def __init__(self, p: MultiplyConnectedPipe, shift_x=0, shift_y=0, rotation=0) -> None:
-
+        
         self.prototye = p
-        self.n_lets = len(p.lets)
-        self.n_flows = self.n_lets - 1
         self.shift = np.array([shift_x, shift_y])
         
         if rotation != 0:
             raise NotImplementedError('Rotation not implemented yet')
-
+    @property
+    def n_lets(self):return len(self.lets)
+    @property
+    def n_flows(self): return self.n_lets - 1
     @property
     def lets(self):
         return [Let(*l.matching_pt+self.shift, l.dir, l.diameter)for l in self.prototye.lets]

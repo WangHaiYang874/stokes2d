@@ -144,6 +144,14 @@ class Curve:
         ret.panels = []
         return ret
         
+    def transformed(self, shift):
+
+        start_pt = self.start_pt + shift
+        end_pt = self.end_pt + shift
+        mid_pt = self.mid_pt + shift
+        
+        return self.__class__(start_pt, end_pt, mid_pt)
+    
     def reversed(self):
         pass # TODO
         
