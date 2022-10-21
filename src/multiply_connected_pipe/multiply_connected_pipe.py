@@ -225,25 +225,25 @@ class MultiplyConnectedPipe:
 
     ### COMPUTE PHYSICS QUANTITIES ###
 
-    def phi(self, z, omega, fmm=True):
-        assert z.ndim == 1
+    # def phi(self, z, omega, fmm=True):
+    #     assert z.ndim == 1
 
-        if fmm: return self.fmm.phi(z.real, z.imag, omega)
+    #     if fmm: return self.fmm.phi(z.real, z.imag, omega)
 
-        regular_part = np.sum((omega * self.dt)[newaxis, :] /
-                            (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
+    #     regular_part = np.sum((omega * self.dt)[newaxis, :] /
+    #                         (self.t[newaxis, :] - z[:, newaxis]), axis=1) / (2j * pi)
 
-        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
+    #     singular_part = np.zeros_like(regular_part, dtype=np.complex128)
 
-        for k in range(1, self.n_boundaries):
+    #     for k in range(1, self.n_boundaries):
 
-            start, end = self.indices_of_boundary[k]
-            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
-            zk = self.boundaries[k].z
+    #         start, end = self.indices_of_boundary[k]
+    #         Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
+    #         zk = self.boundaries[k].z
 
-            singular_part += Ck * np.log(z-zk)
+    #         singular_part += Ck * np.log(z-zk)
 
-        return regular_part + singular_part
+    #     return regular_part + singular_part
         
 
     def d_phi(self, z, omega, fmm=True):
@@ -264,43 +264,67 @@ class MultiplyConnectedPipe:
 
         return regular_part + singular_part
 
-    def psi(self, z, omega, fmm=True):
-        assert z.ndim == 1
+    # def psi(self, z, omega, fmm=True):
+    #     assert z.ndim == 1
 
-        if fmm: return self.fmm.psi(z.real, z.imag, omega)
+    #     if fmm: return self.fmm.psi(z.real, z.imag, omega)
         
-        first_term = np.sum(
-            np.real((conjugate(omega) * self.dt)[newaxis, :])
-            / (self.t[newaxis, :] - z[:, newaxis]),
-            axis=1) / (1j*pi)
+    #     first_term = np.sum(
+    #         np.real((conjugate(omega) * self.dt)[newaxis, :])
+    #         / (self.t[newaxis, :] - z[:, newaxis]),
+    #         axis=1) / (1j*pi)
 
-        second_term = np.sum(
-            (conjugate(self.t) * omega * self.dt)[newaxis, :]
-            / (self.t[newaxis, :] - z[:, newaxis])**2,
-            axis=1) / (-2j * pi)
+    #     second_term = np.sum(
+    #         (conjugate(self.t) * omega * self.dt)[newaxis, :]
+    #         / (self.t[newaxis, :] - z[:, newaxis])**2,
+    #         axis=1) / (-2j * pi)
 
-        regular_part = first_term + second_term
+    #     regular_part = first_term + second_term
 
-        singular_part = np.zeros_like(regular_part, dtype=np.complex128)
+    #     singular_part = np.zeros_like(regular_part, dtype=np.complex128)
 
-        for k in range(1, self.n_boundaries):
-            start, end = self.indices_of_boundary[k]
-            Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
-            zk = self.boundaries[k].z
-            bk = -2*np.sum((omega[start:end] *
-                           np.conj(self.dt[start:end])).imag)
-            singular_part += np.conj(Ck)*np.log(z-zk) + \
-                (bk - Ck*np.conj(zk))/(z-zk)
+    #     for k in range(1, self.n_boundaries):
+    #         start, end = self.indices_of_boundary[k]
+    #         Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
+    #         zk = self.boundaries[k].z
+    #         bk = -2*np.sum((omega[start:end] *
+    #                        np.conj(self.dt[start:end])).imag)
+    #         singular_part += np.conj(Ck)*np.log(z-zk) + \
+    #             (bk - Ck*np.conj(zk))/(z-zk)
 
-        return regular_part + singular_part
+    #     return regular_part + singular_part
 
-    def velocity(self, x, y, omega, fmm=True):
-
+    def velocity(self, x, y, omega:np.ndarray, fmm=True):
+        
+        if fmm:
+            return H2U(self.fmm.velocity(x, y, omega))
+        
         z = x + 1j*y
         assert isinstance(z, ndarray)
         assert z.ndim == 1
+        
+        z = z[:, newaxis]
+        omega = omega[newaxis, :]
+        dt = self.dt[newaxis, :]
+        t = self.t[newaxis, :]
+        t_minus_z = t - z
+        
+        non_singular_term = np.sum(
+            omega*dt/t_minus_z 
+            + t_minus_z*omega.conj()*dt.conj()/(t_minus_z.conj()**2)
+            -2*np.real(omega.conj()*dt)/t_minus_z.conj(),
+            axis=1)/(2j*pi)
+        
+        zk = array([b.z for b in self.boundaries[1:]])[newaxis, :]
+        Ck = array([np.sum(omega[start:end] * np.abs(self.dt[start:end])) for start, end in self.indices_of_boundary[1:]])[newaxis, :]
+        bk = -2*  array([np.sum((omega[start:end] *np.conj(self.dt[start:end])).imag) for start, end in self.indices_of_boundary[1:]])[newaxis, :]
+        
+        singular_term = np.sum(
+            2*Ck*np.log(z-zk) + Ck.conj()*(z-zk)/(z-zk).conj() + bk.conj()/(z-zk).conj(),
+            axis=1)
 
-        return H2U((self.phi(z, omega, fmm) + z * np.conj(self.d_phi(z, omega,fmm)) + np.conj(self.psi(z, omega, fmm))))
+        return H2U(non_singular_term + singular_term)
+
 
     def pressure_and_vorticity(self, x, y, omega, fmm=True):
 
@@ -421,3 +445,21 @@ class MultiplyConnectedPipe:
         p = p - curr_pressure + base_pressure
 
         return u, v, p, o
+
+    def clear_geometry(self):
+        self.boundaries = [b.clean_copy() for b in self.boundaries]
+        
+    def graph_mask(self,xs,ys,dist):
+        
+        inside_mask = self.boundaries[0].inside_mask(xs,ys)
+        near_mask = self.boundaries[0].near_mask(xs,ys,dist)
+        
+        for b in self.boundaries[1:]:
+            inside_mask = inside_mask & ~b.inside_mask(xs,ys)
+            near_mask = near_mask | b.near_mask(xs,ys,dist)
+        
+        return inside_mask, near_mask
+            
+        
+        
+        

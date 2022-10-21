@@ -39,6 +39,8 @@ class MultiplyConnectedPipeFromPipeSystem(MultiplyConnectedPipeFromCurves):
                 if isinstance(c, Cap):
                     c.matching_pt += shift
 
+                c.build_aff_trans()
+                
                 curves.append(c)
 
         super().__init__(curves)

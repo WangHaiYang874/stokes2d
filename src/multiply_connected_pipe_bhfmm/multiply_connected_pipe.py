@@ -423,3 +423,8 @@ class MultiplyConnectedPipe:
         p = p - curr_pressure + base_pressure
 
         return u, v, p, o
+
+    def clear_geometry(self):
+        self.boundaries = [b.clean_copy() for b in self.boundaries]
+        
+        

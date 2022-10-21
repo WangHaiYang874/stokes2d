@@ -1,4 +1,5 @@
 from cProfile import label
+import copy
 from utils import *
 from curve import *
 
@@ -88,5 +89,9 @@ class Boundary:
     
     def build(self, max_distance=None, legendre_ratio=None):
         [c.build(max_distance, legendre_ratio) for c in self.curves]
+    
+    def clean_copy(self):
+        new_curves = [c.clean_copy() for c in self.curves]
+        return Boundary(new_curves)
     
     
