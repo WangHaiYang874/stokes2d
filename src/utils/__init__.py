@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict
 ERR = 1e-17 # the quadrature error setted for scipy.integrate.quad
 THRESHOLD = 1e-10 # for matcthing let. 
 DOMAIN_THRESHOLD = 1e-8 # The minimal size of interval of 16 pts gauss quad rule
-MAX_DISTANCE = 0.16 # panel.good_enough test
+MAX_DISTANCE = 0.08 # panel.good_enough test
 MAX_DISTANCE_DENSE = 0.01 # panel.good_enough test
 LEGENDRE_RATIO = 1e-14 # same as above
 GMRES_TOL = 1E-10
