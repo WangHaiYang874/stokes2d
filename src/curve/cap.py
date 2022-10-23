@@ -16,9 +16,9 @@ class Cap(Curve):
     def dx_da_fn(_, a): return _psi(a)
     def ddx_dda_fn(_, a): return _d_psi(a)
 
-    def y_fn(_, a): return _int_Psi_normalized(a)
-    def dy_da_fn(_, a): return _Psi_normalized(a)
-    def ddy_dda_fn(_, a): return _psi_normalized(a)
+    def y_fn(_, a): return int_Psi(a)
+    def dy_da_fn(_, a): return Psi(a)
+    def ddy_dda_fn(_, a): return psi(a)
 
     def __init__(self, start_pt=pt(1, 0), end_pt=pt(-1, 0), mid_pt=pt(0, 2)) -> None:
 
@@ -72,7 +72,6 @@ def _d_psi(a: np.ndarray) -> np.ndarray:
     ret[np.isnan(ret)] = 0
     return -8*ret
 
-
 def _Psi(a):
 
     if isinstance(a, np.ndarray):
@@ -95,19 +94,13 @@ def _Psi(a):
             return 1
         return np.tanh(-2*a/(1-a**2))
 
+_int_Psi = -quad(_Psi, 0, 1, epsabs=ERR, epsrel=ERR)[0]/2
 
-_int_Psi_normalizer = -quad(_Psi, 0, 1, epsabs=ERR, epsrel=ERR)[0]/2
-
-
-def _int_Psi_normalized(a):
-    if isinstance(a, np.ndarray):
-        return np.array([quad(_Psi, -1, b, epsabs=ERR, epsrel=ERR)[0] for b in a])/_int_Psi_normalizer
+def int_Psi(a):
     if isinstance(a, numbers.Number):
-        return quad(_Psi, -1, a, epsabs=ERR, epsrel=ERR)[0]/_int_Psi_normalizer
-    raise ValueError
+        return quad(_Psi, -1, a, epsabs=ERR, epsrel=ERR)[0]/_int_Psi
+    return np.array([int_Psi(ai) for ai in a])
 
+def Psi(a): return _Psi(a)/_int_Psi
 
-def _Psi_normalized(a): return _Psi(a)/_int_Psi_normalizer
-
-
-def _psi_normalized(a): return _psi(a)/_int_Psi_normalizer
+def psi(a): return _psi(a)/_int_Psi

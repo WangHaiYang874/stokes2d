@@ -2,6 +2,7 @@ from utils import *
 from .curve import Curve
 
 from scipy.integrate import quad, IntegrationWarning
+from scipy.special import expi
 
 import numbers
 import warnings
@@ -31,31 +32,29 @@ class Corner(Curve):
 
 
 def convoluted_abs(x):
+    # see https://www.wolframalpha.com/input?i=%5Cint+exp%281%2Fx%29+dx
+
     if np.abs(x) >= 1:
         return np.abs(x)
     x = np.abs(x)
 
-    a = quad(_bump,
-             0, x,
-             epsabs=ERR, epsrel=ERR)[0]
-    b = quad(lambda y: y*_bump(y),
-             x, 1,
-             epsabs=ERR, epsrel=ERR)[0]
-    return 2*(x*a + b)/bump_def_int
-
+    a = 2*x*quad(bump,0, x,epsabs=ERR, epsrel=ERR)[0]
+    t = (x**2-1)
+    b = (expi(1/t) - t*np.exp(1/t))/_bump_def_int
+    
+    return a + b
 
 def d_convoluted_abs(x):
-    if np.abs(x) >= 1:
-        return np.sign(x)
-
-    return (quad(_bump, -1, x, epsabs=ERR, epsrel=ERR)[0] - quad(_bump, x, 1, epsabs=ERR, epsrel=ERR)[0])/bump_def_int
-
+    sign = np.sign(x)
+    x = np.abs(x)
+    if x >= 1:
+        return sign
+    return 2*sign*quad(bump, 0, x, epsabs=ERR, epsrel=ERR)[0]
 
 def dd_convoluted_abs(x):
     if np.abs(x) >= 1:
         return 0
-    return 2*_bump(x)/bump_def_int
-
+    return 2*bump(x)
 
 def _bump(a):
     if isinstance(a, numbers.Number):
@@ -69,21 +68,7 @@ def _bump(a):
     ret[np.isnan(ret)] = 0
     return ret
 
+_bump_def_int = 0.443993816168079437823048921170552663761201789045697497307484553947040996939333945294846408031424708284300177578991350408812926995038438567308381450581
 
-def _d_bump(a: np.ndarray) -> np.ndarray:
-    with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
-        ret = -2 * _bump(a) * a / (a**2-1)**2
-    ret[abs(a) >= 1] = 0
-    ret[np.isnan(ret)] = 0
-    return ret
-
-
-def _d_d_bump(a: np.ndarray) -> np.ndarray:
-    with np.errstate(divide='ignore', over='ignore', invalid='ignore'):
-        ret = 2 * _bump(a) * (3*a**4 - 1) / (a**2-1)**4
-    ret[abs(a) >= 1] = 0
-    ret[np.isnan(ret)] = 0
-    return ret
-
-
-bump_def_int = quad(_bump, -1, 1, epsabs=ERR, epsrel=ERR)[0]
+def bump(a):
+    return _bump(a)/_bump_def_int

@@ -3,7 +3,7 @@ from .curve import Curve
 
 class Circle(Curve):
     standard_start_pt = pt(1,0)
-    standard_end_pt   = pt(0,1)
+    standard_end_pt   = pt(1,0)
     standard_mid_pt   = pt(-1,0)
     def x_fn(_,a): return np.cos(a*np.pi)
     def y_fn(_,a): return np.sin(a*np.pi)
@@ -18,10 +18,17 @@ class Circle(Curve):
         
         # TODO: this is absolutely bs to make the code runnning....
         start_pt = pt(radius,0) + center
-        end_pt = pt(0,radius) + center
+        end_pt = pt(radius,0) + center
         mid_pt = pt(-radius,0) + center
-        
         super().__init__(start_pt, end_pt, mid_pt)
+        self.orientation = orientation
         
-        self.aff_trans.A = np.array([[radius,0],[0,radius*orientation]])
+    def build_aff_trans(self):
+        super().build_aff_trans()
+        
+        center = (self.start_pt + self.mid_pt) / 2
+        radius = (self.start_pt - center)[0]
+        
+        self.aff_trans.A = np.array([[radius,0],[0,radius*self.orientation]])
         self.aff_trans.b = center
+        

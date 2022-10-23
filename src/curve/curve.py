@@ -14,6 +14,7 @@ class Curve:
     dy_da_fn = None
     ddx_dda_fn = None
     ddy_dda_fn = None
+    panels: list[Panel]
 
     def __init__(self, start_pt, end_pt, mid_pt) -> None:
 
@@ -32,64 +33,26 @@ class Curve:
             self.standard_start_pt, self.standard_mid_pt, self.standard_end_pt,
             self.start_pt, self.mid_pt, self.end_pt)
 
-    def build(self, max_distance=None, legendre_ratio=None):
+    def build(self, required_tol=REQUIRED_TOL,p=16):
 
-        # initialize panel
+        # TODO: change
+        
         if not len(self.panels):
-            a, da = gauss_quad_rule()
-            x = self.x_fn(a)
-            y = self.y_fn(a)
-            x, y = self.aff_trans(x, y, with_affine=True)
-            p = Panel(a, da, x, y, (-1, 1))
+            p = Panel(self, (-1, 1),p)
             self.panels.append(p)
 
         # refine the panels.
         i = 0
         while i < len(self.panels):
-            if self.panels[i].good_enough(max_distance=max_distance, legendre_ratio=legendre_ratio):
+            if self.panels[i].good_enough(required_tol):
                 i += 1
                 continue
 
             # the panel is not good enough, so we want to refine it.
             p = self.panels.pop(i)
-            p1, p2 = self.split_a_panel(p)
+            p1, p2 = p.refined()
             self.panels.insert(i, p2)
             self.panels.insert(i, p1)
-
-        # calculating other needed quantities of the curve.
-        for p in self.panels:
-            dx_da = self.dx_da_fn(p.a)
-            dy_da = self.dy_da_fn(p.a)
-            ddx_dda = self.ddx_dda_fn(p.a)
-            ddy_dda = self.ddy_dda_fn(p.a)
-
-            dx_da, dy_da = self.aff_trans(dx_da, dy_da)
-            ddx_dda, ddy_dda = self.aff_trans(ddx_dda, ddy_dda)
-
-            p.dx_da = dx_da
-            p.dy_da = dy_da
-            p.ddx_dda = ddx_dda
-            p.ddy_dda = ddy_dda
-
-    def split_a_panel(self, p):
-        left, right = p.domain
-        mid = (left + right) / 2.
-        domain1 = (left, mid)
-        domain2 = (mid, right)
-
-        ret = []
-
-        for domain in [domain1, domain2]:
-
-            a, da = gauss_quad_rule(domain=domain)
-            x = self.x_fn(a)
-            y = self.y_fn(a)
-            x, y = self.aff_trans(x, y, with_affine=True)
-            p = Panel(a, da, x, y, domain)
-
-            ret.append(p)
-
-        return ret
 
     def boundary_velocity(self):
         return np.zeros_like(self.a)

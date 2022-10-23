@@ -16,13 +16,12 @@ class affine_transformation:
         x_ = np.vstack([x, [1, 1, 1]])
 
         try:
-            Ab = np.matmul(y, np.linalg.inv(x_))
+            Ab_transpose = np.linalg.solve(x_.T, y.T)
         except np.linalg.LinAlgError:
             Ab_transpose, _, _, _ = np.linalg.lstsq(x_.T, y.T, rcond=0)
             # using is lstsq because the matrix x_ might be singular for curves like a Line.
             # as tested, this would give a numerical error of order 1e-15.
-            Ab = Ab_transpose.T
-
+        Ab = Ab_transpose.T
         self.A = Ab[:, :2]
         self.b = Ab[:, 2]
 
