@@ -4,9 +4,8 @@ from mat_vec import MatVec
 from curve import Boundary
 from mat_vec import MatVec, mat_vec_constructor
 
-from numpy import ndarray, concatenate, pi, array, newaxis
+from numpy import ndarray, concatenate, array
 from scipy.sparse.linalg import gmres, LinearOperator
-from scipy.interpolate import griddata, NearestNDInterpolator
 
 import warnings
 from joblib import Parallel, delayed
@@ -21,7 +20,8 @@ class MultiplyConnectedPipe:
     interior_boundaries: List[Boundary]
     n_boundaries: int
     indices_of_boundary: List[Tuple[int, int]]
-    # curves: List[Curve] # there should be a better way to merge pipe systems. 
+    curves: List[Curve] # there should be a better way to merge pipe systems. 
+    panels: List[Panel]
 
     n_pts: int          # number of points on the boundary curve
     da: ndarray         # the quadrature weights
@@ -72,16 +72,64 @@ class MultiplyConnectedPipe:
     def indices_of_boundary(self):
         index = np.insert(np.cumsum([b.n_pts for b in self.boundaries]), 0, 0)
         return [(index[i], index[i+1]) for i in range(len(index)-1)]
+    @property
+    def curves(self):
+        return [c for b in self.boundaries for c in b.curves]
+    @property
+    def panels(self):
+        return [p for c in self.curves for p in c.panels]
 
-    def build(self, max_distance=None, legendre_ratio=None, tol=None, n_jobs=1, fmm=True):
-        self.build_geometry(max_distance, legendre_ratio)
+    def build(self, required_tol=REQUIRED_TOL, n_jobs=1, fmm=True):
+        self.build_geometry(REQUIRED_TOL)
         self.build_A()
-        self.build_omegas(tol=tol, n_jobs=n_jobs)
-        self.mat_vec.clean()
-        self.build_pressure_drops()
+        # self.build_omegas(tol=tol, n_jobs=n_jobs)
+        # self.mat_vec.clean()
+        # self.build_pressure_drops()
         
-    def build_geometry(self, max_distance=None, legendre_ratio=None):
-        [b.build(max_distance, legendre_ratio) for b in self.boundaries]
+    def build_geometry(self, required_tol=REQUIRED_TOL):
+        
+        p = (np.ceil(-np.log10(required_tol)) + 1).astype(int)
+        
+        # this is not enough for handling corners, but we don't have any corners. 
+        # bent panel refinement is ignored for our solver. 
+        
+        # building each curve separately
+        [b.build(required_tol,p) for b in self.boundaries]
+        
+        # refining panels to handle the close panel interaction         
+        for ib, b in enumerate(self.boundaries):
+            for ic, c in enumerate(b.curves):
+                ip = 0
+                while ip < len(c.panels):
+                    p = c.panels[ip]
+                    s = p.arclen
+                    ip_boundary = ip + sum([len(c_.panels) for c_ in b.curves[:ic]])
+                    ip_boundary_next = (ip_boundary + 1) % len(b.panels)
+                    ip_boundary_prev = (ip_boundary - 1) % len(b.panels)
+                    boundary_offset = sum([len(b_.panels) for b_ in self.boundaries[:ib]])
+                    adj = [boundary_offset + ip_boundary_next, boundary_offset + ip_boundary_prev, boundary_offset + ip_boundary]
+                    
+                    j = 0
+                    good = True
+                
+                    while j < len(self.panels):
+                        if j in adj: 
+                            j += 1
+                            continue
+                        p2 = self.panels[j]
+                        if s < 3*np.min(np.abs(p.t[:,np.newaxis] - p2.t[np.newaxis,:])):
+                            j += 1
+                            continue
+                        # need to refine
+                        c.panels.pop(ip)
+                        p1, p2 = p.refined()
+                        c.panels.insert(ip, p2)
+                        c.panels.insert(ip, p1)
+                        good = False
+                        break
+                    
+                    if good: ip += 1
+        
 
     def build_A(self):
         self.mat_vec = mat_vec_constructor(self)
@@ -284,3 +332,4 @@ class MultiplyConnectedPipe:
     #     p = p - curr_pressure + base_pressure
 
     #     return u, v, p, o
+    

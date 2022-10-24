@@ -44,8 +44,8 @@ shifts = [shift1,shift2,shift3,shift4,shift5,shift6]
 
 
 t = time()
-for pipe in (pipes):
-    pipe.build()
+for pipe in pipes:
+    pipe.build(required_tol=1e-8)
     print(time()-t)
     t = time()
 

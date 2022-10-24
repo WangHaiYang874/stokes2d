@@ -25,6 +25,18 @@ class DenseMat(MatVec):
         np.fill_diagonal(K2, self.k2_diagonal)
         self.K1 = K1
         self.K2 = K2
+        
+    def K_singular_terms(self, omega):
+        
+        singular_terms = np.zeros_like(omega, dtype=np.complex128)
+        
+        for Ck, zk, bk in zip(self.Ck(omega), self.zk, self.bk(omega)):
+            diff = self.t - zk
+            singular_terms += bk/np.conjugate(diff)
+            singular_terms += 2*Ck*np.log(np.abs(diff))
+            singular_terms += Ck.conj() * diff / np.conjugate(diff)
+
+        return singular_terms
 
     def __call__(self, omega_sep):
         
@@ -34,8 +46,20 @@ class DenseMat(MatVec):
         assert omega_sep.shape == (2*self.n_pts,)
 
         omega = omega_sep[:self.n_pts] + 1j*omega_sep[self.n_pts:]
-        ret = omega + self.K1 @ omega + self.K2 @ conjugate(omega)
+        non_singular_term = omega + self.K1 @ omega + self.K2 @ conjugate(omega)
+        
+        
+        if self.n_interior_boundaries == 0:
+            ret = non_singular_term
+            
+        else:
+            ret += self.K_singular_terms(omega)
+    
         return np.concatenate((np.real(ret), np.imag(ret)))
+        
+
+        
+
 
     def velocity(self, x, y, omega):
         assert x.shape == y.shape

@@ -53,6 +53,7 @@ class Curve:
             p1, p2 = p.refined()
             self.panels.insert(i, p2)
             self.panels.insert(i, p1)
+            
 
     def boundary_velocity(self):
         return np.zeros_like(self.a)

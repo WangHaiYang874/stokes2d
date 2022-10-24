@@ -44,6 +44,10 @@ def line_intersect(p1, p2, p3, p4):
 def pt(x, y):
     return np.array((x, y))
 
+def pt2cplx(pt):
+    return pt[0] + 1j * pt[1]
+def cplx2pt(cplx):
+    return np.array([cplx.real, cplx.imag])
 
 def U2H(U):
     if U.shape == (2,):

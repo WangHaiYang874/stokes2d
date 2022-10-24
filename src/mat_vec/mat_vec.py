@@ -1,5 +1,7 @@
 import numpy as np
 from typing import List, Tuple
+from curve import Panel
+from utils import *
 
 class MatVec:
 
@@ -12,6 +14,9 @@ class MatVec:
     n_interior_boundaries: int
     indices_of_interior_boundary: List[Tuple[int, int]]
     zk: np.ndarray # shape=(n_interior_boundaries), dtype=complex
+    
+    panels: List[Panel]
+    close_panel_interactions = List[np.ndarray]
     
     @property
     def n_interior_boundaries(self):
@@ -50,7 +55,16 @@ class MatVec:
         self.zk = np.array([b.z for b in pipe.boundaries[1:]])
         self.indices_of_interior_boundary = pipe.indices_of_boundary[1:]
         
-    
+        self.panels = pipe.panels
+        self.close_panel_interactions = []
+        for p in self.panels:
+            l = p.arclen
+            s = pt2cplx(p.start_pt)
+            e = pt2cplx(p.end_pt)
+            
+            dist = np.abs(self.t-s) + np.abs(self.t-e)
+            self.close_panel_interactions.append(np.where(dist <= 2.5*l)[0])
+        
     def __call__(self,omega_sep):
         
         """this direct call will be tranferred into a call in gmres"""

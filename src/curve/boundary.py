@@ -1,12 +1,9 @@
-import copy
 from utils import *
 from .curve import Curve
 from .cap import Cap
 from .corner import Corner
 
 import numpy as np
-from shapely.ops import polylabel
-from shapely.geometry import LineString, Point, Polygon
 
 class Boundary:
     
@@ -62,6 +59,14 @@ class Boundary:
         # https://github.com/shapely/shapely/blob/main/shapely/algorithms/polylabel.py
         
     @property
+    def caps(self):
+        return [c for c in self.curves if isinstance(c, Cap)]
+
+    @property
+    def panels(self):
+        return [p for c in self.curves for p in c.panels]
+    
+    @property
     def orientation(self):
         orientation = np.sum(self.dt/(self.t-self.z))/(2j*np.pi)
         if np.abs(orientation - 1) < 1e-10:
@@ -94,11 +99,6 @@ class Boundary:
         else:
             return np.array([pts + [pts[0]]])
 
-    @property
-    def caps(self):
-        return [c for c in self.curves if isinstance(c, Cap)]
-
-
     def reverse_orientation(self):
         pass # TODO
     
@@ -111,16 +111,16 @@ class Boundary:
         ret.curves = [c.transformed(shift) for c in ret.curves]
         return ret        
     
-    def build(self, max_distance=None, legendre_ratio=None):
-        [c.build(max_distance, legendre_ratio) for c in self.curves]
+    def build(self, required_tol=REQUIRED_TOL, p=16):
+        [c.build(required_tol,p) for c in self.curves]
     
-    def near(self, xs,ys,dist):
-        g = LineString(self.smth_plyg_bdr()).buffer(dist)
-        return np.array([g.contains(Point(x,y)) for x,y in zip(xs,ys)])
+    # def near(self, xs,ys,dist):
+    #     g = LineString(self.smth_plyg_bdr()).buffer(dist)
+    #     return np.array([g.contains(Point(x,y)) for x,y in zip(xs,ys)])
     
-    def inside(self, xs, ys):
-        p = Polygon(self.plyg_bdr())
-        return np.array([p.contains(Point(x,y)) for x,y in zip(xs,ys)])
+    # def inside(self, xs, ys):
+    #     p = Polygon(self.plyg_bdr())
+    #     return np.array([p.contains(Point(x,y)) for x,y in zip(xs,ys)])
     
     def check_correctedness(self):
 
@@ -130,3 +130,4 @@ class Boundary:
                 assert False
         
         # TODO should also check self-intersection. 
+    
