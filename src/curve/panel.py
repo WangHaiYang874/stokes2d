@@ -105,8 +105,9 @@ class Panel:
 
     @property
     def leg_interp_error(self):
+        
         m = len(self.a)*2
-        test_points = np.linspace(self.domain[0], self.domain[1], m)
+        test_points = gauss_quad_rule(domain=self.domain, n=m)[0]
         x_eval, y_eval = self.aff_trans(
             self.x_fn(test_points), self.y_fn(test_points), with_affine=True)
         dx_da_eval, dy_da_eval = self.aff_trans(
@@ -115,7 +116,6 @@ class Panel:
             self.ddx_dda_fn(test_points), self.ddy_dda_fn(test_points))
         k_eval = (dx_da_eval * ddy_dda_eval - dy_da_eval * ddx_dda_eval) / \
             ((dx_da_eval ** 2 + dy_da_eval ** 2) ** 1.5)
-        t_eval = dx_da_eval + 1j * dy_da_eval
         dt_da_eval = dx_da_eval + 1j * dy_da_eval
         g1_eval = x_eval + 1j * y_eval
         g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
@@ -134,12 +134,13 @@ class Panel:
         g6_interp = self.leg_interp(self.leg_fit(self.x * np.conjugate(self.dt_da)/self.dt_da), test_points)
         g7_interp = self.leg_interp(self.leg_fit(self.y * np.conjugate(self.dt_da)/self.dt_da), test_points)
         
-        error1 = np.linalg.norm(g1_interp - g1_eval)/np.linalg.norm(g1_eval)
-        error2 = np.linalg.norm(g2_interp - g2_eval)/np.linalg.norm(g2_eval)
-        error3 = np.linalg.norm(g3_interp - g3_eval)/np.linalg.norm(g3_eval)
-        error4 = np.sum(np.abs(g4_interp - g4_eval))/np.sum(np.abs(g4_eval))
-        error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
-        error67 = np.sum(np.abs(g6_interp - g6_eval)+np.abs(g7_interp - g7_eval))/np.sum(np.abs(g6_eval)+np.abs(g7_eval))
+        with np.errstate(divide='ignore', invalid='ignore'):
+            error1 = np.linalg.norm(g1_interp - g1_eval)/np.linalg.norm(g1_eval)
+            error2 = np.linalg.norm(g2_interp - g2_eval)/np.linalg.norm(g2_eval)
+            error3 = np.linalg.norm(g3_interp - g3_eval)/np.linalg.norm(g3_eval)
+            error4 = np.sum(np.abs(g4_interp - g4_eval))/np.sum(np.abs(g4_eval))
+            error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
+            error67 = np.sum(np.abs(g6_interp - g6_eval)+np.abs(g7_interp - g7_eval))/np.sum(np.abs(g6_eval)+np.abs(g7_eval))
 
         if self.parent.__class__.__name__ in ["Corner", "Cap"] and (self.domain[0] == -1 or self.domain[1] == 1):
             error3 = 0
@@ -147,7 +148,9 @@ class Panel:
             error3 = 0
             error67 = 0
 
-        return np.max([error1, error2, error3, error4, error5, error67])
+        ret = np.array([error1, error2, error3, error4, error5, error67])
+        ret = ret[~np.isnan(ret)]
+        return np.max(ret)
 
     def good_enough(self, required_tol=REQUIRED_TOL, domain_threhold=DOMAIN_THRESHOLD):
 
