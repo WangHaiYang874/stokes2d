@@ -59,8 +59,8 @@ class MatVec:
         self.close_panel_interactions = []
         for p in self.panels:
             l = p.arclen
-            s = pt2cplx(p.start_pt)
-            e = pt2cplx(p.end_pt)
+            s = p.start_pt
+            e = p.end_pt
             
             dist = np.abs(self.t-s) + np.abs(self.t-e)
             self.close_panel_interactions.append(np.where(dist <= 2.5*l)[0])

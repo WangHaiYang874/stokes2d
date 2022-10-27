@@ -80,9 +80,12 @@ class MultiplyConnectedPipe:
         return [p for c in self.curves for p in c.panels]
 
     def build(self, required_tol=REQUIRED_TOL, n_jobs=1, fmm=True):
-        self.build_geometry(REQUIRED_TOL)
+        self.build_geometry(required_tol=required_tol)
         self.build_A()
-        # self.build_omegas(tol=tol, n_jobs=n_jobs)
+        self.build_omegas(tol=required_tol, n_jobs=n_jobs)
+        
+        for p in self.panels:
+            p._build()
         # self.mat_vec.clean()
         # self.build_pressure_drops()
         

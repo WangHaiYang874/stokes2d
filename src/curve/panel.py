@@ -9,6 +9,9 @@ class Panel:
 
     domain: tuple[float, float]
     parent: "Curve"
+    
+    n: int
+    m: int
 
     x: np.ndarray
     y: np.ndarray
@@ -16,18 +19,33 @@ class Panel:
     dy_da: np.ndarray
     ddx_dda: np.ndarray
     ddy_dda: np.ndarray
+    
+    scale: np.complex128
+    center: np.complex128
+
+    @property
+    def m(self): return 2*self.n
 
     @property
     def start_pt(self):
         a = np.array([self.domain[0]])
-        return np.squeeze(self.aff_trans(self.x_fn(a), self.y_fn(a),with_affine=True))
-    
+        ret = np.squeeze(self.aff_trans(self.x_fn(a), self.y_fn(a),with_affine=True))
+        return ret[0] + 1j*ret[1]
+
     @property
     def end_pt(self):
         a = np.array([self.domain[1]])
-        return np.squeeze(self.aff_trans(self.x_fn(a), self.y_fn(a), with_affine=True))
+        ret = np.squeeze(self.aff_trans(self.x_fn(a), self.y_fn(a), with_affine=True))
+        return ret[0] + 1j*ret[1]
     
+    @property
+    def scale(self):
+        return (self.end_pt - self.start_pt)/2
     
+    @property
+    def center(self):
+        return (self.start_pt + self.end_pt)/2
+        
     @property
     def t(self): return self.x + 1j * self.y
     @property
@@ -57,14 +75,14 @@ class Panel:
     @property
     def aff_trans(self): return self.parent.aff_trans
 
-    def __init__(self, curve, domain, p=16) -> None:
+    def __init__(self, curve, domain, n=16) -> None:
         self.domain = domain
         self.parent = curve
-        self.p = p
+        self.n = n
         self.build()
 
     def build(self):
-        a, da = gauss_quad_rule(domain=self.domain, n=self.p)
+        a, da = gauss_quad_rule(domain=self.domain, n=self.n)
         self.a = a
         self.da = da
         x, y = self.aff_trans(self.x_fn(a), self.y_fn(a), with_affine=True)
@@ -82,15 +100,7 @@ class Panel:
         a = self.domain[0]
         b = self.domain[1]
         c = (a + b) / 2
-        return [Panel(self.parent, (a, c),self.p), Panel(self.parent, (c, b),self.p)]
-    # def distance(self, pts):
-    #     a = pt(self.x[0], self.y[0])
-    #     b = pt(self.x[-1], self.y[-1])
-    #     return np.distance(pts, a, b)
-
-    # @property
-    # def max_distance(self):
-    #     return np.max(np.linalg.norm(np.diff(np.array([self.x, self.y])), axis=0))
+        return [Panel(self.parent, (a, c),self.n), Panel(self.parent, (c, b),self.n)]
 
     def leg_interp(self, lp, pts):
         return np.polynomial.legendre.legval(
@@ -159,3 +169,86 @@ class Panel:
             return True
 
         return self.leg_interp_error <= required_tol
+
+    def normalize(self, t, with_affine=False):
+        if with_affine:
+            return (t-self.center)/self.scale
+        else:
+            return t/self.scale
+        
+    def _build(self):
+        
+        a_refined,da_refined  = gauss_quad_rule(self.m,domain=self.domain)
+        t_normalized = self.normalize(self.t,with_affine=True)
+        t_refined = self.aff_trans(self.x_fn(a_refined), self.y_fn(a_refined), with_affine=True)
+        t_refined = t_refined
+        
+        dt_refined = self.aff_trans(self.dx_da_fn(a_refined),self.dy_da_fn(a_refined),with_affine=False) * da_refined
+        t_refined_normalized = self.normalize(t_refined, with_affine=True)
+        t_refined_normalized = t_refined_normalized[0] + 1j * t_refined_normalized[1]
+        dt_refined_normalized = self.normalize(dt_refined, with_affine=False)
+        dt_refined_normalized = dt_refined_normalized[0] + 1j * dt_refined_normalized[1]
+
+        self.t_refined_normalized = t_refined_normalized
+        self.dt_refined_normalized = dt_refined_normalized
+
+        weight2coeff = np.linalg.solve(np.flip(np.vander(t_normalized,N=self.n),axis=1),np.eye(self.n))
+        coef2interp = np.flip(np.vander(t_refined_normalized,N=self.n),axis=1)
+        
+        self.density_interp = coef2interp @ weight2coeff
+        
+        # self.V = np.flip(np.vander(,N=m),axis=1)
+        # TODO
+        
+    def _build_for_targets(self, targets):
+        targ = self.normalize(targets, with_affine=True)
+        near = np.abs(targ) < 1.1
+        far = ~near
+        
+        P = np.zeros(len(targ), self.m + 1, dtype=np.complex128)
+        R = np.zeros(len(targ), self.m + 1, dtype=np.complex128)
+        
+        P[:,1] = self.p1(targets)
+        P[far,self.m] = self.pm(targets[far])
+        
+        for k in range(1,self.m):
+            P[near,k+1] = P[near, k] * targ[near] + (1 - (-1)**k)/(k)
+        
+        for k in range(self.m-1,1,-1):
+            P[far,k] = (P[far, k+1] - (1-(-1)**k)/k )/targ[far]
+            
+        for k in range(1,self.m+1):
+            R[:,k] = (k-1)*P[:,k-1] + (-1)**(k-1)/ (-1-targ) - 1/(1-targ)
+        
+        P = P[:,1:]
+        R = R[:,1:]
+        R = R / self.scale
+        return P, R
+            
+    def p1(self, targets):
+        targ = self.normalize(targets, with_affine=True)
+        psi = np.pi/4
+        return (1j*psi + np.log((1-targ)/(-1-targ)/np.exp(1j*psi)))
+    
+    def pm(self, targets_far_away):
+        targ = self.normalize(targets_far_away, with_affine=True)
+        zj = self.t_refined_normalized[:,np.newaxis]
+        d_zj = self.dt_refined_normalized[:,np.newaxis]
+        x = targ[np.newaxis,:]
+        return np.sum(zj**(self.m-1)*d_zj/(zj-x), axis=0)
+    
+    # I can use this two simple rules to evaluate the velocity near the boundary. 
+    # This would serve as an sufficient test for the correctedness of this algorithm. 
+    
+    
+    
+    def cauchy_integral(self, density, target):
+        P = self._build_for_targets(target)[0]
+        return P @ density
+    
+    def hadamard_integral(self, density, target):
+        R = self._build_for_targets(target)[1]
+        return R @ density
+    
+    
+    
