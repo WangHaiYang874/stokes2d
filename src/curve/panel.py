@@ -216,7 +216,7 @@ class Panel:
             P[far,k] = (P[far, k+1] - (1-(-1)**k)/k )/targ[far]
             
         for k in range(1,self.m+1):
-            R[:,k] = (k-1)*P[:,k-1] + (-1)**(k-1)/ (-1-targ) - 1/(1-targ)
+            R[:,k] = (k-1)*P[:,k-1] + ((-1)**(k-1)/(-1-targ)) - (1/(1-targ))
         
         P = P[:,1:]
         R = R[:,1:]
