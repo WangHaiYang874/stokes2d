@@ -227,7 +227,13 @@ class Panel:
         IC = C.T@self.density_interp
         IH = (1/self.scale) * H.T@self.density_interp
         
-        return IC, IH
+        K1 = (IC - np.conjugate(IC))/(2j*np.pi)
+        K2 = (- np.diag(targets) @np.conjugate(IH) 
+              - np.conjugate(IC) @np.diag(self.dt_da/np.conj(self.dt_da))
+              + np.conjugate(IH) @np.diag(self.t))/(2j*np.pi)
+        
+        return K1, K2
+        
         
     def p1(self, targets):
         targ = self.normalize(targets, with_affine=True)

@@ -12,6 +12,7 @@ class DenseMat(MatVec):
         super().__init__(pipe)
         self.K1 = None
         self.K2 = None
+        self.build_k()
 
     def build_k(self):
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
@@ -57,10 +58,6 @@ class DenseMat(MatVec):
     
         return np.concatenate((np.real(ret), np.imag(ret)))
         
-
-        
-
-
     def velocity(self, x, y, omega):
         assert x.shape == y.shape
         assert x.ndim == 1
