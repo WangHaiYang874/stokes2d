@@ -181,13 +181,12 @@ class Panel:
         a_refined,da_refined  = gauss_quad_rule(self.m,domain=self.domain)
         t_normalized = self.normalize(self.t,with_affine=True)
         t_refined = self.aff_trans(self.x_fn(a_refined), self.y_fn(a_refined), with_affine=True)
-        t_refined = t_refined
-        
+        t_refined = t_refined[0] + 1j*t_refined[1]
         dt_refined = self.aff_trans(self.dx_da_fn(a_refined),self.dy_da_fn(a_refined),with_affine=False) * da_refined
+        dt_refined = dt_refined[0] + 1j*dt_refined[1]
+        
         t_refined_normalized = self.normalize(t_refined, with_affine=True)
-        t_refined_normalized = t_refined_normalized[0] + 1j * t_refined_normalized[1]
         dt_refined_normalized = self.normalize(dt_refined, with_affine=False)
-        dt_refined_normalized = dt_refined_normalized[0] + 1j * dt_refined_normalized[1]
 
         self.t_refined_normalized = t_refined_normalized
         self.dt_refined_normalized = dt_refined_normalized
@@ -197,16 +196,15 @@ class Panel:
         
         self.density_interp = coef2interp @ weight2coeff
         
-        # self.V = np.flip(np.vander(,N=m),axis=1)
-        # TODO
+        self.V = np.flip(np.vander(t_refined_normalized,N=self.m),axis=1)
         
     def _build_for_targets(self, targets):
         targ = self.normalize(targets, with_affine=True)
         near = np.abs(targ) < 1.1
         far = ~near
         
-        P = np.zeros(len(targ), self.m + 1, dtype=np.complex128)
-        R = np.zeros(len(targ), self.m + 1, dtype=np.complex128)
+        P = np.zeros((len(targ), self.m + 1), dtype=np.complex128)
+        R = np.zeros((len(targ), self.m + 1), dtype=np.complex128)
         
         P[:,1] = self.p1(targets)
         P[far,self.m] = self.pm(targets[far])
@@ -222,9 +220,15 @@ class Panel:
         
         P = P[:,1:]
         R = R[:,1:]
-        R = R / self.scale
-        return P, R
-            
+
+        C = np.linalg.solve(self.V.T,P.T)        
+        H = np.linalg.solve(self.V.T,R.T)
+        
+        IC = C.T@self.density_interp
+        IH = (1/self.scale) * H.T@self.density_interp
+        
+        return IC, IH
+        
     def p1(self, targets):
         targ = self.normalize(targets, with_affine=True)
         psi = np.pi/4
@@ -236,10 +240,6 @@ class Panel:
         d_zj = self.dt_refined_normalized[:,np.newaxis]
         x = targ[np.newaxis,:]
         return np.sum(zj**(self.m-1)*d_zj/(zj-x), axis=0)
-    
-    # I can use this two simple rules to evaluate the velocity near the boundary. 
-    # This would serve as an sufficient test for the correctedness of this algorithm. 
-    
     
     
     def cauchy_integral(self, density, target):
