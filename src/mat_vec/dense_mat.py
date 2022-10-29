@@ -19,8 +19,7 @@ class DenseMat(MatVec):
         dt = self.dt[newaxis, :]
         with np.errstate(divide='ignore', invalid='ignore'):
             K1 = np.imag(dt/diff_t) / (-pi)
-            K2 = (dt / conjugate(diff_t) - conjugate(dt)
-                  * diff_t/(conjugate(diff_t**2))) / (2j*pi)
+            K2 = np.imag(dt * conjugate(diff_t))/(conjugate(diff_t**2)*pi)
 
         np.fill_diagonal(K1, self.k1_diagonal)
         np.fill_diagonal(K2, self.k2_diagonal)

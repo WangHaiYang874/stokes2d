@@ -131,34 +131,36 @@ class Panel:
         g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
         g3_eval = k_eval**2
         g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
-        g5_eval = np.real(dt_da_eval)
-        g6_eval = x_eval * np.conjugate(dt_da_eval)/dt_da_eval
-        g7_eval = y_eval * np.conjugate(dt_da_eval)/dt_da_eval
+        # g5_eval = np.real(dt_da_eval)
+        # g6_eval = x_eval * np.conjugate(dt_da_eval)/dt_da_eval
+        # g7_eval = y_eval * np.conjugate(dt_da_eval)/dt_da_eval
         
         g1_interp = self.leg_interp(self.leg_fit(self.t), test_points)
         g2_interp = self.leg_interp(
             self.leg_fit(np.abs(self.dt_da)), test_points)
         g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
         g4_interp = self.leg_interp(self.leg_fit(np.conjugate(self.dt_da)/self.dt_da), test_points)
-        g5_interp = self.leg_interp(self.leg_fit(np.real(self.dt_da)), test_points)
-        g6_interp = self.leg_interp(self.leg_fit(self.x * np.conjugate(self.dt_da)/self.dt_da), test_points)
-        g7_interp = self.leg_interp(self.leg_fit(self.y * np.conjugate(self.dt_da)/self.dt_da), test_points)
+        # g5_interp = self.leg_interp(self.leg_fit(np.real(self.dt_da)), test_points)
+        # g6_interp = self.leg_interp(self.leg_fit(self.x * np.conjugate(self.dt_da)/self.dt_da), test_points)
+        # g7_interp = self.leg_interp(self.leg_fit(self.y * np.conjugate(self.dt_da)/self.dt_da), test_points)
         
         with np.errstate(divide='ignore', invalid='ignore'):
             error1 = np.linalg.norm(g1_interp - g1_eval)/np.linalg.norm(g1_eval)
             error2 = np.linalg.norm(g2_interp - g2_eval)/np.linalg.norm(g2_eval)
             error3 = np.linalg.norm(g3_interp - g3_eval)/np.linalg.norm(g3_eval)
             error4 = np.sum(np.abs(g4_interp - g4_eval))/np.sum(np.abs(g4_eval))
-            error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
-            error67 = np.sum(np.abs(g6_interp - g6_eval)+np.abs(g7_interp - g7_eval))/np.sum(np.abs(g6_eval)+np.abs(g7_eval))
+            # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
+            # error67 = np.sum(np.abs(g6_interp - g6_eval)+np.abs(g7_interp - g7_eval))/np.sum(np.abs(g6_eval)+np.abs(g7_eval))
 
         if self.parent.__class__.__name__ in ["Corner", "Cap"] and (self.domain[0] == -1 or self.domain[1] == 1):
             error3 = 0
         elif self.parent.__class__.__name__ == 'Line':
             error3 = 0
-            error67 = 0
+            # error67 = 0
 
-        ret = np.array([error1, error2, error3, error4, error5, error67])
+        ret = np.array([error1, error2, error3, error4,
+                        # error5, error67
+                        ])
         ret = ret[~np.isnan(ret)]
         return np.max(ret)
 
@@ -221,19 +223,23 @@ class Panel:
         P = P[:,1:]
         R = R[:,1:]
 
-        C = np.linalg.solve(self.V.T,P.T)        
+        C = np.linalg.solve(self.V.T,P.T)
         H = np.linalg.solve(self.V.T,R.T)
         
-        IC = C.T@self.density_interp
-        IH = (1/self.scale) * H.T@self.density_interp
+        IC = (C.T@self.density_interp) / (2j*np.pi)
+        IH = (H.T@self.density_interp) / (2j*np.pi * self.scale)
+
+        K1 = IC + np.conjugate(IC)
         
-        K1 = (IC - np.conjugate(IC))/(2j*np.pi)
-        K2 = (- np.diag(targets) @np.conjugate(IH) 
-              - np.conjugate(IC) @np.diag(self.dt_da/np.conj(self.dt_da))
-              + np.conjugate(IH) @np.diag(self.t))/(2j*np.pi)
+        K2 = np.conj(
+            np.diag(targets.conj())@IH 
+            + IH@np.diag(self.t*np.conj(self.dt_da)/self.dt_da)
+            - np.diag(targets)@IH@np.diag(np.conj(self.dt_da)/self.dt_da)
+            - IH@np.diag(self.t.conj())
+        )
         
         return K1, K2
-        
+
         
     def p1(self, targets):
         targ = self.normalize(targets, with_affine=True)
@@ -245,16 +251,16 @@ class Panel:
         zj = self.t_refined_normalized[:,np.newaxis]
         d_zj = self.dt_refined_normalized[:,np.newaxis]
         x = targ[np.newaxis,:]
-        return np.sum(zj**(self.m-1)*d_zj/(zj-x), axis=0)
+        return np.sum(np.power(zj,self.m-1)*d_zj/(zj-x), axis=0)
     
     
-    def cauchy_integral(self, density, target):
-        P = self._build_for_targets(target)[0]
-        return P @ density
+    # def cauchy_integral(self, density, target):
+    #     P = self._build_for_targets(target)[0]
+    #     return P @ density
     
-    def hadamard_integral(self, density, target):
-        R = self._build_for_targets(target)[1]
-        return R @ density
+    # def hadamard_integral(self, density, target):
+    #     R = self._build_for_targets(target)[1]
+    #     return R @ density
     
     
     

@@ -91,6 +91,10 @@ class Curve:
         return np.concatenate([p.dt_da for p in self.panels])
 
     @property
+    def dt(self):
+        return self.dt_da * self.da
+    
+    @property
     def ddx_dda(self):
         return np.concatenate([p.ddx_dda for p in self.panels])
 
