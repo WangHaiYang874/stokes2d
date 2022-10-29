@@ -57,7 +57,8 @@ class Boundary:
         # poles of inaccessibility.
         # PIA has a convenient python implementation at
         # https://github.com/shapely/shapely/blob/main/shapely/algorithms/polylabel.py
-        
+    
+    
     @property
     def caps(self):
         return [c for c in self.curves if isinstance(c, Cap)]
@@ -76,6 +77,16 @@ class Boundary:
         else:
             assert False, "Unknown orientation"
     
+    @property
+    def leftest_nodes(self):
+        ret = np.inf
+        for c in self.curves:
+            ret = min(c.start_pt[0], ret)
+            if isinstance(c, Corner):
+                ret = min(c.mid_pt[0], ret)
+        return ret
+        
+        
     def plyg_bdr(self,closed=True):
         pts = []
         for c in self.curves:
@@ -111,7 +122,11 @@ class Boundary:
         ret.curves = [c.transformed(shift) for c in ret.curves]
         return ret        
     
-    def build(self, required_tol=REQUIRED_TOL, p=16):
+    def build(self, required_tol=REQUIRED_TOL, p=None):
+        
+        if p is None:
+            p = (np.ceil(-np.log10(required_tol)) + 2).astype(int)
+        
         [c.build(required_tol,p) for c in self.curves]
     
     # def near(self, xs,ys,dist):

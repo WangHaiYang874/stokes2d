@@ -18,6 +18,9 @@ class Fmm(MatVec):
         
         super().__init__(pipe)
         self.singular_sources = np.array([self.zk.real, self.zk.imag])
+        # TODO construct the correction term. 
+        
+        
         
 
     def K_non_singular_terms(self, omega):

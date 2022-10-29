@@ -41,8 +41,8 @@ class MultiplyConnectedPipeFromCurves(MultiplyConnectedPipe):
             boundaries.append(boundary_curves)
             
         boundaries = [Boundary(b) for b in boundaries]
-        [b.build() for b in boundaries]
-        self.boundaries = sorted(boundaries, key=lambda boundary: np.min(boundary.t.real))
+        # [b.build() for b in boundaries]
+        self.boundaries = sorted(boundaries, key=lambda boundary: boundary.leftest_nodes)
 
 def pt2tuple(pt):
     assert pt.shape == (2,)

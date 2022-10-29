@@ -79,19 +79,19 @@ class MultiplyConnectedPipe:
     def panels(self):
         return [p for c in self.curves for p in c.panels]
 
-    def build(self, required_tol=REQUIRED_TOL, n_jobs=1, fmm=True):
+    def build(self, required_tol=REQUIRED_TOL, n_jobs=1):
         self.build_geometry(required_tol=required_tol)
         self.build_A()
-        # self.build_omegas(tol=required_tol, n_jobs=n_jobs)
+        self.build_omegas(tol=required_tol, n_jobs=n_jobs)
+        self.build_pressure_drops()
         
         # for p in self.panels:
         #     p._build()
         # self.mat_vec.clean()
-        # self.build_pressure_drops()
         
     def build_geometry(self, required_tol=REQUIRED_TOL):
         
-        p = (np.ceil(-np.log10(required_tol)) + 1).astype(int)
+        p = (np.ceil(-np.log10(required_tol)) + 2).astype(int)
         
         # this is not enough for handling corners, but we don't have any corners. 
         # bent panel refinement is ignored for our solver. 

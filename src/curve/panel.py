@@ -1,6 +1,5 @@
 from distutils.log import warn
 from utils import *
-import matlab.engine
 
 class Panel:
     """
@@ -127,11 +126,15 @@ class Panel:
         k_eval = (dx_da_eval * ddy_dda_eval - dy_da_eval * ddx_dda_eval) / \
             ((dx_da_eval ** 2 + dy_da_eval ** 2) ** 1.5)
         dt_da_eval = dx_da_eval + 1j * dy_da_eval
-        g1_eval = x_eval + 1j * y_eval
+        t_eval = x_eval + 1j * y_eval
+        g1_eval = t_eval
         g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
         g3_eval = k_eval**2
+        
         g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
-        g5_eval = y_eval*np.conjugate(dt_da_eval)/dt_da_eval
+        # TODO, this term should be testing agains t, not a
+        
+        # g5_eval = np.imag(t_eval*np.conjugate(dt_da_eval)/dt_da_eval)
         # g5_eval = np.real(dt_da_eval)
         # g6_eval = x_eval * np.conjugate(dt_da_eval)/dt_da_eval
         # g7_eval = y_eval * np.conjugate(dt_da_eval)/dt_da_eval
@@ -141,7 +144,7 @@ class Panel:
             self.leg_fit(np.abs(self.dt_da)), test_points)
         g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
         g4_interp = self.leg_interp(self.leg_fit(np.conjugate(self.dt_da)/self.dt_da), test_points)
-        g5_interp = self.leg_interp(self.leg_fit(self.y*np.conjugate(self.dt_da)/self.dt_da), test_points)
+        # g5_interp = self.leg_interp(self.leg_fit(np.imag(self.t*np.conjugate(self.dt_da)/self.dt_da)), test_points)
         # g5_interp = self.leg_interp(self.leg_fit(np.real(self.dt_da)), test_points)
         # g6_interp = self.leg_interp(self.leg_fit(self.x * np.conjugate(self.dt_da)/self.dt_da), test_points)
         # g7_interp = self.leg_interp(self.leg_fit(self.y * np.conjugate(self.dt_da)/self.dt_da), test_points)
@@ -151,7 +154,7 @@ class Panel:
             error2 = np.linalg.norm(g2_interp - g2_eval)/np.linalg.norm(g2_eval)
             error3 = np.linalg.norm(g3_interp - g3_eval)/np.linalg.norm(g3_eval)
             error4 = np.sum(np.abs(g4_interp - g4_eval))/np.sum(np.abs(g4_eval))
-            error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
+            # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
             # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
             # error67 = np.sum(np.abs(g6_interp - g6_eval)+np.abs(g7_interp - g7_eval))/np.sum(np.abs(g6_eval)+np.abs(g7_eval))
 
@@ -161,8 +164,7 @@ class Panel:
             error3 = 0
             # error67 = 0
 
-        ret = np.array([error1, error2, error3, error4, error5
-                        # error5, error67
+        ret = np.array([error1, error2, error3, error4, # error5, error67
                         ])
         ret = ret[~np.isnan(ret)]
         return np.max(ret)
@@ -173,7 +175,9 @@ class Panel:
             warn(f"domain too small: {self.domain}")
             return True
 
-        return self.leg_interp_error <= required_tol
+        not_curved = np.max(np.abs(self.k * self.scale)) < 0.03 # TODO: find out the optimal value for this. 
+
+        return self.leg_interp_error <= required_tol and not_curved
 
     def normalize(self, t, with_affine=False):
         if with_affine:
@@ -181,10 +185,7 @@ class Panel:
         else:
             return t/self.scale
         
-    def _build(self,eng=None):
-        
-        if eng is None:
-            eng = matlab.engine.start_matlab()
+    def _build(self):
         
         a_refined,da_refined  = gauss_quad_rule(self.m,domain=self.domain)
         t_normalized = self.normalize(self.t,with_affine=True)
@@ -199,18 +200,14 @@ class Panel:
         self.t_refined_normalized = t_refined_normalized
         self.dt_refined_normalized = dt_refined_normalized
 
-        weight2coeff = np.array(eng.mldivide(np.vander(t_normalized,N=self.n),np.eye(self.n)))
-        coef2interp = np.vander(t_refined_normalized,N=self.n)
+        weight2coeff = np.linalg.solve(vand(t_normalized,self.n),np.eye(self.n))
+        coef2interp = vand(t_refined_normalized,self.n)
         
         self.density_interp = coef2interp @ weight2coeff
         
-        self.V = np.vander(t_refined_normalized,N=self.m)
+        self.V = vand(t_refined_normalized,self.m)
         
-    def _build_for_targets(self, targets,eng=None):
-        
-        if eng is None:
-            eng = matlab.engine.start_matlab()
-        
+    def get_pr(self, targets):
         targ = self.normalize(targets, with_affine=True)
         near = np.abs(targ) < 1.1
         far = ~near
@@ -225,24 +222,34 @@ class Panel:
             P[near,k+1] = P[near, k] * targ[near] + (1 - (-1)**k)/(k)
         
         for k in range(self.m-1,1,-1):
-            P[far,k] = (P[far, k+1] - (1-(-1)**k)/k )/targ[far]
+            P[far,k] = (P[far, k+1] - (1-(-1)**k)/k)/targ[far]
             
         for k in range(1,self.m+1):
-            R[:,k] = (k-1)*P[:,k-1] + ((-1)**(k-1)/(-1-targ)) - (1/(1-targ))
+            R[:,k] = (k-1)*P[:,k-1] + (-1)**k/(1+targ) - 1/(1-targ)
         
         P = P[:,1:]
         R = R[:,1:]
+        R = R/self.scale
+        return P, R
 
-        C = np.array(eng.mldivide(np.array(self.V.T),np.array(np.flip(P.T,axis=0))))
-        H = np.array(eng.mldivide(np.array(self.V.T),np.array(np.flip(R.T,axis=0))))
+    def coeff_for_k2(self, targets):
+        return (2j*np.imag((self.t[np.newaxis,:] - targets[:,np.newaxis])*np.conj(self.dt_da[np.newaxis,:]))) / self.dt_da[np.newaxis,:]
         
-        IC = (C.T@self.density_interp) / (2j*np.pi)
-        IH = (H.T@self.density_interp) / (2j*np.pi * self.scale)
+    def _build_for_targets(self, targets):
+        
+        P, R = self.get_pr(targets)
+        
+        C = np.linalg.solve(self.V.T,np.flip(P.T,axis=0))
+        H = np.linalg.solve(self.V.T,np.flip(R.T,axis=0))
+        
+        IC = (C.T@self.density_interp)
+        IH = (H.T@self.density_interp) / (2j*np.pi)
 
-        K1 = IC + np.conjugate(IC)
-        
-        coeff = (2j*np.imag((self.t[np.newaxis,:] - targets[:,np.newaxis])*np.conj(self.dt_da[np.newaxis,:]))) / self.dt_da[np.newaxis,:]
+        K1 = np.imag(IC)/np.pi
+        coeff = self.coeff_for_k2(targets)
         K2 = np.conj(coeff * IH)
+
+        # TODO what is the correct way to write K2?
         
         # K2 = np.conj(
         #     np.diag(targets.conj())@IH 
@@ -257,7 +264,7 @@ class Panel:
     def p1(self, targets):
         targ = self.normalize(targets, with_affine=True)
         psi = np.pi/4
-        return (1j*psi + np.log((1-targ)/(-1-targ)/np.exp(1j*psi)))
+        return (1j*psi + np.log((1-targ)/((-1-targ)*np.exp(1j*psi))))
     
     def pm(self, targets_far_away):
         targ = self.normalize(targets_far_away, with_affine=True)
@@ -266,6 +273,8 @@ class Panel:
         x = targ[np.newaxis,:]
         return np.sum(np.power(zj,self.m-1)*d_zj/(zj-x), axis=0)
     
+    # TODO: the only correction term I need is for evaluate velocity, pressure, vorticity. 
+    # so I might invent them here later. 
     
     # def cauchy_integral(self, density, target):
     #     P = self._build_for_targets(target)[0]
@@ -275,5 +284,5 @@ class Panel:
     #     R = self._build_for_targets(target)[1]
     #     return R @ density
     
-    
-    
+def vand(x,n):
+    return np.column_stack([x**(n-1-i) for i in range(n)])

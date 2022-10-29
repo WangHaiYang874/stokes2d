@@ -109,69 +109,69 @@ class PipeSystem:
         ###### TODO #####
         
         
-        # A = []
-        # B = []
+        A = []
+        B = []
 
-        # for v in self.vertices:
+        for v in self.vertices:
 
-        #     a = np.zeros(self.n_flows)
-        #     b = 0
+            a = np.zeros(self.n_flows)
+            b = 0
 
-        #     if v.atBdr:
+            if v.atBdr:
 
-        #         assert v.l1.pipeIndex == -1  # v.l1 is at the boundary.
-        #         pipe_index, let_index = v.l2
+                assert v.l1.pipeIndex == -1  # v.l1 is at the boundary.
+                pipe_index, let_index = v.l2
 
-        #         for flow_index, sign in self.pipes[pipe_index].flux_indices_at_let(let_index):
+                for flow_index, sign in self.pipes[pipe_index].flux_indices_at_let(let_index):
 
-        #             a[self.flow2index[(pipe_index, flow_index)]] = sign
+                    a[self.flow2index[(pipe_index, flow_index)]] = sign
 
-        #         b = -self.boundaryPipe.lets[v.l1.letIndex].flux
+                b = -self.boundaryPipe.lets[v.l1.letIndex].flux
 
-        #     else:
+            else:
 
-        #         assert v.l1[0] != v.l2[0]
+                assert v.l1[0] != v.l2[0]
 
-        #         for pipe_index, let_index in [v.l1, v.l2]:
-        #             if let_index == 0:
-        #                 for j in range(len(self.pipes[pipe_index].lets)-1):
-        #                     a[self.flow2index[(pipe_index, j)]] = 1
-        #             else:
-        #                 a[self.flow2index[(pipe_index, let_index-1)]] = -1
+                for pipe_index, let_index in [v.l1, v.l2]:
+                    if let_index == 0:
+                        for j in range(len(self.pipes[pipe_index].lets)-1):
+                            a[self.flow2index[(pipe_index, j)]] = 1
+                    else:
+                        a[self.flow2index[(pipe_index, let_index-1)]] = -1
 
-        #     A.append(a)
-        #     B.append(b)
+            A.append(a)
+            B.append(b)
 
-        # for c in self.cycles:
+        for c in self.cycles:
 
-        #     a = np.zeros(self.n_flows)
-        #     b = 0
+            a = np.zeros(self.n_flows)
+            b = 0
 
-        #     for v1, v2 in zip(c, c[1:]+c[:1]):
+            for v1, v2 in zip(c, c[1:]+c[:1]):
 
-        #         if (v1, v2) in self.edge2flow:
-        #             flow = self.edge2flow[(v1, v2)]
-        #             sign = 1
-        #         elif (v2, v1) in self.edge2flow:
-        #             flow = self.edge2flow[(v2, v1)]
-        #             sign = -1
-        #         else:
-        #             raise RuntimeError("There is no edge between", v1, v2)
+                if (v1, v2) in self.edge2flow:
+                    flow = self.edge2flow[(v1, v2)]
+                    sign = 1
+                elif (v2, v1) in self.edge2flow:
+                    flow = self.edge2flow[(v2, v1)]
+                    sign = -1
+                else:
+                    raise RuntimeError("There is no edge between", v1, v2)
 
-        #         pipe_index, flow_index = flow
-        #         pressure_coef = sign * \
-        #             self.pipes[pipe_index].pressure_diff_coef_at_let(
-        #                 flow_index + 1)
-        #         for flow_index, coef in enumerate(pressure_coef):
-        #             a[self.flow2index[(pipe_index, flow_index)]] += coef
+                pipe_index, flow_index = flow
+                pressure_coef = sign * \
+                    self.pipes[pipe_index].pressure_diff_coef_at_let(
+                        flow_index + 1)
+                for flow_index, coef in enumerate(pressure_coef):
+                    a[self.flow2index[(pipe_index, flow_index)]] += coef
 
-        #     A.append(a)
-        #     B.append(b)
+            A.append(a)
+            B.append(b)
 
-        # self.A = np.array(A)
-        # self.b = np.array(B)
+        self.A = np.array(A)
+        self.b = np.array(B)
 
-        # self.fluxes = np.linalg.lstsq(self.A, self.b, rcond=None)[0]
+        self.fluxes = np.linalg.lstsq(self.A, self.b, rcond=None)[0]
 
     def fluxes_of_pipe(self, pipe_index):
         return np.array(sorted([(flow_index, flux) for (pipe_index_, flow_index), flux in zip(
