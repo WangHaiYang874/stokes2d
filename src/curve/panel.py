@@ -1,6 +1,6 @@
 from distutils.log import warn
 from utils import *
-
+import matlab.engine
 
 class Panel:
     """
@@ -131,6 +131,7 @@ class Panel:
         g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
         g3_eval = k_eval**2
         g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
+        g5_eval = y_eval*np.conjugate(dt_da_eval)/dt_da_eval
         # g5_eval = np.real(dt_da_eval)
         # g6_eval = x_eval * np.conjugate(dt_da_eval)/dt_da_eval
         # g7_eval = y_eval * np.conjugate(dt_da_eval)/dt_da_eval
@@ -140,6 +141,7 @@ class Panel:
             self.leg_fit(np.abs(self.dt_da)), test_points)
         g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
         g4_interp = self.leg_interp(self.leg_fit(np.conjugate(self.dt_da)/self.dt_da), test_points)
+        g5_interp = self.leg_interp(self.leg_fit(self.y*np.conjugate(self.dt_da)/self.dt_da), test_points)
         # g5_interp = self.leg_interp(self.leg_fit(np.real(self.dt_da)), test_points)
         # g6_interp = self.leg_interp(self.leg_fit(self.x * np.conjugate(self.dt_da)/self.dt_da), test_points)
         # g7_interp = self.leg_interp(self.leg_fit(self.y * np.conjugate(self.dt_da)/self.dt_da), test_points)
@@ -149,6 +151,7 @@ class Panel:
             error2 = np.linalg.norm(g2_interp - g2_eval)/np.linalg.norm(g2_eval)
             error3 = np.linalg.norm(g3_interp - g3_eval)/np.linalg.norm(g3_eval)
             error4 = np.sum(np.abs(g4_interp - g4_eval))/np.sum(np.abs(g4_eval))
+            error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
             # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
             # error67 = np.sum(np.abs(g6_interp - g6_eval)+np.abs(g7_interp - g7_eval))/np.sum(np.abs(g6_eval)+np.abs(g7_eval))
 
@@ -158,7 +161,7 @@ class Panel:
             error3 = 0
             # error67 = 0
 
-        ret = np.array([error1, error2, error3, error4,
+        ret = np.array([error1, error2, error3, error4, error5
                         # error5, error67
                         ])
         ret = ret[~np.isnan(ret)]
@@ -178,7 +181,10 @@ class Panel:
         else:
             return t/self.scale
         
-    def _build(self):
+    def _build(self,eng=None):
+        
+        if eng is None:
+            eng = matlab.engine.start_matlab()
         
         a_refined,da_refined  = gauss_quad_rule(self.m,domain=self.domain)
         t_normalized = self.normalize(self.t,with_affine=True)
@@ -193,14 +199,18 @@ class Panel:
         self.t_refined_normalized = t_refined_normalized
         self.dt_refined_normalized = dt_refined_normalized
 
-        weight2coeff = np.linalg.solve(np.flip(np.vander(t_normalized,N=self.n),axis=1),np.eye(self.n))
-        coef2interp = np.flip(np.vander(t_refined_normalized,N=self.n),axis=1)
+        weight2coeff = np.array(eng.mldivide(np.vander(t_normalized,N=self.n),np.eye(self.n)))
+        coef2interp = np.vander(t_refined_normalized,N=self.n)
         
         self.density_interp = coef2interp @ weight2coeff
         
-        self.V = np.flip(np.vander(t_refined_normalized,N=self.m),axis=1)
+        self.V = np.vander(t_refined_normalized,N=self.m)
         
-    def _build_for_targets(self, targets):
+    def _build_for_targets(self, targets,eng=None):
+        
+        if eng is None:
+            eng = matlab.engine.start_matlab()
+        
         targ = self.normalize(targets, with_affine=True)
         near = np.abs(targ) < 1.1
         far = ~near
@@ -223,20 +233,23 @@ class Panel:
         P = P[:,1:]
         R = R[:,1:]
 
-        C = np.linalg.solve(self.V.T,P.T)
-        H = np.linalg.solve(self.V.T,R.T)
+        C = np.array(eng.mldivide(np.array(self.V.T),np.array(np.flip(P.T,axis=0))))
+        H = np.array(eng.mldivide(np.array(self.V.T),np.array(np.flip(R.T,axis=0))))
         
         IC = (C.T@self.density_interp) / (2j*np.pi)
         IH = (H.T@self.density_interp) / (2j*np.pi * self.scale)
 
         K1 = IC + np.conjugate(IC)
         
-        K2 = np.conj(
-            np.diag(targets.conj())@IH 
-            + IH@np.diag(self.t*np.conj(self.dt_da)/self.dt_da)
-            - np.diag(targets)@IH@np.diag(np.conj(self.dt_da)/self.dt_da)
-            - IH@np.diag(self.t.conj())
-        )
+        coeff = (2j*np.imag((self.t[np.newaxis,:] - targets[:,np.newaxis])*np.conj(self.dt_da[np.newaxis,:]))) / self.dt_da[np.newaxis,:]
+        K2 = np.conj(coeff * IH)
+        
+        # K2 = np.conj(
+        #     np.diag(targets.conj())@IH 
+        #     + IH@np.diag(self.t*np.conj(self.dt_da)/self.dt_da)
+        #     - np.diag(targets)@IH@np.diag(np.conj(self.dt_da)/self.dt_da)
+        #     - IH@np.diag(self.t.conj())
+        # )
         
         return K1, K2
 

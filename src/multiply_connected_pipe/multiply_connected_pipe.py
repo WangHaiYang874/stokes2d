@@ -84,8 +84,8 @@ class MultiplyConnectedPipe:
         self.build_A()
         # self.build_omegas(tol=required_tol, n_jobs=n_jobs)
         
-        for p in self.panels:
-            p._build()
+        # for p in self.panels:
+        #     p._build()
         # self.mat_vec.clean()
         # self.build_pressure_drops()
         

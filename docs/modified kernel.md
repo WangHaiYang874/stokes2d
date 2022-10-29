@@ -23,3 +23,14 @@ $$
 A\omega - z \overline{B\omega} - \overline{A}\omega - \bar A \frac{d\xi}{d\bar \xi} \bar \omega + \bar{B}\xi\bar{\omega} = \\
 (A-\bar A) \omega + (-z\bar B -\bar A \frac{d\xi}{d\bar \xi} + \bar B \xi ) \bar\omega
 $$
+
+
+# K2 terms
+
+$$
+z \overline{\frac{1}{2\pi i} \int \frac{\omega d\xi }{(\xi - z)^2}} 
++ \overline{\frac{1}{2\pi i} \int \frac{\omega \overline{d\xi}}{\xi - z}  - \frac{1}{2\pi i} \int \frac{\overline{\xi} \omega d\xi}{(\xi - z)^2}} \\
+= \overline{\frac{1}{2\pi i}( \int \frac{\overline{z}\omega d\xi + \omega (\xi-z) \overline{d\xi} - \overline{\xi}\omega d\xi }{(\xi - z)^2}  )} \\
+= \overline{\frac{1}{2\pi i}( \int \omega \frac{ (\xi-z)  \overline{d\xi} - \overline{(\xi -z)} d\xi}{(\xi -  \omega)^2})} \\ 
+= \overline{(H(\xi \frac{\overline{d\xi}}{d\xi} ) - zH(\frac{\overline{d\xi}}{d\xi}) - H(\overline{\xi}) + \overline{z}H)} \overline{\omega}
+$$
