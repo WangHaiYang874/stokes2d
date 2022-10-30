@@ -2,6 +2,7 @@ from utils import *
 from .curve import Curve
 from .cap import Cap
 from .corner import Corner
+from matplotlib import path
 
 import numpy as np
 
@@ -94,10 +95,8 @@ class Boundary:
             if isinstance(c, Corner):
                 pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
         
-        if not closed:
-            return np.array(pts)
-        else:
-            return np.array(pts + [pts[0]])
+        if not closed: return np.array(pts)
+        return np.array(pts + [pts[0]])
         
     def smth_plyg_bdr(self,closed=True):
         pts = []
@@ -105,13 +104,11 @@ class Boundary:
             pts += [c.start_pt]
             if isinstance(c, Corner) or isinstance(c, Cap):
                 pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
-        if not closed:
-            return np.array(pts)
-        else:
-            return np.array([pts + [pts[0]]])
+        if not closed: return np.array(pts)
+        return np.array(pts + [pts[0]])
 
-    def reverse_orientation(self):
-        pass # TODO
+    # def reverse_orientation(self):
+    #     pass # TODO
     
     def clean_copy(self):
         new_curves = [c.clean_copy() for c in self.curves]
@@ -129,13 +126,20 @@ class Boundary:
         
         [c.build(required_tol,p) for c in self.curves]
     
-    # def near(self, xs,ys,dist):
-    #     g = LineString(self.smth_plyg_bdr()).buffer(dist)
-    #     return np.array([g.contains(Point(x,y)) for x,y in zip(xs,ys)])
+    def inside(self, xs, ys):
+        p = path.Path(self.plyg_bdr())
+        return np.array(p.contains_points(np.array([xs, ys]).T))
     
-    # def inside(self, xs, ys):
-    #     p = Polygon(self.plyg_bdr())
-    #     return np.array([p.contains(Point(x,y)) for x,y in zip(xs,ys)])
+    @property
+    def extent(self):
+        pts = self.plyg_bdr()
+        
+        xmin = np.min(pts[:,0])
+        xmax = np.max(pts[:,0])
+        ymin = np.min(pts[:,1])
+        ymax = np.max(pts[:,1])
+        
+        return (xmin, xmax, ymin, ymax)
     
     def check_correctedness(self):
 
