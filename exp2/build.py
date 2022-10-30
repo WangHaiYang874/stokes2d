@@ -25,17 +25,14 @@ ps = PipeSystem(real_pipes,bdr_pipe)
 
 global_pipe = MultiplyConnectedPipeFromPipeSystem(ps)
 
-assert global_pipe.boundaries[0].orientation == 1
-assert global_pipe.boundaries[1].orientation == -1
+# assert global_pipe.boundaries[0].orientation == 1
+# assert global_pipe.boundaries[1].orientation == -1
 
 t = time()
-global_pipe.build(tol=1E-8)
+global_pipe.build()
 print(time()-t)
 
-# t = time()
-# xs, ys, interior, _, _, _, _ = ps.plotting_data()
-# global_pipe.build_plotting_data(xs,ys,interior)
-# print(time()-t)
+global_pipe.mat_vec.clean()
 
 with open(curr_dir + '/global_pipe.pickle','wb') as f:
     pickle.dump(global_pipe, f)

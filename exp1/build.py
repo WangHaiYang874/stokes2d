@@ -48,6 +48,7 @@ for pipe in pipes:
     pipe.build(required_tol=REQUIRED_TOL)
     print(time()-t)
     t = time()
+    pipe.mat_vec.clean()
 
 with open(curr_dir + '/pipes_and_shifts.pickle','wb') as f:
     pickle.dump([pipes, shifts],f,fix_imports=True,protocol=None)

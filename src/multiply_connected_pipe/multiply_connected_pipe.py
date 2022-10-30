@@ -114,6 +114,7 @@ class MultiplyConnectedPipe:
         self.build_A(fmm=fmm)
         self.build_omegas(tol=required_tol, n_jobs=n_jobs)
         self.build_pressure_drops()
+        self.build_plotting_data()
 
     def build_geometry(self, required_tol=REQUIRED_TOL):
 

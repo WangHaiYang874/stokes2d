@@ -187,7 +187,7 @@ class PipeSystem:
 
         xs = []
         ys = []
-        interior = []
+        # interior = []
 
         unexplored = set(range(len(self.pipes)))
         open = []
@@ -205,7 +205,7 @@ class PipeSystem:
             
             xs.append(pipe.xs)
             ys.append(pipe.ys)
-            interior.append(pipe.interior)
+            # interior.append(pipe.interior)
 
             u, v, p, o = pipe.fields_with_fluxes(fluxes, let_index, pressure_at_let)
             
@@ -244,10 +244,11 @@ class PipeSystem:
 
         xs = np.concatenate(xs)
         ys = np.concatenate(ys)
-        interior = np.concatenate(interior)
+        # interior = np.concatenate(interior)
         u_field = np.concatenate(u_field)
         v_field = np.concatenate(v_field)
         p_field = np.concatenate(p_field)
         o_field = np.concatenate(o_field)
         
+        return xs, ys, u_field, v_field, p_field, o_field
         return xs, ys, interior, u_field, v_field, p_field, o_field
