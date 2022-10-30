@@ -79,9 +79,9 @@ class MultiplyConnectedPipe:
     def panels(self):
         return [p for c in self.curves for p in c.panels]
 
-    def build(self, required_tol=REQUIRED_TOL, n_jobs=1):
+    def build(self, required_tol=REQUIRED_TOL, n_jobs=1,fmm=None):
         self.build_geometry(required_tol=required_tol)
-        self.build_A()
+        self.build_A(fmm=fmm)
         self.build_omegas(tol=required_tol, n_jobs=n_jobs)
         self.build_pressure_drops()
         
@@ -134,8 +134,8 @@ class MultiplyConnectedPipe:
                     if good: ip += 1
         
 
-    def build_A(self):
-        self.mat_vec = mat_vec_constructor(self)
+    def build_A(self,fmm=None):
+        self.mat_vec = mat_vec_constructor(self,fmm=fmm)
         self.A = LinearOperator(matvec=self.mat_vec,dtype=np.float64,shape=(2*self.n_pts, 2*self.n_pts))
 
     def compute_omega(self, H, tol=None,max_iter=None):

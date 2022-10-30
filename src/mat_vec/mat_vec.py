@@ -16,7 +16,6 @@ class MatVec:
     zk: np.ndarray # shape=(n_interior_boundaries), dtype=complex
     
     panels: List[Panel]
-    close_panel_interactions = List[np.ndarray]
     
     @property
     def n_interior_boundaries(self):
@@ -43,6 +42,44 @@ class MatVec:
 
         return np.array(ret)
     
+    def K_singular_terms(self, omega):
+        
+        singular_terms = np.zeros_like(omega, dtype=np.complex128)
+        
+        for Ck, zk, bk in zip(self.Ck(omega), self.zk, self.bk(omega)):
+            diff = self.t - zk
+            singular_terms += bk/np.conjugate(diff)
+            singular_terms += 2*Ck*np.log(np.abs(diff))
+            singular_terms += Ck.conj() * diff / np.conjugate(diff)
+
+        return singular_terms
+    
+    def velocity_singular_term(self,z, omega):
+        
+        singular_terms = np.zeros_like(z, dtype=np.complex128)
+
+        for Ck, zk, bk in zip(self.Ck(omega), self.zk, self.bk(omega)):
+
+            phi_singular = Ck * np.log(z-zk)
+            d_phi_singular = Ck/(z-zk)
+            psi_singular = np.conj(Ck) * np.log(z-zk) + \
+                (bk - Ck*np.conj(zk))/(z-zk)
+
+            singular_terms += phi_singular + z*d_phi_singular.conjugate() + \
+                psi_singular.conjugate()
+        return singular_terms
+    
+    def d_phi_singular_term(self,z,omega):
+        
+        singular_term = np.zeros_like(z, dtype=np.complex128)
+        
+        for Ck, zk in zip(self.Ck(omega), self.zk):
+            singular_term += Ck/(z-zk)
+            
+        return singular_term
+        
+        
+    
     def __init__(self,pipe:"MultiplyConnectedPipe") -> None:
         
         self.t = pipe.t
@@ -56,19 +93,27 @@ class MatVec:
         self.indices_of_interior_boundary = pipe.indices_of_boundary[1:]
         
         self.panels = pipe.panels
-        self.close_panel_interactions = []
-        for p in self.panels:
-            l = p.arclen
-            s = p.start_pt
-            e = p.end_pt
-            
-            dist = np.abs(self.t-s) + np.abs(self.t-e)
-            self.close_panel_interactions.append(np.where(dist <= 2.5*l)[0])
+        
+        
         
     def __call__(self,omega_sep):
         
         """this direct call will be tranferred into a call in gmres"""
         pass
+    
+    def pairs_needing_correction(self, x, y):
+        
+        near_panel_interactions = []
+        
+        z = x + 1j*y
+        
+        for p in self.panels:
+            l = p.arclen
+            s = p.start_pt
+            e = p.end_pt
+            
+            dist = np.abs(z-s) + np.abs(z-e)
+            near_panel_interactions.append(np.where(dist <= 1.5*l)[0])
     
     def velocity(self,x,y, omega):
         pass
