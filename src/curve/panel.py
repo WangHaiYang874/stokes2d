@@ -185,7 +185,7 @@ class Panel:
             return True
 
         # TODO: find out the optimal value for this.
-        not_curved = np.max(np.abs(self.k * self.scale)) < 0.03
+        not_curved = np.max(np.abs(self.k * self.scale)) < 0.05
 
         return self.leg_interp_error <= required_tol and not_curved
 
