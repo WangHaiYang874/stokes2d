@@ -53,7 +53,7 @@ class DenseMat(MatVec):
             axis=1)/(2j*pi)
 
         if self.n_interior_boundaries > 0:
-            ret += self.velocity_singular_term(z, omega)
+            ret += self.velocity_singular_term(x + 1j*y, omega)
         return ret
 
     def d_phi(self, x, y, omega):

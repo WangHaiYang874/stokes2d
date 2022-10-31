@@ -1,6 +1,7 @@
 import numpy as np
 import numbers
 from typing import List, Tuple, Dict
+from .callback import Callback
 
 
 ERR = 1e-17 # the quadrature error setted for scipy.integrate.quad

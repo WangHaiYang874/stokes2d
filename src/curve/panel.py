@@ -1,4 +1,5 @@
 from distutils.log import warn
+from random import gauss
 from utils import *
 
 class Panel:
@@ -184,105 +185,73 @@ class Panel:
             return (t-self.center)/self.scale
         else:
             return t/self.scale
-        
+    
     def _build(self):
+        a_fine, da_fine = gauss_quad_rule(self.m, domain=self.domain)
         
-        a_refined,da_refined  = gauss_quad_rule(self.m,domain=self.domain)
-        t_normalized = self.normalize(self.t,with_affine=True)
-        t_refined = self.aff_trans(self.x_fn(a_refined), self.y_fn(a_refined), with_affine=True)
-        t_refined = t_refined[0] + 1j*t_refined[1]
-        dt_refined = self.aff_trans(self.dx_da_fn(a_refined),self.dy_da_fn(a_refined),with_affine=False) * da_refined
-        dt_refined = dt_refined[0] + 1j*dt_refined[1]
-        
-        t_refined_normalized = self.normalize(t_refined, with_affine=True)
-        dt_refined_normalized = self.normalize(dt_refined, with_affine=False)
+        self.t_fine_norm = self.normalize(
+            (lambda x: x[0]+1j*x[1])(self.aff_trans(self.x_fn(a_fine), self.y_fn(a_fine), with_affine=True)), with_affine=True)
+        self.dt_fine_norm = self.normalize(
+            (lambda x: x[0]+1j*x[1])(self.aff_trans(self.dx_da_fn(a_fine),self.dy_da_fn(a_fine),with_affine=False)),with_affine=False)*da_fine
 
-        self.t_refined_normalized = t_refined_normalized
-        self.dt_refined_normalized = dt_refined_normalized
-
-        weight2coeff = np.linalg.solve(vand(t_normalized,self.n),np.eye(self.n))
-        coef2interp = vand(t_refined_normalized,self.n)
+        a_fine = gauss_quad_rule(self.m)[0]
+        a = gauss_quad_rule(self.n)[0]
         
-        self.density_interp = coef2interp @ weight2coeff
-        
-        self.V = vand(t_refined_normalized,self.m)
+        self.omega_interp = vand(a_fine, self.n) @ np.linalg.solve(vand(a,self.n),np.eye(self.n))
+        self.V = vand(self.t_fine_norm,self.m)
         
     def get_pr(self, targets):
-        targ = self.normalize(targets, with_affine=True)
-        near = np.abs(targ) < 1.1
+        targ_norm = self.normalize(targets, with_affine=True)
+        near = np.abs(targ_norm) < 1.1
         far = ~near
         
-        P = np.zeros((len(targ), self.m + 1), dtype=np.complex128)
-        R = np.zeros((len(targ), self.m + 1), dtype=np.complex128)
+        P = np.zeros((len(targ_norm), self.m + 1), dtype=np.complex128)
+        R = np.zeros((len(targ_norm), self.m + 1), dtype=np.complex128)
         
         P[:,1] = self.p1(targets)
         P[far,self.m] = self.pm(targets[far])
         
         for k in range(1,self.m):
-            P[near,k+1] = P[near, k] * targ[near] + (1 - (-1)**k)/(k)
+            P[near,k+1] = P[near, k] * targ_norm[near] + (1 - (-1)**k)/(k)
         
         for k in range(self.m-1,1,-1):
-            P[far,k] = (P[far, k+1] - (1-(-1)**k)/k)/targ[far]
+            P[far,k] = (P[far, k+1] - (1-(-1)**k)/k)/targ_norm[far]
             
         for k in range(1,self.m+1):
-            R[:,k] = (k-1)*P[:,k-1] + (-1)**k/(1+targ) - 1/(1-targ)
+            R[:,k] = (k-1)*P[:,k-1] + (-1)**k/(1+targ_norm) - 1/(1-targ_norm)
         
         P = P[:,1:]
         R = R[:,1:]
         R = R/self.scale
         return P, R
 
-    def coeff_for_k2(self, targets):
-        return (2j*np.imag((self.t[np.newaxis,:] - targets[:,np.newaxis])*np.conj(self.dt_da[np.newaxis,:]))) / self.dt_da[np.newaxis,:]
+    def cauchy_integral(self, targets):
+        P,_ = self.get_pr(targets)
+        return np.linalg.solve(self.V.T,P.T).T @ self.omega_interp / (2j*np.pi)
         
-    def _build_for_targets(self, targets):
+    def hadamard_integral(self, targets):
+        _,R = self.get_pr(targets)
+        return np.linalg.solve(self.V.T,R.T).T @ self.omega_interp / (2j*np.pi)
+        
+    def both_integrals(self,targets):
         
         P, R = self.get_pr(targets)
-        
-        C = np.linalg.solve(self.V.T,np.flip(P.T,axis=0))
-        H = np.linalg.solve(self.V.T,np.flip(R.T,axis=0))
-        
-        IC = (C.T@self.density_interp)
-        IH = (H.T@self.density_interp) / (2j*np.pi)
+        C = np.linalg.solve(self.V.T,P.T).T @ self.omega_interp / (2j*np.pi)
+        H = np.linalg.solve(self.V.T,R.T).T @ self.omega_interp / (2j*np.pi)
 
-        K1 = np.imag(IC)/np.pi
-        coeff = self.coeff_for_k2(targets)
-        K2 = np.conj(coeff * IH)
-
-        # TODO what is the correct way to write K2?
-        
-        # K2 = np.conj(
-        #     np.diag(targets.conj())@IH 
-        #     + IH@np.diag(self.t*np.conj(self.dt_da)/self.dt_da)
-        #     - np.diag(targets)@IH@np.diag(np.conj(self.dt_da)/self.dt_da)
-        #     - IH@np.diag(self.t.conj())
-        # )
-        
-        return K1, K2
-
+        return C,H
         
     def p1(self, targets):
-        targ = self.normalize(targets, with_affine=True)
+        targ_norm = self.normalize(targets, with_affine=True)
         psi = np.pi/4
-        return (1j*psi + np.log((1-targ)/((-1-targ)*np.exp(1j*psi))))
+        return (1j*psi + np.log((1-targ_norm)/((-1-targ_norm)*np.exp(1j*psi))))
     
     def pm(self, targets_far_away):
-        targ = self.normalize(targets_far_away, with_affine=True)
-        zj = self.t_refined_normalized[:,np.newaxis]
-        d_zj = self.dt_refined_normalized[:,np.newaxis]
-        x = targ[np.newaxis,:]
+        targ_norm = self.normalize(targets_far_away, with_affine=True)
+        zj = self.t_fine_norm[:,np.newaxis]
+        d_zj = self.dt_fine_norm[:,np.newaxis]
+        x = targ_norm[np.newaxis,:]
         return np.sum(np.power(zj,self.m-1)*d_zj/(zj-x), axis=0)
     
-    # TODO: the only correction term I need is for evaluate velocity, pressure, vorticity. 
-    # so I might invent them here later. 
-    
-    # def cauchy_integral(self, density, target):
-    #     P = self._build_for_targets(target)[0]
-    #     return P @ density
-    
-    # def hadamard_integral(self, density, target):
-    #     R = self._build_for_targets(target)[1]
-    #     return R @ density
-    
 def vand(x,n):
-    return np.column_stack([x**(n-1-i) for i in range(n)])
+    return np.column_stack([x**i for i in range(n)])

@@ -1,3 +1,4 @@
+from hashlib import new
 import numpy as np
 from typing import List, Tuple
 from curve import Panel
@@ -101,11 +102,9 @@ class MatVec:
         """this direct call will be tranferred into a call in gmres"""
         pass
     
-    def pairs_needing_correction(self, x, y):
+    def pairs_needing_correction(self, z):
         
         near_panel_interactions = []
-        
-        z = x + 1j*y
         
         for p in self.panels:
             l = p.arclen
@@ -114,22 +113,61 @@ class MatVec:
             
             dist = np.abs(z-s) + np.abs(z-e)
             near_panel_interactions.append(np.where(dist <= 1.5*l)[0])
+            
+        return near_panel_interactions
     
+    def velocity_correction_term(self, z, omega, pairs=None):
+        
+        return NotImplemented
+        
+        if pairs is None:
+            pairs = self.pairs_needing_correction(z)
+            
+        correction = np.zeros_like(z, dtype=np.complex128)
+        
+        source_index_start = 0
+        for p, target_indices in zip(self.panels,pairs):
+            source_index_end = source_index_start + p.n
+            target_curr = z[target_indices:np.newaxis]
+            omega_curr = omega[np.newaxis,source_index_start:source_index_end]
+            dt = p.dt[np.newaxis,:]
+            t  = p.t[np.newaxis, :]
+            t_minus_z = t - target_curr
+            
+            naive_eval = np.sum(
+                omega_curr*dt/t_minus_z
+                + t_minus_z*omega_curr.conj()*dt.conj()/(t_minus_z.conj()**2)
+                - 2*np.real(omega_curr.conj()*dt)/t_minus_z.conj(),
+                axis=1)/(2j*np.pi)
+            
+            precise_eval = None
+            
+            correction[target_indices] = precise_eval - naive_eval            
+            
+            source_index_start += p.n
+            
+    def d_phi_correction_term(self,z,omega,pairs=None):
+        if pairs is None:
+            pairs = self.pairs_needing_correction(z)                
+        correction = np.zeros_like(z, dtype=np.complex128)
+        source_index_start = 0
+        for p, target_indices in zip(self.panels,pairs):
+            source_index_end = source_index_start + p.n
+            t_minus_z = p.t[np.newaxis,:] - z[target_indices][:,np.newaxis]
+            naive_eval = np.sum(
+                (omega[source_index_start:source_index_end]*p.dt)[np.newaxis,:]
+                /(t_minus_z**2), 
+                axis=1)/(2j*np.pi)
+            precise_eval = p.hadamard_integral(z[target_indices]) @ omega[source_index_start:source_index_end]
+            correction[target_indices] = precise_eval - naive_eval            
+            source_index_start += p.n
+        return correction
+        
     def velocity(self,x,y, omega):
         pass
     
     def d_phi(self,x,y, omega):
         pass
-
-        # singular_part = np.zeros_like(regular_part, dtype=np.complex128)
-
-        # for k in range(1, self.n_boundaries):
-        #     start, end = self.indices_of_boundary[k]
-        #     Ck = np.sum(omega[start:end] * np.abs(self.dt[start:end]))
-        #     zk = self.boundaries[k].z
-        #     singular_part += Ck/(z-zk)
-
-        # return regular_part + singular_part
 
     def clean(self):
         pass

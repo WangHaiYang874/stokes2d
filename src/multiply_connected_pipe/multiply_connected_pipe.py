@@ -1,3 +1,4 @@
+from ast import Call
 from curve import *
 from utils import *
 from mat_vec import MatVec
@@ -45,7 +46,7 @@ class MultiplyConnectedPipe:
     pressure_drops: ndarray  # shape=(nfluxes, nflows), dtype=float64
 
     def __init__(self) -> None:
-        pass
+        self.callbacks = []
 
     # graphic
     extent: Tuple[float, float, float, float]
@@ -198,9 +199,13 @@ class MultiplyConnectedPipe:
         max_iter = GMRES_MAX_ITER if max_iter is None else max_iter
         b = concatenate((H.real, H.imag))
 
+        callback = Callback()
         omega_sep, _ = gmres(self.A, b, atol=0, tol=tol,
-                             restart=RESTART, maxiter=max_iter)
+                             restart=RESTART, maxiter=max_iter,
+                             callback=callback, callback_type='pr_norm')
 
+        self.callbacks.append(callback)
+        
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
             assert False
@@ -237,7 +242,7 @@ class MultiplyConnectedPipe:
         d_phi_init = self.d_phi(
             array([self.lets[0].matching_pt[0]]),
             array([1j*self.lets[0].matching_pt[1]]), omega)
-
+        
         pressure = np.imag(d_phi) - np.imag(d_phi_init)
         vorticity = np.real(d_phi)
 
