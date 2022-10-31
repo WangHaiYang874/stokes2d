@@ -16,6 +16,7 @@ LEGENDRE_RATIO = 1e-14 # same as above
 GMRES_TOL = 1E-10
 GMRES_MAX_ITER = None
 RESTART = 50
+DENSITY = 20
 
 # TODO: change this 
 def gauss_quad_rule(n=16, domain=(-1, 1)):

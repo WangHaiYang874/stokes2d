@@ -148,7 +148,7 @@ class MatVec:
         
         for p in self.panels:
             dist = np.abs(z-p.start_pt) + np.abs(z-p.end_pt)
-            near_panel_interactions.append(dist <= 2.5*p.arclen)
+            near_panel_interactions.append(dist <= 4*p.arclen)
             
         return near_panel_interactions
     

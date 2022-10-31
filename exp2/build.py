@@ -23,24 +23,27 @@ bdr_pipe = BoundaryPipe([BoundaryLet(-5,0,0,1,-1),BoundaryLet(31,0,np.pi,1,1)])
 real_pipes = [RealPipe(p,shift_x=shift[0],shift_y=shift[1]) for p,shift in zip(pipes,shifts)]
 ps = PipeSystem(real_pipes,bdr_pipe)
 
-global_pipe_fmm = MultiplyConnectedPipeFromPipeSystem(ps)
-global_pipe_dense_mat = MultiplyConnectedPipeFromPipeSystem(ps)
 
 # assert global_pipe.boundaries[0].orientation == 1
 # assert global_pipe.boundaries[1].orientation == -1
 
-t = time()
-global_pipe_dense_mat.build(fmm=False)
-print('dense_mat_vec time',time()-t)
+# global_pipe_dense_mat = MultiplyConnectedPipeFromPipeSystem(ps)
+
+# t = time()
+# global_pipe_dense_mat.build(fmm=False)
+# print('dense_mat_vec time',time()-t)
+
+# global_pipe_dense_mat.mat_vec.clean()
+
+# with open(curr_dir + 'global_pipe_dense_solve.pickle','wb') as f:
+#     pickle.dump(global_pipe_dense_mat, f)
+
+global_pipe_fmm = MultiplyConnectedPipeFromPipeSystem(ps)
 
 t = time()
-global_pipe_fmm.build(fmm=True)
+global_pipe_fmm.build(fmm=True,required_tol=1e-11)
 print("fmmtime", time()-t)
 
-global_pipe_dense_mat.mat_vec.clean()
 
-with open(curr_dir + 'global_pipe_dense_solve.pickle','wb') as f:
-    pickle.dump(global_pipe_dense_mat, f)
-
-with open(curr_dir + 'global_pipe_fmm.pickle','wb') as f:
+with open(curr_dir + '/global_pipe_fmm.pickle','wb') as f:
     pickle.dump(global_pipe_fmm, f)

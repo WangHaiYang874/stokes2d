@@ -14,11 +14,10 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
 
 ## top of my todo. 
 
-- [x] a solver for a multiply connected domain.
-- [ ] add reverse_orientation method to the scheme: probably by simply rebuild the curves. 
 - [ ] finish the paper. 
-- [ ] add the finder for z.
-- [ ] merge multiply connected domain with simply connected domain. 
+- [x] a solver for a multiply connected domain.
+- [x] merge multiply connected domain with simply connected domain. 
+- [ ] verify correction term for post-processing
 
 ## math-ish
 
@@ -28,14 +27,15 @@ This is a summer project of Haiyang Wang as an undergraduate math student at NYU
   - [x] Nlets 里面相临的两条线不能是平行的. 
 
 ## engineering-ish
-- [ ] write a build script to be ran on a server. 
+- [ ] add the finder for z.
+- [ ] add reverse_orientation method to the scheme: probably by simply rebuild the curves. 
+- [x] write a build script to be ran on a server. 
 - [ ] change some instance of `flatten` to `ravel`. 
 - [ ] store every data of the standard pieces. the data needs to include
 - [ ] removing scipy, 主要的scipy的dependency在
   - [ ] gmres
   - [ ] quad
   - [ ] LinearOperator
-  - [ ] interpolate
 
 ## games
   - [ ] how to use matplotlib with pygame

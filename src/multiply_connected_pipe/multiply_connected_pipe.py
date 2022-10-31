@@ -129,7 +129,11 @@ class MultiplyConnectedPipe:
         # building each curve separately
         [b.build(required_tol, p) for b in self.boundaries]
 
-        # refining panels to handle the close panel interaction
+        # refining panels to handle the close panel interaction. 
+        # it also needs that panel need the matching pt to be refineds. 
+        
+        matching_pts = np.array([i.matching_pt[0]+1j*i.matching_pt[1] for i in self.lets])
+        
         for ib, b in enumerate(self.boundaries):
             for ic, c in enumerate(b.curves):
                 ip = 0
@@ -147,13 +151,13 @@ class MultiplyConnectedPipe:
 
                     j = 0
                     good = True
-
+                    
                     while j < len(self.panels):
                         if j in adj:
                             j += 1
                             continue
                         p2 = self.panels[j]
-                        if s < 3*np.min(np.abs(p.t[:, np.newaxis] - p2.t[np.newaxis, :])):
+                        if s < 3*np.min(np.abs(p.t[:, np.newaxis] - p2.t[np.newaxis, :])) and s < 0.5*np.min(np.abs(matching_pts[:,np.newaxis] - p2.t[np.newaxis, :])):
                             j += 1
                             continue
                         # need to refine
@@ -259,7 +263,11 @@ class MultiplyConnectedPipe:
             m = m & b.outside(xs, ys)
         return m
 
-    def build_plotting_data(self, density=40):
+    def compute_plotting_data(self,xs,ys,omega):
+        pass
+        
+
+    def build_plotting_data(self, density=DENSITY, xs=None, ys=None):
 
         # points
         xmin, xmax, ymin, ymax = self.extent

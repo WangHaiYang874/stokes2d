@@ -30,9 +30,10 @@ class Fmm(MatVec):
             omega + (self.k2_diagonal)*omega.conj()
 
         dipoles = np.array([
-            -self.dt*omega/(2j*np.pi),
-            (self.dt*omega.conj()).real/(1j*np.pi)])
-
+            -omega*self.dt/(2j*np.pi),
+            (omega.conj()*self.dt).real/(1j*np.pi),
+        ])
+        
         bh_term = bhfmm2d(
             eps=FMM_EPS, pg=1, sources=self.boundary_sources,
             dipoles=dipoles).pot
@@ -57,9 +58,10 @@ class Fmm(MatVec):
     def velocity_non_singular_terms(self, x, y, omega):
         assert x.shape == y.shape
         assert x.ndim == 1
+
         dipoles = np.array([
-            omega*self.dt/(2j*np.pi),
-            -(omega.conj()*self.dt).real/(1j*np.pi),
+            -omega*self.dt/(2j*np.pi),
+            (omega.conj()*self.dt).real/(1j*np.pi),
         ])
 
         return bhfmm2d(
