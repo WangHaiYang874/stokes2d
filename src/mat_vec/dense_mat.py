@@ -14,6 +14,63 @@ class DenseMat(MatVec):
         self.K2 = None
         self.build_k()
 
+    def __call__(self,omega_sep):
+        
+        omega = omega_sep[:self.n_pts] + 1j*omega_sep[self.n_pts:]
+        ret = self.K_non_singular_terms(omega)
+        if self.n_interior_boundaries > 0:
+            ret += self.K_singular_terms(omega)
+        return np.concatenate([ret.real, ret.imag])
+
+    def K_non_singular_terms(self, omega):
+        if self.K1 is None or self.K2 is None:
+            self.build_k()
+        return omega + self.K1 @ omega + self.K2 @ conjugate(omega)
+
+    def velocity(self,x,y, omega):
+        ret = self.velocity_non_singular_terms(x, y, omega)
+        if self.n_interior_boundaries > 0:
+            ret += self.velocity_singular_terms(x + 1j*y, omega)
+        ret += self.velocity_correction_terms(x + 1j*y, omega)
+        
+        return ret
+    
+    def d_phi(self,x,y, omega):
+        ret = self.d_phi_non_singular_terms(x, y, omega)
+        if self.n_interior_boundaries > 0:
+            ret += self.d_phi_singular_terms(x + 1j*y, omega)
+        ret += self.d_phi_correction_terms(x + 1j*y, omega)
+        return ret
+
+    def velocity_non_singular_terms(self, x, y, omega):
+        assert x.shape == y.shape
+        assert x.ndim == 1
+
+        z = x + 1j*y
+        z = z[:, newaxis]
+        omega = omega[newaxis, :]
+        dt = self.dt[newaxis, :]
+        t = self.t[newaxis, :]
+        t_minus_z = t - z
+
+        return np.sum(omega * np.imag(dt/t_minus_z) +
+                      np.conj(omega) * np.imag(t_minus_z*np.conj(dt)) / np.conj(t_minus_z**2), axis=1) / pi
+
+    def d_phi_non_singular_terms(self, x, y, omega):
+        assert x.shape == y.shape
+        assert x.ndim == 1
+        assert omega.shape == (self.n_pts,)
+        z = x + 1j*y
+
+        return np.sum((omega * self.dt)[newaxis, :] /
+                      (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
+
+    def clean(self):
+        self.K1 = None
+        self.K2 = None
+        super().clean()
+
+
     def build_k(self):
         diff_t = self.t[:, newaxis] - self.t[newaxis, :]
         dt = self.dt[newaxis, :]
@@ -25,52 +82,3 @@ class DenseMat(MatVec):
         np.fill_diagonal(K2, self.k2_diagonal)
         self.K1 = K1
         self.K2 = K2
-
-    def __call__(self, omega_sep):
-        if self.K1 is None or self.K2 is None:
-            self.build_k()
-        omega = omega_sep[:self.n_pts] + 1j*omega_sep[self.n_pts:]
-        ret = omega + self.K1 @ omega + self.K2 @ conjugate(omega)
-        if self.n_interior_boundaries > 0:
-            ret += self.K_singular_terms(omega)
-        return np.concatenate([ret.real, ret.imag])
-        
-    def velocity(self, x, y, omega):
-        assert x.shape == y.shape
-        assert x.ndim == 1
-
-        z = x + 1j*y
-        z = z[:, newaxis]
-        omega = omega[newaxis, :]
-        dt = self.dt[newaxis, :]
-        t = self.t[newaxis, :]
-        t_minus_z = t - z
-
-        ret = np.sum(
-            omega*dt/t_minus_z
-            + t_minus_z*omega.conj()*dt.conj()/(t_minus_z.conj()**2)
-            - 2*np.real(omega.conj()*dt)/t_minus_z.conj(),
-            axis=1)/(2j*pi)
-
-        if self.n_interior_boundaries > 0:
-            ret += self.velocity_singular_term(x + 1j*y, omega)
-        return ret
-
-    def d_phi(self, x, y, omega):
-        assert x.shape == y.shape
-        assert x.ndim == 1
-        assert omega.shape == (self.n_pts,)
-        z = x + 1j*y
-
-        ret = np.sum((omega * self.dt)[newaxis, :] /
-                    (self.t[newaxis, :] - z[:, newaxis])**2, axis=1) / (2j * pi)
-
-        if self.n_interior_boundaries > 0:
-            ret += self.d_phi_singular_term(z, omega)
-
-        return ret
-
-    def clean(self):
-        self.K1 = None
-        self.K2 = None
-        super().clean()

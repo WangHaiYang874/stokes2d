@@ -112,6 +112,8 @@ class MultiplyConnectedPipe:
 
     def build(self, required_tol=REQUIRED_TOL, n_jobs=1, fmm=None):
         self.build_geometry(required_tol=required_tol)
+        for p in self.panels:
+            p._build()
         self.build_A(fmm=fmm)
         self.build_omegas(tol=required_tol, n_jobs=n_jobs)
         self.build_pressure_drops()
@@ -205,7 +207,7 @@ class MultiplyConnectedPipe:
                              callback=callback, callback_type='pr_norm')
 
         self.callbacks.append(callback)
-        
+
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")
             assert False
@@ -242,7 +244,7 @@ class MultiplyConnectedPipe:
         d_phi_init = self.d_phi(
             array([self.lets[0].matching_pt[0]]),
             array([1j*self.lets[0].matching_pt[1]]), omega)
-        
+
         pressure = np.imag(d_phi) - np.imag(d_phi_init)
         vorticity = np.real(d_phi)
 
@@ -257,12 +259,12 @@ class MultiplyConnectedPipe:
             m = m & ~b.inside(xs, ys)
         return m
 
-    def build_plotting_data(self, density=20):
+    def build_plotting_data(self, density=40):
 
         # points
         xmin, xmax, ymin, ymax = self.extent
-        xs = np.linspace(xmin, xmax, (density*(xmax-xmin)+1).astype(int))
-        ys = np.linspace(ymin, ymax, (density*(ymax-ymin)+1).astype(int))
+        xs = np.linspace(xmin, xmax, (density*(xmax-xmin)+1).astype(int))[1:-1]
+        ys = np.linspace(ymin, ymax, (density*(ymax-ymin)+1).astype(int))[1:-1]
         xs, ys = np.meshgrid(xs, ys)
         xs = xs.flatten()
         ys = ys.flatten()
