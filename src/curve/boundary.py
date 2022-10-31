@@ -3,6 +3,7 @@ from .curve import Curve
 from .cap import Cap
 from .corner import Corner
 from matplotlib import path
+from shapely.geometry import LineString
 
 import numpy as np
 
@@ -127,8 +128,12 @@ class Boundary:
         [c.build(required_tol,p) for c in self.curves]
     
     def inside(self, xs, ys):
-        p = path.Path(self.plyg_bdr())
+        p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.005).interiors[0].xy).T)
         return np.array(p.contains_points(np.array([xs, ys]).T))
+    
+    def outside(self, xs, ys):
+        p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.005).exterior.xy).T)
+        return ~np.array(p.contains_points(np.array([xs, ys]).T))
     
     @property
     def extent(self):

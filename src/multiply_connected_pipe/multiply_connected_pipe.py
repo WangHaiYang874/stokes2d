@@ -256,15 +256,15 @@ class MultiplyConnectedPipe:
     def inside(self, xs, ys):
         m = self.exterior_boundary.inside(xs, ys)
         for b in self.interior_boundaries:
-            m = m & ~b.inside(xs, ys)
+            m = m & b.outside(xs, ys)
         return m
 
     def build_plotting_data(self, density=40):
 
         # points
         xmin, xmax, ymin, ymax = self.extent
-        xs = np.linspace(xmin, xmax, (density*(xmax-xmin)+1).astype(int))[1:-1]
-        ys = np.linspace(ymin, ymax, (density*(ymax-ymin)+1).astype(int))[1:-1]
+        xs = np.linspace(xmin, xmax, (density*(xmax-xmin)+1).astype(int))
+        ys = np.linspace(ymin, ymax, (density*(ymax-ymin)+1).astype(int))
         xs, ys = np.meshgrid(xs, ys)
         xs = xs.flatten()
         ys = ys.flatten()
