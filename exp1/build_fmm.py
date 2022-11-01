@@ -45,7 +45,7 @@ shifts = [shift1,shift2,shift3,shift4,shift5,shift6]
 
 t = time()
 for pipe in pipes:
-    pipe.build(required_tol=REQUIRED_TOL,fmm=True)
+    pipe.build(required_tol=1e-11,fmm=True)
     print(time()-t)
     t = time()
     pipe.mat_vec.clean()
