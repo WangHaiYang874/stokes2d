@@ -128,11 +128,11 @@ class Boundary:
         [c.build(required_tol,p) for c in self.curves]
     
     def inside(self, xs, ys):
-        p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.005).interiors[0].xy).T)
+        p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.002).interiors[0].xy).T)
         return np.array(p.contains_points(np.array([xs, ys]).T))
     
     def outside(self, xs, ys):
-        p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.005).exterior.xy).T)
+        p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.002).exterior.xy).T)
         return ~np.array(p.contains_points(np.array([xs, ys]).T))
     
     @property

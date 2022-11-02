@@ -11,12 +11,10 @@ FMM_EPS = 1e-16
 REQUIRED_TOL = 1e-8
 DOMAIN_THRESHOLD = 2**(-10) # The minimal size of interval of 16 pts gauss quad rule
 MAX_DISTANCE = 0.08 # panel.good_enough test
-MAX_DISTANCE_DENSE = 0.01 # panel.good_enough test
-LEGENDRE_RATIO = 1e-14 # same as above
 GMRES_TOL = 1E-10
-GMRES_MAX_ITER = None
+GMRES_MAX_ITER = 1000
 RESTART = 50
-DENSITY = 20
+DENSITY = 50
 
 # TODO: change this 
 def gauss_quad_rule(n=16, domain=(-1, 1)):
