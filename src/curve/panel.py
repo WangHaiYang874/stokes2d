@@ -133,7 +133,7 @@ class Panel:
         t_eval = x_eval + 1j * y_eval
         g1_eval = t_eval
         g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
-        g3_eval = k_eval**2
+        # g3_eval = k_eval**2
 
         g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
         # TODO, this term should be testing agains t, not a
@@ -146,7 +146,7 @@ class Panel:
         g1_interp = self.leg_interp(self.leg_fit(self.t), test_points)
         g2_interp = self.leg_interp(
             self.leg_fit(np.abs(self.dt_da)), test_points)
-        g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
+        # g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
         g4_interp = self.leg_interp(self.leg_fit(
             np.conjugate(self.dt_da)/self.dt_da), test_points)
         # g5_interp = self.leg_interp(self.leg_fit(np.imag(self.t*np.conjugate(self.dt_da)/self.dt_da)), test_points)
@@ -159,8 +159,8 @@ class Panel:
                 np.linalg.norm(g1_eval)
             error2 = np.linalg.norm(g2_interp - g2_eval) / \
                 np.linalg.norm(g2_eval)
-            error3 = np.linalg.norm(g3_interp - g3_eval) / \
-                np.linalg.norm(g3_eval)
+            # error3 = np.linalg.norm(g3_interp - g3_eval) / \
+                # np.linalg.norm(g3_eval)
             error4 = np.sum(np.abs(g4_interp - g4_eval)) / \
                 np.sum(np.abs(g4_eval))
             # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
@@ -173,7 +173,7 @@ class Panel:
             error3 = 0
             # error67 = 0
 
-        ret = np.array([error1, error2, error3, error4,  # error5, error67
+        ret = np.array([error1, error2, error4,  # error5, error67, error3,
                         ])
         ret = ret[~np.isnan(ret)]
         return np.max(ret)

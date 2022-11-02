@@ -110,14 +110,14 @@ class MultiplyConnectedPipe:
     @property
     def extent(self): return self.exterior_boundary.extent
 
-    def build(self, required_tol=REQUIRED_TOL, n_jobs=1, fmm=None):
+    def build(self, required_tol=REQUIRED_TOL, n_jobs=1, fmm=None,density=None):
         self.build_geometry(required_tol=required_tol)
         for p in self.panels:
             p._build()
         self.build_A(fmm=fmm)
         self.build_omegas(tol=required_tol, n_jobs=n_jobs)
         self.build_pressure_drops()
-        self.build_plotting_data()
+        self.build_plotting_data(density=density)
 
     def build_geometry(self, required_tol=REQUIRED_TOL):
 
@@ -267,8 +267,9 @@ class MultiplyConnectedPipe:
         pass
         
 
-    def build_plotting_data(self, density=DENSITY, xs=None, ys=None):
-
+    def build_plotting_data(self, density=None, xs=None, ys=None):
+        
+        if density is None: density = DENSITY
         # points
         xmin, xmax, ymin, ymax = self.extent
         xs = np.linspace(xmin, xmax, (density*(xmax-xmin)+1).astype(int))
