@@ -118,7 +118,7 @@ class Curve:
         end_pt = self.end_pt + shift
         mid_pt = self.mid_pt + shift
         
-        return self.__class__(start_pt, end_pt, mid_pt)
+        return self.__class__(start_pt=start_pt, end_pt=end_pt, mid_pt=mid_pt)
     
     def reversed(self):
         pass # TODO

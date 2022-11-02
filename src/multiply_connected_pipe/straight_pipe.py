@@ -1,6 +1,8 @@
-from .multiply_connected_pipe import MultiplyConnectedPipe
+from .smooth_pipe import SmoothPipe
 
 
-class StraightPipe(MultiplyConnectedPipe):
-    # TODO Implement
-    pass
+class StraightPipe(SmoothPipe):
+    def __init__(self,length,width,direction,center) -> None:
+        return NotImplemented
+    
+    

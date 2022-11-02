@@ -59,7 +59,7 @@ def smooth_corners(curves, corner_size=1e-1):
 
         corner_size = min(corner_size, np.linalg.norm(
             p - q) / 2, np.linalg.norm(r - q) / 2)
-        assert (corner_size > 1e-2)
+        assert (corner_size > 1e-3)
 
         start_pt = q + (((p - q) / np.linalg.norm(p - q)) * corner_size)
         end_pt = q + (((r - q) / np.linalg.norm(r - q)) * corner_size)

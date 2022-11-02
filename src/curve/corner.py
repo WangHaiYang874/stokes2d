@@ -25,7 +25,7 @@ class Corner(Curve):
 
         assert (np.linalg.norm(start_pt - mid_pt) > 0)
         assert (np.abs(np.linalg.norm(start_pt - mid_pt) -
-                    np.linalg.norm(end_pt - mid_pt)) < 1e-14)
+                    np.linalg.norm(end_pt - mid_pt)) < 1e-12)
             
 
         super(Corner, self).__init__(start_pt, end_pt, mid_pt)

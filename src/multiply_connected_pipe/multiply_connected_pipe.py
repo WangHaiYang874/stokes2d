@@ -262,9 +262,7 @@ class MultiplyConnectedPipe:
         for b in self.interior_boundaries:
             m = m & b.outside(xs, ys)
         return m
-
-    def compute_plotting_data(self,xs,ys,omega):
-        pass
+        
         
 
     def build_plotting_data(self, density=None, xs=None, ys=None):
