@@ -14,7 +14,7 @@ curr_dir = os.path.dirname(__file__)
 with open(curr_dir + '/pipes_and_shifts.pickle','rb') as f:
     pipe_and_shifts = pickle.load(f)
 
-pipes = set([p, p,_ in pipe_and_shifts])
+pipes = set([p for p,_ in pipe_and_shifts])
 required_tol = 1e-11
 
 

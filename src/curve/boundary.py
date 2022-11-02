@@ -3,7 +3,8 @@ from .curve import Curve
 from .cap import Cap
 from .corner import Corner
 from matplotlib import path
-from shapely.geometry import LineString
+from shapely.geometry import LineString,Polygon
+from shapely.ops import polylabel
 
 import numpy as np
 
@@ -50,18 +51,6 @@ class Boundary:
         [c.k for c in self.curves])
     
     @property
-    def z(self):
-        # here I assume that the domain is convex,
-        # so I will simply take the average of points on the boundary.
-        return np.mean(self.t)
-    
-        # TODO: the more careful algorithm to handle non-convex domains is to use
-        # poles of inaccessibility.
-        # PIA has a convenient python implementation at
-        # https://github.com/shapely/shapely/blob/main/shapely/algorithms/polylabel.py
-    
-    
-    @property
     def caps(self):
         return [c for c in self.curves if isinstance(c, Cap)]
 
@@ -87,7 +76,6 @@ class Boundary:
             if isinstance(c, Corner):
                 ret = min(c.mid_pt[0], ret)
         return ret
-        
         
     def plyg_bdr(self,closed=True):
         pts = []
@@ -126,6 +114,9 @@ class Boundary:
             p = (np.ceil(-np.log10(required_tol)) + 2).astype(int)
         
         [c.build(required_tol,p) for c in self.curves]
+        
+        pt = polylabel(Polygon(self.plyg_bdr(1e-2)))
+        self.z = pt.x + 1j*pt.y
     
     def inside(self, xs, ys):
         p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.002).interiors[0].xy).T)
