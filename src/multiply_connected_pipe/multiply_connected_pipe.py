@@ -1,4 +1,3 @@
-from ast import Call
 from curve import *
 from utils import *
 from mat_vec import MatVec
@@ -119,15 +118,21 @@ class MultiplyConnectedPipe:
         self.build_pressure_drops()
         self.build_plotting_data(density=density)
 
-    def build_geometry(self, required_tol=REQUIRED_TOL):
+    def build_geometry(self, required_tol=REQUIRED_TOL,n_jobs=1):
 
         p = (np.ceil(-np.log10(required_tol)) + 2).astype(int)
 
         # this is not enough for handling corners, but we don't have any corners.
         # bent panel refinement is ignored for our solver.
 
-        # building each curve separately
-        [b.build(required_tol, p) for b in self.boundaries]
+        # building each boundary separately
+        if n_jobs == 1:
+            [b.build(required_tol, p) for b in self.boundaries]
+        else:
+            def build(b):
+                b.build(required_tol, p)
+                return b
+            self.boundaries = Parallel(n_jobs=n_jobs)(delayed(build)(b) for b in self.boundaries)
 
         # refining panels to handle the close panel interaction. 
         # it also needs that panel need the matching pt to be refineds. 
