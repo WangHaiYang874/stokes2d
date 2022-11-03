@@ -174,7 +174,7 @@ class MultiplyConnectedPipe:
                     s = p.arclen
                     
                     k1 = KDTree(np.array([p.x,p.y]).T)
-                    pts2 = np.concatenate([b2.t for b2 in enumerate(self.boundaries) if b2 is not b])
+                    pts2 = np.concatenate([b2.t for b2 in self.boundaries if b2 is not b])
                     pts2 = np.array([pts2.real, pts2.imag]).T
                     k2 = KDTree(pts2,compact_nodes=False)
                     

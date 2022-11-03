@@ -24,26 +24,16 @@ for i,pipe in enumerate(pipes):
     
     t = time()
     pipe.build_geometry(required_tol=required_tol)
+    for p in pipe.panels: p._build()
+    pipe.build_A(fmm=True)
     print("geometry_built, time used: ", time()-t)
     print("number of points: ", len(pipe.t))
-    
-    for p in pipe.panels: p._build()
+
     t = time()
-
-    pipe.build_A(fmm=True)
-
-    print("fmm built, time used: ", time()-t)
-    t = time()
-
     pipe.build_omegas(tol=required_tol)
-
     print("solver built, time used: ", time()-t)
-    t = time()
-
-    pipe.build_pressure_drops()
-    
-    print('finished.')
-
+    print('n omegas: ', len(pipe.omegas))
+    print()
 
 with open(curr_dir + '/local_pipes.pickle','wb') as f:
     pickle.dump(pipes,f,fix_imports=True,protocol=None)
