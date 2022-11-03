@@ -134,8 +134,8 @@ class MultiplyConnectedPipe:
         
         matching_pts = np.array([i.matching_pt[0]+1j*i.matching_pt[1] for i in self.lets])
         
-        for ib, b in enumerate(self.boundaries):
-            for ic, c in enumerate(b.curves):
+        for b in self.boundaries:
+            for c in b.curves:
                 ip = 0
                 
                 while ip < len(c.panels):
@@ -144,42 +144,35 @@ class MultiplyConnectedPipe:
                     
                     dist1 = np.min(np.abs(matching_pts[:,np.newaxis] - p.t[np.newaxis, :]))
                     
-                    if not s < 0.5*dist1:
+                    if s > 0.5*dist1:
                         # need refinement
                         c.panels.pop(ip)
                         p1, p2 = p.refined()
                         c.panels.insert(ip, p2)
                         c.panels.insert(ip, p1)
-                        continue
+                    else: ip += 1
                     
-                    ip_boundary = ip + sum([len(c_.panels)
-                                           for c_ in b.curves[:ic]])
-                    ip_boundary_next = (ip_boundary + 1) % len(b.panels)
-                    ip_boundary_next2 = (ip_boundary + 2) % len(b.panels)
-                    ip_boundary_prev = (ip_boundary - 1) % len(b.panels)
-                    ip_boundary_prev2 = (ip_boundary - 2) % len(b.panels)
-                    boundary_offset = sum([len(b_.panels)
-                                          for b_ in self.boundaries[:ib]])
-                    adj = [boundary_offset + ip_boundary_next, 
-                           boundary_offset + ip_boundary_prev, 
-                           boundary_offset + ip_boundary, 
-                           boundary_offset + ip_boundary_next2,
-                           boundary_offset + ip_boundary_prev2]
+        if len(self.boundaries) == 1:
+            return # no need to refine the boundary curve
+        for i,b in enumerate(self.boundaries):
+            print(f"\t\trefining boundary {i} out of {len(self.boundaries)}")
+            for c in b.curves:
+                ip = 0
+                
+                while ip < len(c.panels):
+                    p = c.panels[ip]
+                    s = p.arclen
                     
-                    test_pts = np.concatenate([p2.t for j,p2 in enumerate(self.panels) if j not in adj])
+                    test_pts = np.concatenate([b2.t for b2 in self.boundaries if b2 is not b])
                     dist2 = np.min(np.abs(p.start_pt - test_pts) + np.abs(p.end_pt - test_pts))
                     
-                    if not s < 3*dist2:
+                    if s > 3*dist2:
                         # need refinement
                         c.panels.pop(ip)
                         p1, p2 = p.refined()
                         c.panels.insert(ip, p2)
                         c.panels.insert(ip, p1)
-                        continue
-                    
-                    # no refinement needed. 
-                    
-                    ip += 1
+                    else: ip += 1
 
 
     def build_A(self, fmm=None):

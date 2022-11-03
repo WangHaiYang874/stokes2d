@@ -115,6 +115,33 @@ class Boundary:
         
         [c.build(required_tol,p) for c in self.curves]
         
+        for ic, c in enumerate(self.curves):
+            ip = 0
+            
+            while ip < len(c.panels):
+                
+                p = c.panels[ip]
+                s = p.arclen
+                ip_boundary = ip + sum([len(c_.panels) for c_ in self.curves[:ic]])
+                ip_boundary_next = (ip_boundary + 1) % len(self.panels)
+                ip_boundary_next2 = (ip_boundary + 2) % len(self.panels)
+                ip_boundary_prev = (ip_boundary - 1) % len(self.panels)
+                ip_boundary_prev2 = (ip_boundary - 2) % len(self.panels)
+                
+                adj = [ip_boundary_next, ip_boundary_prev, ip_boundary, 
+                       ip_boundary_next2, ip_boundary_prev2]
+                
+                test_pts = np.concatenate([p2.t for j,p2 in enumerate(self.panels) if j not in adj])
+                dist2 = np.min(np.abs(p.start_pt - test_pts) + np.abs(p.end_pt - test_pts))
+                
+                if s > 3*dist2:
+                    # need refinement
+                    c.panels.pop(ip)
+                    p1, p2 = p.refined()
+                    c.panels.insert(ip, p2)
+                    c.panels.insert(ip, p1)
+                else: ip += 1
+    
         pt = polylabel(Polygon(self.plyg_bdr(1e-2)))
         self.z = pt.x + 1j*pt.y
     
