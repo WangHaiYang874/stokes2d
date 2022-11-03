@@ -183,11 +183,14 @@ class Panel:
         if self.domain[1] - self.domain[0] < domain_threhold:
             warn(f"domain too small: {self.domain}")
             return True
+        
+        if np.max(np.abs(self.k * self.scale)) > 0.05:
+            return False
 
-        # TODO: find out the optimal value for this.
-        not_curved = np.max(np.abs(self.k * self.scale)) < 0.05
+        if self.arclen > 1:
+            return False
 
-        return self.leg_interp_error <= required_tol and not_curved
+        return self.leg_interp_error <= required_tol
 
     def normalize(self, t, with_affine=False):
         if with_affine:

@@ -6,6 +6,7 @@ from mat_vec import MatVec, mat_vec_constructor
 
 from numpy import ndarray, concatenate, array
 from scipy.sparse.linalg import gmres, LinearOperator
+from scipy.spatial import KDTree
 
 import warnings
 from joblib import Parallel, delayed
@@ -135,9 +136,8 @@ class MultiplyConnectedPipe:
             self.boundaries = Parallel(n_jobs=n_jobs)(delayed(build)(b) for b in self.boundaries)
 
         # refining panels to handle the close panel interaction. 
-        # it also needs that panel need the matching pt to be refineds. 
         
-        matching_pts = np.array([i.matching_pt[0]+1j*i.matching_pt[1] for i in self.lets])
+        k0 = KDTree(np.array([i.matching_pt for i in self.lets]))
         
         for b in self.boundaries:
             for c in b.curves:
@@ -147,15 +147,20 @@ class MultiplyConnectedPipe:
                     p = c.panels[ip]
                     s = p.arclen
                     
-                    dist1 = np.min(np.abs(matching_pts[:,np.newaxis] - p.t[np.newaxis, :]))
+                    k1 = KDTree(np.array([p.x,p.y]).T)
                     
-                    if s > 0.5*dist1:
-                        # need refinement
-                        c.panels.pop(ip)
-                        p1, p2 = p.refined()
-                        c.panels.insert(ip, p2)
-                        c.panels.insert(ip, p1)
-                    else: ip += 1
+                    near = k0.query_ball_tree(k1, r=2.8*s)
+                    near = np.any([bool(n) for n in near])
+                    
+                    if not near:
+                        ip+=1
+                        break
+
+                    c.panels.pop(ip)
+                    p1, p2 = p.refined()
+                    c.panels.insert(ip, p2)
+                    c.panels.insert(ip, p1)
+                    
                     
         if len(self.boundaries) == 1:
             return # no need to refine the boundary curve
@@ -168,16 +173,22 @@ class MultiplyConnectedPipe:
                     p = c.panels[ip]
                     s = p.arclen
                     
-                    test_pts = np.concatenate([b2.t for b2 in self.boundaries if b2 is not b])
-                    dist2 = np.min(np.abs(p.start_pt - test_pts) + np.abs(p.end_pt - test_pts))
+                    k1 = KDTree(np.array([p.x,p.y]).T)
+                    pts2 = np.concatenate([b2.t for b2 in enumerate(self.boundaries) if b2 is not b])
+                    pts2 = np.array([pts2.real, pts2.imag]).T
+                    k2 = KDTree(pts2,compact_nodes=False)
                     
-                    if s > 3*dist2:
-                        # need refinement
-                        c.panels.pop(ip)
-                        p1, p2 = p.refined()
-                        c.panels.insert(ip, p2)
-                        c.panels.insert(ip, p1)
-                    else: ip += 1
+                    near = k1.query_ball_tree(k2, r=2.8*s)
+                    near = np.any([bool(n) for n in near])
+                    
+                    if not near:
+                        ip+=1
+                        break
+
+                    c.panels.pop(ip)
+                    p1, p2 = p.refined()
+                    c.panels.insert(ip, p2)
+                    c.panels.insert(ip, p1)
 
 
     def build_A(self, fmm=None):

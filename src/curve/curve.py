@@ -38,8 +38,10 @@ class Curve:
         # TODO: change
         
         if not len(self.panels):
-            p = Panel(self, (-1, 1),p)
-            self.panels.append(p)
+            p1 = Panel(self, (-1, 0),p)
+            p2 = Panel(self, (0, 1),p)
+            self.panels.append(p1)
+            self.panels.append(p2)
 
         # refine the panels.
         i = 0
