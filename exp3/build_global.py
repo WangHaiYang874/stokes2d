@@ -19,10 +19,11 @@ required_tol = 1e-11
 
 t = time()
 pipe.build_geometry(required_tol=required_tol)
+for p in pipe.panels: p._build()
 print("geometry_built, time used: ", time()-t)
+print("number of points: ", len(pipe.t))
 t = time()
-# for p in pipe.panels:
-#     p._build()    
+
 
 pipe.build_A(fmm=True)
 

@@ -25,6 +25,9 @@ for i,pipe in enumerate(pipes):
     t = time()
     pipe.build_geometry(required_tol=required_tol)
     print("geometry_built, time used: ", time()-t)
+    print("number of points: ", len(pipe.t))
+    
+    for p in pipe.panels: p._build()
     t = time()
 
     pipe.build_A(fmm=True)
