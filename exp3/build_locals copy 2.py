@@ -47,4 +47,5 @@ def build_pipe(pipe,i):
     with open(curr_dir + '/local_pipes' + str(i) + '.pickle','wb') as f:
         pickle.dump(pipes,f,fix_imports=True,protocol=None)
 
-Parallel(n_jobs=5)(delayed(build_pipe)(pipe,i) for i,pipe in enumerate(pipes))
+i = 2
+build_pipe(pipes[i],i)
