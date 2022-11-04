@@ -2,9 +2,9 @@ import sys
 sys.path.insert(0,'./src/')
 from curve import *
 from utils import *
-import numpy as np
 from multiply_connected_pipe import *
 import pickle
+from joblib import Parallel, delayed
 
 from time import time
 
@@ -15,28 +15,25 @@ with open(curr_dir + '/pipes_and_shifts.pickle','rb') as f:
     pipe_and_shifts = pickle.load(f)
 
 pipes = set([p for p,_ in pipe_and_shifts])
-required_tol = 1e-11
+required_tol = 1e-10
 
-
-for i,pipe in enumerate(pipes):
-    
-    print("----building the pipe", i, "of", len(pipes), '----')
-    
+def build_pipe(pipe,i):
     t = time()
     pipe.build_geometry(required_tol=required_tol)
     for p in pipe.panels: p._build()
     pipe.build_A(fmm=True)
-    print("geometry_built, time used: ", time()-t)
-    print("number of points: ", len(pipe.t))
+    print("i", "geometry_built, time used: ", time()-t)
+    print("i", "number of points: ", len(pipe.t))
 
     t = time()
     pipe.build_omegas(tol=required_tol)
-    print("solver built, time used: ", time()-t)
-    print('n omegas: ', len(pipe.omegas))
+    
+    print("i", "solver built, time used: ", time()-t, 'n omegas: ', len(pipe.omegas))
     print()
+    
+    pipe.build_pressure_drops()
+    
+    with open(curr_dir + '/local_pipes' + str(i) + '.pickle','wb') as f:
+        pickle.dump(pipes,f,fix_imports=True,protocol=None)
 
-with open(curr_dir + '/local_pipes.pickle','wb') as f:
-    pickle.dump(pipes,f,fix_imports=True,protocol=None)
-
-with open(curr_dir + '/pipes_and_shifts_built.pickle','wb') as f:
-    pickle.dump(pipe_and_shifts,f,fix_imports=True,protocol=None)
+Parallel(n_jobs=9)(delayed(build_pipe)(pipe,i) for i,pipe in enumerate(pipes))

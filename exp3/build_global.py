@@ -2,7 +2,6 @@ import sys
 sys.path.insert(0,'./src/')
 from curve import *
 from utils import *
-import numpy as np
 from multiply_connected_pipe import *
 import pickle
 
@@ -15,7 +14,7 @@ curr_dir = os.path.dirname(__file__)
 with open(curr_dir + '/global_pipe_unbuilt.pickle','rb') as f:
     pipe = pickle.load(f)
 
-required_tol = 1e-11
+required_tol = 5e-9
 
 t = time()
 pipe.build_geometry(required_tol=required_tol,n_jobs=9)
