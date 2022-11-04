@@ -14,7 +14,7 @@ curr_dir = os.path.dirname(__file__)
 with open(curr_dir + '/global_pipe_unbuilt.pickle','rb') as f:
     pipe = pickle.load(f)
 
-required_tol = 5e-9
+required_tol = 5e-11
 
 t = time()
 pipe.build_geometry(required_tol=required_tol,n_jobs=9)

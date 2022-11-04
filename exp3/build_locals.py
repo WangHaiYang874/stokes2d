@@ -4,7 +4,6 @@ from curve import *
 from utils import *
 from multiply_connected_pipe import *
 import pickle
-from joblib import Parallel, delayed
 
 from time import time
 
@@ -25,8 +24,7 @@ while i < len(pipes):
         
 print("# pipes: ", len(pipes))
     
-        
-required_tol = 1e-10
+required_tol = 1e-11
 
 def build_pipe(pipe,i):
     t = time()
@@ -47,4 +45,8 @@ def build_pipe(pipe,i):
     with open(curr_dir + '/local_pipes' + str(i) + '.pickle','wb') as f:
         pickle.dump(pipes,f,fix_imports=True,protocol=None)
 
-Parallel(n_jobs=5)(delayed(build_pipe)(pipe,i) for i,pipe in enumerate(pipes))
+for i,pipe in enumerate(pipes):
+    build_pipe(pipe,i)
+    
+with open(curr_dir + '/pipes_and_shifts_built.pickle','wb') as f:
+    pickle.dump(pipe_and_shifts,f,fix_imports=True,protocol=None)
