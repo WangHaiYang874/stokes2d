@@ -18,7 +18,7 @@ with open(curr_dir + '/global_pipe_unbuilt.pickle','rb') as f:
 required_tol = 1e-11
 
 t = time()
-pipe.build_geometry(required_tol=required_tol,n_jobs=6)
+pipe.build_geometry(required_tol=required_tol,n_jobs=9)
 for p in pipe.panels: p._build()
 pipe.build_A(fmm=True)
 print("geometry_built, time used: ", time()-t)
