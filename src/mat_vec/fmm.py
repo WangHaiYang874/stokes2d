@@ -29,6 +29,7 @@ class Fmm(MatVec):
         diagonal_term = omega + self.k1_diagonal * \
             omega + (self.k2_diagonal)*omega.conj()
 
+        
         dipoles = np.array([
             -omega*self.dt/(2j*np.pi),
             (omega.conj()*self.dt).real/(1j*np.pi),
