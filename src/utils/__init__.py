@@ -13,7 +13,7 @@ DOMAIN_THRESHOLD = 2**(-10) # The minimal size of interval of 16 pts gauss quad 
 MAX_DISTANCE = 0.08 # panel.good_enough test
 GMRES_TOL = 1E-10
 GMRES_MAX_ITER = 1000
-RESTART = 50
+RESTART = 100
 DENSITY = 50
 
 # TODO: change this 

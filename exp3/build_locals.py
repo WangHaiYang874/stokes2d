@@ -43,7 +43,7 @@ def build_pipe(pipe,i):
     pipe.build_pressure_drops()
     
     with open(curr_dir + '/local_pipes' + str(i) + '.pickle','wb') as f:
-        pickle.dump(pipes,f,fix_imports=True,protocol=None)
+        pickle.dump(pipe,f,fix_imports=True,protocol=None)
 
 for i,pipe in enumerate(pipes):
     build_pipe(pipe,i)
