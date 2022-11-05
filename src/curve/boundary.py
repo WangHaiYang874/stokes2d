@@ -135,7 +135,7 @@ class Boundary:
                 pts2 = np.concatenate([p2.t for j,p2 in enumerate(self.panels) if j not in adj])
                 pts2 = np.array([pts2.real, pts2.imag]).T
                 k2 = KDTree(pts2,compact_nodes=False)
-                near = k1.query_ball_tree(k2, r=2.8*s)
+                near = k1.query_ball_tree(k2, r=2.95*s)
                 near = np.any([bool(n) for n in near])
                 
                 if not near: 

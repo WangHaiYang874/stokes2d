@@ -24,7 +24,7 @@ while i < len(pipes):
         
 print("# pipes: ", len(pipes))
     
-required_tol = 1e-11
+required_tol = 1e-10
 
 def build_pipe(pipe,i):
     t = time()

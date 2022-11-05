@@ -6,14 +6,14 @@ from .callback import Callback
 
 ERR = 1e-17 # the quadrature error setted for scipy.integrate.quad
 THRESHOLD = 1e-10 # for matcthing let. 
-FMM_EPS = 1e-16
+FMM_EPS = 6e-16
 
 REQUIRED_TOL = 1e-8
 DOMAIN_THRESHOLD = 2**(-10) # The minimal size of interval of 16 pts gauss quad rule
 MAX_DISTANCE = 0.08 # panel.good_enough test
 GMRES_TOL = 1E-10
 GMRES_MAX_ITER = 1000
-RESTART = 100
+RESTART = 500
 DENSITY = 50
 
 # TODO: change this 

@@ -149,7 +149,7 @@ class MultiplyConnectedPipe:
                     
                     k1 = KDTree(np.array([p.x,p.y]).T)
                     
-                    near = k0.query_ball_tree(k1, r=2.8*s)
+                    near = k0.query_ball_tree(k1, r=2.95*s)
                     near = np.any([bool(n) for n in near])
                     
                     if not near:
