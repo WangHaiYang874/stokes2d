@@ -44,7 +44,11 @@ omega_sep, _ = lgmres(A, b,
                     inner_m=500, outer_k=100 , maxiter=100000, 
                     callback=Callback())
 
+if _ < 0:
+    print('Did not converge')
+
+
 print('totol time cost', time() - t)
 
 with open('omegasep_global.pickle','wb') as f:
-    pickle.dump(pipe,f)
+    pickle.dump(omega_sep,f)
