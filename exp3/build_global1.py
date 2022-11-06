@@ -1,3 +1,4 @@
+from pdb import Restart
 import sys
 sys.path.insert(0,'./src/')
 from curve import *
@@ -10,12 +11,18 @@ from time import time
 import os
 curr_dir = os.path.dirname(__file__)
 
-required_tol = 1e-10
+required_tol = 1e-11
 
 with open(curr_dir + '/global_pipe_with_geometry.pickle','rb') as f:
     pipe = pickle.load(f)
 
-pipe.build_omegas(required_tol)
+print(len(pipe.t),' pts')
+
+t = time()
+
+pipe.build_omegas(required_tol,max_iter=100,restart=4000)
+
+print('totol time cost', time() - t)
 
 with open('global_pipe_with_omegas.pickle','wb') as f:
     pickle.dump(pipe,f)

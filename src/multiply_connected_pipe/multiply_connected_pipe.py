@@ -196,19 +196,10 @@ class MultiplyConnectedPipe:
         self.A = LinearOperator(
             matvec=self.mat_vec, dtype=np.float64, shape=(2*self.n_pts, 2*self.n_pts))
 
-    def build_omegas(self, tol=None, n_jobs=1):
-        assert n_jobs > 0
-        n_jobs = min(n_jobs, self.n_flows)
-
-        if n_jobs == 1:
-            self.omegas = array([
-                self.compute_omega(self.boundary_value(i), tol)
-                for i in range(self.n_flows)])
-        else:
-            self.omegas = array(Parallel(n_jobs=n_jobs)(
-                delayed(lambda i: self.compute_omega(
-                    self.boundary_value(i), tol))(i)
-                for i in range(self.n_flows)))
+    def build_omegas(self, tol=None,max_iter=None,restart=None):
+        self.omegas = array([
+            self.compute_omega(self.boundary_value(i), tol,max_iter,restart)
+            for i in range(self.n_flows)])
 
     def build_pressure_drops(self):
         pts = array([let.matching_pt for let in self.lets])
@@ -219,10 +210,11 @@ class MultiplyConnectedPipe:
             pressure_drops.append(pressure[1:] - pressure[0])
         self.pressure_drops = array(pressure_drops)
 
-    def compute_omega(self, H, tol=None, max_iter=None):
+    def compute_omega(self, H, tol=None, max_iter=None,restart=None):
 
         tol = GMRES_TOL if tol is None else tol
         max_iter = GMRES_MAX_ITER if max_iter is None else max_iter
+        restart = RESTART if restart is None else restart
         b = concatenate((H.real, H.imag))
 
         callback = Callback()
