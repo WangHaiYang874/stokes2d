@@ -1,0 +1,125 @@
+# pipes:  9
+0 geometry_built, time used:  20.227863550186157
+0 number of points:  7560
+0 solver built, time used:  5.91429328918457 n omegas:  2
+
+/home/haiyang/pkg/fmm2d/python/fmm2dpy/fmm2d.py:894: ComplexWarning: Casting complex values to real discards the imaginary part
+  out.pottarg,out.gradtarg,out.ier = lfmm.cfmm2d_t_d_g(eps,sources,dipstr,targets)
+1 geometry_built, time used:  12.75729489326477
+1 number of points:  2988
+1 solver built, time used:  1.497110366821289 n omegas:  1
+
+2 geometry_built, time used:  42.32786417007446
+2 number of points:  11880
+        Residual norm: 0.019872739161368724 at iteration 100, time: 0.1063255508740743 mins
+        Residual norm: 0.00021775960988256805 at iteration 100, time: 0.12070835034052531 mins
+2 solver built, time used:  26.414215326309204 n omegas:  2
+
+3 geometry_built, time used:  36.51159691810608
+3 number of points:  14172
+        Residual norm: 0.06095078234386141 at iteration 100, time: 0.0936612884203593 mins
+        Residual norm: 0.05346347874580145 at iteration 200, time: 0.18821685314178466 mins
+        Residual norm: 0.06988034239889271 at iteration 100, time: 0.08942594130833943 mins
+        Residual norm: 0.04346239507572759 at iteration 200, time: 0.1848464886347453 mins
+        Residual norm: 0.05947772652388507 at iteration 100, time: 0.1371107816696167 mins
+        Residual norm: 0.02208929974158154 at iteration 200, time: 0.23076114654541016 mins
+        Residual norm: 0.06953651714742923 at iteration 100, time: 0.09039692083994548 mins
+        Residual norm: 0.048037760563978016 at iteration 200, time: 0.18400346040725707 mins
+3 solver built, time used:  67.26585984230042 n omegas:  4
+
+4 geometry_built, time used:  39.47984862327576
+4 number of points:  17208
+        Residual norm: 0.11885822582194326 at iteration 100, time: 0.12328226963678995 mins
+        Residual norm: 0.05420311181177025 at iteration 200, time: 0.24235990047454833 mins
+        Residual norm: 4.988761486259503e-11 at iteration 300, time: 0.369311261177063 mins
+        Residual norm: 3.459275172637481e-11 at iteration 400, time: 0.4982052723566691 mins
+        Residual norm: 2.7175601610285504e-11 at iteration 500, time: 0.6408373514811198 mins
+        Residual norm: 2.0768044551463244e-11 at iteration 600, time: 0.7661265095074972 mins
+        Residual norm: 1.6291580227138698e-11 at iteration 700, time: 0.8875728686650594 mins
+        Residual norm: 3.591359551671559e-12 at iteration 800, time: 1.0058637142181397 mins
+        Residual norm: 3.387701979231887e-13 at iteration 900, time: 1.1262109359105428 mins
+        Residual norm: 4.858861569569465e-12 at iteration 1000, time: 1.2456021825472514 mins
+        Residual norm: 1.1014441743596705e-12 at iteration 1100, time: 1.3665090084075928 mins
+        Residual norm: 3.323783953069089e-11 at iteration 1200, time: 1.4996384739875794 mins
+        Residual norm: 2.078105117842007e-11 at iteration 1300, time: 1.6171176115671793 mins
+        Residual norm: 8.644969138633212e-12 at iteration 1400, time: 1.7466460784276328 mins
+        Residual norm: 1.5286156253748397e-19 at iteration 1500, time: 1.9017701824506124 mins
+        Residual norm: 1.328315133037555e-19 at iteration 1600, time: 2.0596303423245748 mins
+        Residual norm: 0.13181052420857467 at iteration 100, time: 0.1199551502863566 mins
+        Residual norm: 0.012222171877895297 at iteration 200, time: 0.24521679083506268 mins
+        Residual norm: 1.0172027537256152e-10 at iteration 300, time: 0.44049827655156454 mins
+        Residual norm: 4.431553528919859e-11 at iteration 400, time: 0.5820414423942566 mins
+        Residual norm: 2.7392967454665823e-11 at iteration 500, time: 0.7261816740036011 mins
+        Residual norm: 3.168971018124848e-11 at iteration 600, time: 0.847828992207845 mins
+        Residual norm: 2.4868651947512196e-11 at iteration 700, time: 0.9679925362269084 mins
+        Residual norm: 4.349420369067437e-11 at iteration 800, time: 1.0880886793136597 mins
+        Residual norm: 2.7828562191790975e-11 at iteration 900, time: 1.2071121215820313 mins
+        Residual norm: 2.0333130096563054e-12 at iteration 1000, time: 1.3288893938064574 mins
+        Residual norm: 2.7020454074880077e-11 at iteration 1100, time: 1.4504929463068643 mins
+        Residual norm: 1.0328820948956839e-11 at iteration 1200, time: 1.5726708809534709 mins
+        Residual norm: 4.34152864654142e-11 at iteration 1300, time: 1.6934650381406149 mins
+        Residual norm: 2.2330156025552406e-11 at iteration 1400, time: 1.811125648021698 mins
+        Residual norm: 3.2527059839647093e-13 at iteration 1500, time: 1.9341802795728047 mins
+        Residual norm: 1.7736294732362015e-19 at iteration 1600, time: 2.058730363845825 mins
+        Residual norm: 1.7425456465391426e-19 at iteration 1700, time: 2.1845557570457457 mins
+        Residual norm: 0.1577644565445132 at iteration 100, time: 0.11547866264979044 mins
+        Residual norm: 0.0629919418807379 at iteration 200, time: 0.23595532576243083 mins
+        Residual norm: 3.095958873099181e-11 at iteration 300, time: 0.3565585851669312 mins
+        Residual norm: 2.6538480398303257e-11 at iteration 400, time: 0.47637160619099933 mins
+        Residual norm: 1.5483023719047196e-11 at iteration 500, time: 0.5938969810803731 mins
+        Residual norm: 7.712366667104233e-12 at iteration 600, time: 0.7138895193735758 mins
+        Residual norm: 1.1775170906020341e-11 at iteration 700, time: 0.8337707241376241 mins
+        Residual norm: 2.447064869438562e-12 at iteration 800, time: 0.9541506131490072 mins
+        Residual norm: 1.467950927473392e-11 at iteration 900, time: 1.0763570229212442 mins
+        Residual norm: 2.5361966040876625e-12 at iteration 1000, time: 1.1944930950800579 mins
+        Residual norm: 1.7767789022437294e-12 at iteration 1100, time: 1.3158152898152669 mins
+        Residual norm: 8.930379766599996e-12 at iteration 1200, time: 1.4352415005366008 mins
+        Residual norm: 4.180850654688407e-12 at iteration 1300, time: 1.5548370520273844 mins
+        Residual norm: 4.7020576883052225e-20 at iteration 1400, time: 1.677258344491323 mins
+        Residual norm: 3.9519626490593504e-20 at iteration 1500, time: 1.8020593722661336 mins
+        Residual norm: 3.830977586663802e-20 at iteration 1600, time: 1.9291315118471781 mins
+        Residual norm: 0.1412352987217035 at iteration 100, time: 0.11529740095138549 mins
+        Residual norm: 0.042594397511676166 at iteration 200, time: 0.23753003676732382 mins
+        Residual norm: 1.167128872712204e-10 at iteration 300, time: 0.36252021392186484 mins
+        Residual norm: 1.1586755739440989e-10 at iteration 400, time: 0.488411279519399 mins
+        Residual norm: 1.130507727623647e-10 at iteration 500, time: 0.6172261953353881 mins
+        Residual norm: 3.503483192845853e-11 at iteration 600, time: 0.7352188189824422 mins
+        Residual norm: 4.7642043738488446e-11 at iteration 700, time: 0.8554309169451396 mins
+        Residual norm: 1.6378123992897044e-11 at iteration 800, time: 0.9727972348531088 mins
+        Residual norm: 3.275209781958945e-11 at iteration 900, time: 1.0937132398287455 mins
+        Residual norm: 9.475460697817766e-12 at iteration 1000, time: 1.2121663014094035 mins
+        Residual norm: 7.644789290003403e-13 at iteration 1100, time: 1.3325908780097961 mins
+        Residual norm: 2.0381126610668558e-11 at iteration 1200, time: 1.4567450086275737 mins
+        Residual norm: 4.254320855818355e-12 at iteration 1300, time: 1.5785087148348491 mins
+        Residual norm: 3.5523677115350543e-11 at iteration 1400, time: 1.7004606127738953 mins
+        Residual norm: 1.3132395862985636e-11 at iteration 1500, time: 1.8200904448827109 mins
+        Residual norm: 4.3126557552340765e-12 at iteration 1600, time: 1.9412492911020915 mins
+4 solver built, time used:  501.8641755580902 n omegas:  4
+
+5 geometry_built, time used:  22.060060024261475
+5 number of points:  11796
+        Residual norm: 0.05355940831013995 at iteration 100, time: 0.07584255139033 mins
+        Residual norm: 3.3149679276079513e-07 at iteration 100, time: 0.07354913155237834 mins
+5 solver built, time used:  11.466401100158691 n omegas:  2
+
+6 geometry_built, time used:  22.285635232925415
+6 number of points:  11796
+        Residual norm: 0.05271811655245171 at iteration 100, time: 0.07447452147801717 mins
+        Residual norm: 3.339416738653127e-07 at iteration 100, time: 0.07211870749791463 mins
+6 solver built, time used:  11.25504469871521 n omegas:  2
+
+7 geometry_built, time used:  24.19597840309143
+7 number of points:  17976
+        Residual norm: 0.08588917629382284 at iteration 100, time: 0.11120736201604207 mins
+        Residual norm: 0.061248480275829985 at iteration 200, time: 0.22012011210123697 mins
+        Residual norm: 0.060690030157968575 at iteration 100, time: 0.10428070227305095 mins
+        Residual norm: 0.026509854163533502 at iteration 200, time: 0.21348786354064941 mins
+7 solver built, time used:  37.07592558860779 n omegas:  2
+
+8 geometry_built, time used:  24.35954523086548
+8 number of points:  17976
+        Residual norm: 0.08588917629383863 at iteration 100, time: 0.10977797508239746 mins
+        Residual norm: 0.06124848027587892 at iteration 200, time: 0.22377752065658568 mins
+        Residual norm: 0.06069003015795554 at iteration 100, time: 0.1085214893023173 mins
+        Residual norm: 0.02650985416353097 at iteration 200, time: 0.22035734256108602 mins
+8 solver built, time used:  37.81352996826172 n omegas:  2

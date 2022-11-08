@@ -219,7 +219,7 @@ class MultiplyConnectedPipe:
 
         callback = Callback()
         omega_sep, _ = gmres(self.A, b, atol=0, tol=tol,
-                             restart=RESTART, maxiter=max_iter,
+                             restart=restart, maxiter=max_iter,
                              callback=callback, callback_type='pr_norm')
 
         self.callbacks.append(callback)

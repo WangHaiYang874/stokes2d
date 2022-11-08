@@ -6,7 +6,7 @@ from .callback import Callback
 
 ERR = 1e-17 # the quadrature error setted for scipy.integrate.quad
 THRESHOLD = 1e-10 # for matcthing let. 
-FMM_EPS = 1e-15
+FMM_EPS = 5e-16
 
 REQUIRED_TOL = 1e-8
 DOMAIN_THRESHOLD = 2**(-10) # The minimal size of interval of 16 pts gauss quad rule
