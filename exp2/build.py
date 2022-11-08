@@ -41,7 +41,7 @@ ps = PipeSystem(real_pipes,bdr_pipe)
 global_pipe_fmm = MultiplyConnectedPipeFromPipeSystem(ps)
 
 t = time()
-global_pipe_fmm.build(fmm=True,required_tol=1e-11)
+global_pipe_fmm.build(fmm=True,required_tol=1e-10)
 print("fmmtime", time()-t)
 
 

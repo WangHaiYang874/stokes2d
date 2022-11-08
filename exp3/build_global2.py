@@ -23,7 +23,7 @@ A = pipe.A
 
 omega_sep, _ = gmres(A, b, 
                     atol=0, tol=required_tol,
-                    restart=5000, maxiter=100, 
+                    restart=2000, maxiter=100, 
                     callback=Callback(),callback_type='pr_norm')
 
 if _ < 0:
