@@ -118,37 +118,38 @@ class Panel:
 
     @property
     def leg_interp_error(self):
-
+        
+        if self.parent.__class__.__name__ == "Line":
+            return 0
+        
         m = len(self.a)*2
         test_points = gauss_quad_rule(domain=self.domain, n=m)[0]
         x_eval, y_eval = self.aff_trans(
             self.x_fn(test_points), self.y_fn(test_points), with_affine=True)
-        dx_da_eval, dy_da_eval = self.aff_trans(
-            self.dx_da_fn(test_points), self.dy_da_fn(test_points))
-        ddx_dda_eval, ddy_dda_eval = self.aff_trans(
-            self.ddx_dda_fn(test_points), self.ddy_dda_fn(test_points))
-        k_eval = (dx_da_eval * ddy_dda_eval - dy_da_eval * ddx_dda_eval) / \
-            ((dx_da_eval ** 2 + dy_da_eval ** 2) ** 1.5)
-        dt_da_eval = dx_da_eval + 1j * dy_da_eval
+        # dx_da_eval, dy_da_eval = self.aff_trans(
+        #     self.dx_da_fn(test_points), self.dy_da_fn(test_points))
+        # ddx_dda_eval, ddy_dda_eval = self.aff_trans(
+        #     self.ddx_dda_fn(test_points), self.ddy_dda_fn(test_points))
+        # k_eval = (dx_da_eval * ddy_dda_eval - dy_da_eval * ddx_dda_eval) / \
+        #     ((dx_da_eval ** 2 + dy_da_eval ** 2) ** 1.5)
+        # dt_da_eval = dx_da_eval + 1j * dy_da_eval
         t_eval = x_eval + 1j * y_eval
+        
         g1_eval = t_eval
-        g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
+        # g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
         # g3_eval = k_eval**2
-
-        g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
-        # TODO, this term should be testing agains t, not a
-
+        # g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
         # g5_eval = np.imag(t_eval*np.conjugate(dt_da_eval)/dt_da_eval)
         # g5_eval = np.real(dt_da_eval)
         # g6_eval = x_eval * np.conjugate(dt_da_eval)/dt_da_eval
         # g7_eval = y_eval * np.conjugate(dt_da_eval)/dt_da_eval
 
         g1_interp = self.leg_interp(self.leg_fit(self.t), test_points)
-        g2_interp = self.leg_interp(
-            self.leg_fit(np.abs(self.dt_da)), test_points)
+        # g2_interp = self.leg_interp(
+            # self.leg_fit(np.abs(self.dt_da)), test_points)
         # g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
-        g4_interp = self.leg_interp(self.leg_fit(
-            np.conjugate(self.dt_da)/self.dt_da), test_points)
+        # g4_interp = self.leg_interp(self.leg_fit(
+            # np.conjugate(self.dt_da)/self.dt_da), test_points)
         # g5_interp = self.leg_interp(self.leg_fit(np.imag(self.t*np.conjugate(self.dt_da)/self.dt_da)), test_points)
         # g5_interp = self.leg_interp(self.leg_fit(np.real(self.dt_da)), test_points)
         # g6_interp = self.leg_interp(self.leg_fit(self.x * np.conjugate(self.dt_da)/self.dt_da), test_points)
@@ -157,26 +158,30 @@ class Panel:
         with np.errstate(divide='ignore', invalid='ignore'):
             error1 = np.linalg.norm(g1_interp - g1_eval) / \
                 np.linalg.norm(g1_eval)
-            error2 = np.linalg.norm(g2_interp - g2_eval) / \
-                np.linalg.norm(g2_eval)
+            # error2 = np.linalg.norm(g2_interp - g2_eval) / \
+                # np.linalg.norm(g2_eval)
             # error3 = np.linalg.norm(g3_interp - g3_eval) / \
                 # np.linalg.norm(g3_eval)
-            error4 = np.sum(np.abs(g4_interp - g4_eval)) / \
-                np.sum(np.abs(g4_eval))
+            # error4 = np.sum(np.abs(g4_interp - g4_eval)) / \
+                # np.sum(np.abs(g4_eval))
             # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
             # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
             # error67 = np.sum(np.abs(g6_interp - g6_eval)+np.abs(g7_interp - g7_eval))/np.sum(np.abs(g6_eval)+np.abs(g7_eval))
 
-        if self.parent.__class__.__name__ in ["Corner", "Cap"] and (self.domain[0] == -1 or self.domain[1] == 1):
-            error3 = 0
-        elif self.parent.__class__.__name__ == 'Line':
-            error3 = 0
-            # error67 = 0
+        # if self.parent.__class__.__name__ in ["Corner", "Cap"] and (self.domain[0] == -1 or self.domain[1] == 1):
+        #     error3 = 0
+        # elif self.parent.__class__.__name__ == 'Line':
+        #     error3 = 0
+        #     # error67 = 0
 
-        ret = np.array([error1, error2, error4,  # error5, error67, error3,
-                        ])
-        ret = ret[~np.isnan(ret)]
-        return np.max(ret)
+        # ret = np.array([error1, # error2, error4,  # error5, error67, error3,
+        #                 ])
+        # ret = ret[~np.isnan(ret)]
+        # return np.max(ret)
+        
+        if np.isfinite(error1): return error1
+        return 0
+        
 
     def good_enough(self, required_tol=REQUIRED_TOL, domain_threhold=DOMAIN_THRESHOLD):
 

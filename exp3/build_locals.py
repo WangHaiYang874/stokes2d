@@ -28,7 +28,7 @@ required_tol = 1e-10
 
 def build_pipe(pipe,i):
     t = time()
-    pipe.build_geometry(required_tol=required_tol)
+    pipe.build_geometry(required_tol=required_tol/5)
     for p in pipe.panels: p._build()
     pipe.build_A(fmm=True)
     print(i, "geometry_built, time used: ", time()-t)

@@ -8,5 +8,5 @@ class Callback:
         
     def __call__(self, prnorm):
         self.residuals.append(prnorm)
-        if len(self.residuals) % 100 == 0:
-            print(f"\tResidual norm: {prnorm} at iteration {len(self.residuals)}, time: {(time() - self.t)/60} mins")
+        if len(self.residuals) % 20 == 0:
+            print(f"\tresidual = {prnorm},\titer = {len(self.residuals)},\ttime = {(time() - self.t)//60} mins")

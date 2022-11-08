@@ -6,7 +6,7 @@ from multiply_connected_pipe import *
 import pickle
 
 from time import time
-from scipy.sparse.linalg import lgmres
+from scipy.sparse.linalg import gmres
 
 import os
 curr_dir = os.path.dirname(__file__)
@@ -14,39 +14,20 @@ curr_dir = os.path.dirname(__file__)
 with open(curr_dir + '/global_pipe_with_geometry.pickle','rb') as f:
     pipe = pickle.load(f)
 
-required_tol = 1e-10
+required_tol = 1e-9
 print(len(pipe.t),' pts')
 
 b = np.concatenate([pipe.boundary_value(0).real, pipe.boundary_value(0).imag],dtype=np.float64)
+pipe.build_A(fmm=True)
 A = pipe.A
 
-class Callback:
-    
-    def __init__(self):
-        self.iter = 0
-        self.residuals = []
-        self.t = time()
-        
-    def __call__(self, xk):
-        self.iter += 1
-        if self.iter % 200 == 0:
-            residual = np.linalg.norm(A(xk) - b)
-            self.residuals.append(residual)
-            print(f"iter {self.iter}", 
-                  f"resdiual {residual}", 
-                  f"time {int((time()-self.t)/60)} min", 
-                  sep='\t')
-
-t = time()
-
-omega_sep, _ = lgmres(A, b, 
+omega_sep, _ = gmres(A, b, 
                     atol=0, tol=required_tol,
-                    inner_m=500, outer_k=100 , maxiter=100000, 
-                    callback=Callback())
+                    restart=2000, maxiter=100, 
+                    callback=Callback(),callback_type='pr_norm')
 
 if _ < 0:
     print('Did not converge')
-
 
 print('totol time cost', time() - t)
 
