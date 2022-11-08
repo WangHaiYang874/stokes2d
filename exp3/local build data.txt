@@ -1,125 +1,463 @@
+Computed in WSL
+
 # pipes:  9
-0 geometry_built, time used:  20.227863550186157
-0 number of points:  7560
-0 solver built, time used:  5.91429328918457 n omegas:  2
+0 geometry_built, time used:  21.18040633201599
+0 number of points:  7826
+        residual = 0.13559202415395571, iter = 20,      time = 0.0 mins
+        residual = 0.0906350204187511,  iter = 40,      time = 0.0 mins
+        residual = 0.0552597292272184,  iter = 60,      time = 0.0 mins
+        residual = 3.446940070309174e-05,       iter = 80,      time = 0.0 mins
+        residual = 0.134886303885109,   iter = 20,      time = 0.0 mins
+        residual = 0.08962283644549573, iter = 40,      time = 0.0 mins
+        residual = 0.055301511099089574,        iter = 60,      time = 0.0 mins
+        residual = 3.4516179743718695e-05,      iter = 80,      time = 0.0 mins
+0 solver built, time used:  24.39384961128235 n omegas:  2
 
-/home/haiyang/pkg/fmm2d/python/fmm2dpy/fmm2d.py:894: ComplexWarning: Casting complex values to real discards the imaginary part
+/home/haiy/pkg/fmm2d/python/fmm2dpy/fmm2d.py:894: ComplexWarning: Casting complex values to real discards the imaginary part
   out.pottarg,out.gradtarg,out.ier = lfmm.cfmm2d_t_d_g(eps,sources,dipstr,targets)
-1 geometry_built, time used:  12.75729489326477
-1 number of points:  2988
-1 solver built, time used:  1.497110366821289 n omegas:  1
+1 geometry_built, time used:  10.058908224105835
+1 number of points:  2769
+        residual = 0.044901831069373836,        iter = 20,      time = 0.0 mins
+        residual = 0.0011114529689399634,       iter = 40,      time = 0.0 mins
+1 solver built, time used:  0.8002734184265137 n omegas:  1
 
-2 geometry_built, time used:  42.32786417007446
-2 number of points:  11880
-        Residual norm: 0.019872739161368724 at iteration 100, time: 0.1063255508740743 mins
-        Residual norm: 0.00021775960988256805 at iteration 100, time: 0.12070835034052531 mins
-2 solver built, time used:  26.414215326309204 n omegas:  2
+2 geometry_built, time used:  33.42968535423279
+2 number of points:  11583
+        residual = 0.06814430076557226, iter = 20,      time = 0.0 mins
+        residual = 0.05986203262621963, iter = 40,      time = 0.0 mins
+        residual = 0.050174288547419274,        iter = 60,      time = 0.0 mins
+        residual = 0.023342520570918946,        iter = 80,      time = 0.0 mins
+        residual = 0.019660642695242425,        iter = 100,     time = 0.0 mins
+        residual = 0.0004739586695570461,       iter = 120,     time = 0.0 mins
+        residual = 4.232452000000019e-10,       iter = 140,     time = 0.0 mins
+        residual = 0.059373183436234975,        iter = 20,      time = 0.0 mins
+        residual = 0.05082587861987367, iter = 40,      time = 0.0 mins
+        residual = 0.023559975373468142,        iter = 60,      time = 0.0 mins
+        residual = 0.0003657722550774782,       iter = 80,      time = 0.0 mins
+        residual = 9.890130444561129e-05,       iter = 100,     time = 0.0 mins
+        residual = 3.2880617765463147e-07,      iter = 120,     time = 0.0 mins
+        residual = 7.127248196294259e-10,       iter = 140,     time = 0.0 mins
+        residual = 2.4698400717631303e-11,      iter = 160,     time = 0.0 mins
+        residual = 1.9735361913863268e-11,      iter = 180,     time = 0.0 mins
+        residual = 1.760065978080558e-11,       iter = 200,     time = 0.0 mins
+2 solver built, time used:  60.38603210449219 n omegas:  2
 
-3 geometry_built, time used:  36.51159691810608
-3 number of points:  14172
-        Residual norm: 0.06095078234386141 at iteration 100, time: 0.0936612884203593 mins
-        Residual norm: 0.05346347874580145 at iteration 200, time: 0.18821685314178466 mins
-        Residual norm: 0.06988034239889271 at iteration 100, time: 0.08942594130833943 mins
-        Residual norm: 0.04346239507572759 at iteration 200, time: 0.1848464886347453 mins
-        Residual norm: 0.05947772652388507 at iteration 100, time: 0.1371107816696167 mins
-        Residual norm: 0.02208929974158154 at iteration 200, time: 0.23076114654541016 mins
-        Residual norm: 0.06953651714742923 at iteration 100, time: 0.09039692083994548 mins
-        Residual norm: 0.048037760563978016 at iteration 200, time: 0.18400346040725707 mins
-3 solver built, time used:  67.26585984230042 n omegas:  4
+3 geometry_built, time used:  36.46958088874817
+3 number of points:  14586
+        residual = 0.10119229566357318, iter = 20,      time = 0.0 mins
+        residual = 0.08538024857279276, iter = 40,      time = 0.0 mins
+        residual = 0.07225969751439333, iter = 60,      time = 0.0 mins
+        residual = 0.06641114839934827, iter = 80,      time = 0.0 mins
+        residual = 0.06056185033564241, iter = 100,     time = 0.0 mins
+        residual = 0.059421930391358575,        iter = 120,     time = 0.0 mins
+        residual = 0.05815645432437024, iter = 140,     time = 0.0 mins
+        residual = 0.05707502289786603, iter = 160,     time = 0.0 mins
+        residual = 0.055076724217690394,        iter = 180,     time = 0.0 mins
+        residual = 0.053276754241204365,        iter = 200,     time = 0.0 mins
+        residual = 0.02558905815296124, iter = 220,     time = 0.0 mins
+        residual = 0.007573820108012036,        iter = 240,     time = 0.0 mins
+        residual = 0.00031648987303856656,      iter = 260,     time = 0.0 mins
+        residual = 1.5664933948040984e-10,      iter = 280,     time = 0.0 mins
+        residual = 0.12862402461161848, iter = 20,      time = 0.0 mins
+        residual = 0.08717869509098472, iter = 40,      time = 0.0 mins
+        residual = 0.07731006805416095, iter = 60,      time = 0.0 mins
+        residual = 0.07480952865790373, iter = 80,      time = 0.0 mins
+        residual = 0.06938699333610944, iter = 100,     time = 0.0 mins
+        residual = 0.06491547723518022, iter = 120,     time = 0.0 mins
+        residual = 0.06263814315332865, iter = 140,     time = 0.0 mins
+        residual = 0.060895977625956596,        iter = 160,     time = 0.0 mins
+        residual = 0.054666363199428566,        iter = 180,     time = 0.0 mins
+        residual = 0.04316861120949037, iter = 200,     time = 0.0 mins
+        residual = 0.03312709569303926, iter = 220,     time = 0.0 mins
+        residual = 6.086382613195148e-05,       iter = 240,     time = 0.0 mins
+        residual = 2.6976230091071823e-05,      iter = 260,     time = 0.0 mins
+        residual = 0.105256635576102,   iter = 20,      time = 0.0 mins
+        residual = 0.07759440000063657, iter = 40,      time = 0.0 mins
+        residual = 0.06869455035918118, iter = 60,      time = 0.0 mins
+        residual = 0.06463759228788181, iter = 80,      time = 0.0 mins
+        residual = 0.05918227561484774, iter = 100,     time = 0.0 mins
+        residual = 0.05011221128995857, iter = 120,     time = 0.0 mins
+        residual = 0.032649182550393493,        iter = 140,     time = 0.0 mins
+        residual = 0.03151557000765547, iter = 160,     time = 0.0 mins
+        residual = 0.030992161167058087,        iter = 180,     time = 0.0 mins
+        residual = 0.0219425131825913,  iter = 200,     time = 0.0 mins
+        residual = 0.005749854948732928,        iter = 220,     time = 0.0 mins
+        residual = 0.0007738750849127072,       iter = 240,     time = 0.0 mins
+        residual = 3.1859880181896943e-06,      iter = 260,     time = 0.0 mins
+        residual = 1.8900086710058106e-10,      iter = 280,     time = 0.0 mins
+        residual = 4.8837639568440136e-11,      iter = 300,     time = 0.0 mins
+        residual = 4.452045851887032e-11,       iter = 320,     time = 0.0 mins
+        residual = 4.29874977464429e-11,        iter = 340,     time = 0.0 mins
+        residual = 4.133193616958602e-11,       iter = 360,     time = 0.0 mins
+        residual = 3.9778983888425186e-11,      iter = 380,     time = 0.0 mins
+        residual = 3.905655576477141e-11,       iter = 400,     time = 0.0 mins
+        residual = 3.6187600490893014e-11,      iter = 420,     time = 1.0 mins
+        residual = 3.509340451216116e-11,       iter = 440,     time = 1.0 mins
+        residual = 3.3810197941720326e-11,      iter = 460,     time = 1.0 mins
+        residual = 3.32565448742967e-11,        iter = 480,     time = 1.0 mins
+        residual = 3.0024839255803994e-11,      iter = 500,     time = 1.0 mins
+        residual = 2.938158805340345e-11,       iter = 520,     time = 1.0 mins
+        residual = 2.8823240895518255e-11,      iter = 540,     time = 1.0 mins
+        residual = 2.8669975200057442e-11,      iter = 560,     time = 1.0 mins
+        residual = 6.553071673373476e-12,       iter = 580,     time = 1.0 mins
+        residual = 0.1206093652558098,  iter = 20,      time = 0.0 mins
+        residual = 0.09820029354861684, iter = 40,      time = 0.0 mins
+        residual = 0.08839393760052698, iter = 60,      time = 0.0 mins
+        residual = 0.07704832008254348, iter = 80,      time = 0.0 mins
+        residual = 0.06897789118795725, iter = 100,     time = 0.0 mins
+        residual = 0.06389083656059254, iter = 120,     time = 0.0 mins
+        residual = 0.06116965125998819, iter = 140,     time = 0.0 mins
+        residual = 0.057708654280292974,        iter = 160,     time = 0.0 mins
+        residual = 0.05708973332368151, iter = 180,     time = 0.0 mins
+        residual = 0.0478084280690296,  iter = 200,     time = 0.0 mins
+        residual = 0.03177715272206392, iter = 220,     time = 0.0 mins
+        residual = 0.0055229494883773204,       iter = 240,     time = 0.0 mins
+        residual = 0.0006298870831897437,       iter = 260,     time = 0.0 mins
+        residual = 1.2685978563824585e-10,      iter = 280,     time = 0.0 mins
+3 solver built, time used:  216.61408615112305 n omegas:  4
 
-4 geometry_built, time used:  39.47984862327576
-4 number of points:  17208
-        Residual norm: 0.11885822582194326 at iteration 100, time: 0.12328226963678995 mins
-        Residual norm: 0.05420311181177025 at iteration 200, time: 0.24235990047454833 mins
-        Residual norm: 4.988761486259503e-11 at iteration 300, time: 0.369311261177063 mins
-        Residual norm: 3.459275172637481e-11 at iteration 400, time: 0.4982052723566691 mins
-        Residual norm: 2.7175601610285504e-11 at iteration 500, time: 0.6408373514811198 mins
-        Residual norm: 2.0768044551463244e-11 at iteration 600, time: 0.7661265095074972 mins
-        Residual norm: 1.6291580227138698e-11 at iteration 700, time: 0.8875728686650594 mins
-        Residual norm: 3.591359551671559e-12 at iteration 800, time: 1.0058637142181397 mins
-        Residual norm: 3.387701979231887e-13 at iteration 900, time: 1.1262109359105428 mins
-        Residual norm: 4.858861569569465e-12 at iteration 1000, time: 1.2456021825472514 mins
-        Residual norm: 1.1014441743596705e-12 at iteration 1100, time: 1.3665090084075928 mins
-        Residual norm: 3.323783953069089e-11 at iteration 1200, time: 1.4996384739875794 mins
-        Residual norm: 2.078105117842007e-11 at iteration 1300, time: 1.6171176115671793 mins
-        Residual norm: 8.644969138633212e-12 at iteration 1400, time: 1.7466460784276328 mins
-        Residual norm: 1.5286156253748397e-19 at iteration 1500, time: 1.9017701824506124 mins
-        Residual norm: 1.328315133037555e-19 at iteration 1600, time: 2.0596303423245748 mins
-        Residual norm: 0.13181052420857467 at iteration 100, time: 0.1199551502863566 mins
-        Residual norm: 0.012222171877895297 at iteration 200, time: 0.24521679083506268 mins
-        Residual norm: 1.0172027537256152e-10 at iteration 300, time: 0.44049827655156454 mins
-        Residual norm: 4.431553528919859e-11 at iteration 400, time: 0.5820414423942566 mins
-        Residual norm: 2.7392967454665823e-11 at iteration 500, time: 0.7261816740036011 mins
-        Residual norm: 3.168971018124848e-11 at iteration 600, time: 0.847828992207845 mins
-        Residual norm: 2.4868651947512196e-11 at iteration 700, time: 0.9679925362269084 mins
-        Residual norm: 4.349420369067437e-11 at iteration 800, time: 1.0880886793136597 mins
-        Residual norm: 2.7828562191790975e-11 at iteration 900, time: 1.2071121215820313 mins
-        Residual norm: 2.0333130096563054e-12 at iteration 1000, time: 1.3288893938064574 mins
-        Residual norm: 2.7020454074880077e-11 at iteration 1100, time: 1.4504929463068643 mins
-        Residual norm: 1.0328820948956839e-11 at iteration 1200, time: 1.5726708809534709 mins
-        Residual norm: 4.34152864654142e-11 at iteration 1300, time: 1.6934650381406149 mins
-        Residual norm: 2.2330156025552406e-11 at iteration 1400, time: 1.811125648021698 mins
-        Residual norm: 3.2527059839647093e-13 at iteration 1500, time: 1.9341802795728047 mins
-        Residual norm: 1.7736294732362015e-19 at iteration 1600, time: 2.058730363845825 mins
-        Residual norm: 1.7425456465391426e-19 at iteration 1700, time: 2.1845557570457457 mins
-        Residual norm: 0.1577644565445132 at iteration 100, time: 0.11547866264979044 mins
-        Residual norm: 0.0629919418807379 at iteration 200, time: 0.23595532576243083 mins
-        Residual norm: 3.095958873099181e-11 at iteration 300, time: 0.3565585851669312 mins
-        Residual norm: 2.6538480398303257e-11 at iteration 400, time: 0.47637160619099933 mins
-        Residual norm: 1.5483023719047196e-11 at iteration 500, time: 0.5938969810803731 mins
-        Residual norm: 7.712366667104233e-12 at iteration 600, time: 0.7138895193735758 mins
-        Residual norm: 1.1775170906020341e-11 at iteration 700, time: 0.8337707241376241 mins
-        Residual norm: 2.447064869438562e-12 at iteration 800, time: 0.9541506131490072 mins
-        Residual norm: 1.467950927473392e-11 at iteration 900, time: 1.0763570229212442 mins
-        Residual norm: 2.5361966040876625e-12 at iteration 1000, time: 1.1944930950800579 mins
-        Residual norm: 1.7767789022437294e-12 at iteration 1100, time: 1.3158152898152669 mins
-        Residual norm: 8.930379766599996e-12 at iteration 1200, time: 1.4352415005366008 mins
-        Residual norm: 4.180850654688407e-12 at iteration 1300, time: 1.5548370520273844 mins
-        Residual norm: 4.7020576883052225e-20 at iteration 1400, time: 1.677258344491323 mins
-        Residual norm: 3.9519626490593504e-20 at iteration 1500, time: 1.8020593722661336 mins
-        Residual norm: 3.830977586663802e-20 at iteration 1600, time: 1.9291315118471781 mins
-        Residual norm: 0.1412352987217035 at iteration 100, time: 0.11529740095138549 mins
-        Residual norm: 0.042594397511676166 at iteration 200, time: 0.23753003676732382 mins
-        Residual norm: 1.167128872712204e-10 at iteration 300, time: 0.36252021392186484 mins
-        Residual norm: 1.1586755739440989e-10 at iteration 400, time: 0.488411279519399 mins
-        Residual norm: 1.130507727623647e-10 at iteration 500, time: 0.6172261953353881 mins
-        Residual norm: 3.503483192845853e-11 at iteration 600, time: 0.7352188189824422 mins
-        Residual norm: 4.7642043738488446e-11 at iteration 700, time: 0.8554309169451396 mins
-        Residual norm: 1.6378123992897044e-11 at iteration 800, time: 0.9727972348531088 mins
-        Residual norm: 3.275209781958945e-11 at iteration 900, time: 1.0937132398287455 mins
-        Residual norm: 9.475460697817766e-12 at iteration 1000, time: 1.2121663014094035 mins
-        Residual norm: 7.644789290003403e-13 at iteration 1100, time: 1.3325908780097961 mins
-        Residual norm: 2.0381126610668558e-11 at iteration 1200, time: 1.4567450086275737 mins
-        Residual norm: 4.254320855818355e-12 at iteration 1300, time: 1.5785087148348491 mins
-        Residual norm: 3.5523677115350543e-11 at iteration 1400, time: 1.7004606127738953 mins
-        Residual norm: 1.3132395862985636e-11 at iteration 1500, time: 1.8200904448827109 mins
-        Residual norm: 4.3126557552340765e-12 at iteration 1600, time: 1.9412492911020915 mins
-4 solver built, time used:  501.8641755580902 n omegas:  4
+4 geometry_built, time used:  38.036999464035034
+4 number of points:  17836
+        residual = 0.20596908084477797, iter = 20,      time = 0.0 mins
+        residual = 0.1676676129183002,  iter = 40,      time = 0.0 mins
+        residual = 0.14155202365503838, iter = 60,      time = 0.0 mins
+        residual = 0.1280285451316041,  iter = 80,      time = 0.0 mins
+        residual = 0.1177952905067468,  iter = 100,     time = 0.0 mins
+        residual = 0.11536391546549951, iter = 120,     time = 0.0 mins
+        residual = 0.11145472643038008, iter = 140,     time = 0.0 mins
+        residual = 0.061302419581698686,        iter = 160,     time = 0.0 mins
+        residual = 0.0601793409392985,  iter = 180,     time = 0.0 mins
+        residual = 0.0536448019825871,  iter = 200,     time = 0.0 mins
+        residual = 0.004240057365007211,        iter = 220,     time = 0.0 mins
+        residual = 0.0014456545467349193,       iter = 240,     time = 0.0 mins
+        residual = 8.582972381150477e-11,       iter = 260,     time = 0.0 mins
+        residual = 5.5501153883326765e-11,      iter = 280,     time = 0.0 mins
+        residual = 4.742485336628637e-11,       iter = 300,     time = 0.0 mins
+        residual = 3.9993026510186485e-11,      iter = 320,     time = 0.0 mins
+        residual = 3.6860205848550104e-11,      iter = 340,     time = 0.0 mins
+        residual = 3.427747453651584e-11,       iter = 360,     time = 0.0 mins
+        residual = 3.195768083513828e-11,       iter = 380,     time = 1.0 mins
+        residual = 2.6192083151325907e-11,      iter = 400,     time = 1.0 mins
+        residual = 3.8243176931568634e-11,      iter = 420,     time = 1.0 mins
+        residual = 3.4438879090826634e-11,      iter = 440,     time = 1.0 mins
+        residual = 3.2225123391272234e-11,      iter = 460,     time = 1.0 mins
+        residual = 3.132366245673897e-11,       iter = 480,     time = 1.0 mins
+        residual = 3.025153410314043e-11,       iter = 500,     time = 1.0 mins
+        residual = 2.942654619939742e-11,       iter = 520,     time = 1.0 mins
+        residual = 2.3455795104925045e-11,      iter = 540,     time = 1.0 mins
+        residual = 1.936293763329847e-11,       iter = 560,     time = 1.0 mins
+        residual = 1.9004588196949026e-11,      iter = 580,     time = 1.0 mins
+        residual = 1.678028579001905e-11,       iter = 600,     time = 1.0 mins
+        residual = 1.5779563748201817e-11,      iter = 620,     time = 1.0 mins
+        residual = 1.3793700779647632e-11,      iter = 640,     time = 1.0 mins
+        residual = 3.740620461029352e-11,       iter = 660,     time = 1.0 mins
+        residual = 2.9517006598955635e-11,      iter = 680,     time = 1.0 mins
+        residual = 2.6303497466885622e-11,      iter = 700,     time = 1.0 mins
+        residual = 2.443962191001129e-11,       iter = 720,     time = 1.0 mins
+        residual = 2.2060406548107246e-11,      iter = 740,     time = 2.0 mins
+        residual = 2.035630101372249e-11,       iter = 760,     time = 2.0 mins
+        residual = 1.640662163312077e-11,       iter = 780,     time = 2.0 mins
+        residual = 1.2593737579572215e-11,      iter = 800,     time = 2.0 mins
+        residual = 1.0751131734979118e-11,      iter = 820,     time = 2.0 mins
+        residual = 9.487727900265056e-12,       iter = 840,     time = 2.0 mins
+        residual = 7.195719814627529e-12,       iter = 860,     time = 2.0 mins
+        residual = 6.346884237247534e-12,       iter = 880,     time = 2.0 mins
+        residual = 0.23944587390577385, iter = 20,      time = 0.0 mins
+        residual = 0.19100681836023597, iter = 40,      time = 0.0 mins
+        residual = 0.1682164188346951,  iter = 60,      time = 0.0 mins
+        residual = 0.1620431431034933,  iter = 80,      time = 0.0 mins
+        residual = 0.11066051781045372, iter = 100,     time = 0.0 mins
+        residual = 0.0748379122008453,  iter = 120,     time = 0.0 mins
+        residual = 0.073471509016231,   iter = 140,     time = 0.0 mins
+        residual = 0.06350562278683715, iter = 160,     time = 0.0 mins
+        residual = 0.011218943515613361,        iter = 180,     time = 0.0 mins
+        residual = 0.004596838904569187,        iter = 200,     time = 0.0 mins
+        residual = 0.0032505301874390905,       iter = 220,     time = 0.0 mins
+        residual = 0.0019219413284918276,       iter = 240,     time = 0.0 mins
+        residual = 1.3378741490471481e-10,      iter = 260,     time = 0.0 mins
+        residual = 8.010193183614018e-11,       iter = 280,     time = 0.0 mins
+        residual = 5.630231511940908e-11,       iter = 300,     time = 0.0 mins
+        residual = 2.7144866223990245e-11,      iter = 320,     time = 0.0 mins
+        residual = 2.357392898888451e-11,       iter = 340,     time = 0.0 mins
+        residual = 2.1903664209529788e-11,      iter = 360,     time = 0.0 mins
+        residual = 2.0383883785394247e-11,      iter = 380,     time = 1.0 mins
+        residual = 1.9346330844257534e-11,      iter = 400,     time = 1.0 mins
+        residual = 3.830370834608744e-11,       iter = 420,     time = 1.0 mins
+        residual = 2.7992908409308742e-11,      iter = 440,     time = 1.0 mins
+        residual = 2.6000160189688608e-11,      iter = 460,     time = 1.0 mins
+        residual = 2.074674533431591e-11,       iter = 480,     time = 1.0 mins
+        residual = 1.8940888518454742e-11,      iter = 500,     time = 1.0 mins
+        residual = 1.818865116913601e-11,       iter = 520,     time = 1.0 mins
+        residual = 1.618493599727864e-11,       iter = 540,     time = 1.0 mins
+        residual = 1.1053031702000784e-11,      iter = 560,     time = 1.0 mins
+        residual = 8.970511760110997e-12,       iter = 580,     time = 1.0 mins
+        residual = 7.669670543306109e-12,       iter = 600,     time = 1.0 mins
+        residual = 5.871242708435796e-12,       iter = 620,     time = 1.0 mins
+        residual = 3.639454367590736e-12,       iter = 640,     time = 1.0 mins
+        residual = 5.242915544226637e-11,       iter = 660,     time = 1.0 mins
+        residual = 3.266927493254646e-11,       iter = 680,     time = 1.0 mins
+        residual = 2.512844308727465e-11,       iter = 700,     time = 1.0 mins
+        residual = 2.1712502774346572e-11,      iter = 720,     time = 1.0 mins
+        residual = 2.006859582963991e-11,       iter = 740,     time = 2.0 mins
+        residual = 1.9263475645637952e-11,      iter = 760,     time = 2.0 mins
+        residual = 1.17227728530576e-11,        iter = 780,     time = 2.0 mins
+        residual = 6.813661428573444e-12,       iter = 800,     time = 2.0 mins
+        residual = 5.855307526619703e-12,       iter = 820,     time = 2.0 mins
+        residual = 5.719036540324832e-12,       iter = 840,     time = 2.0 mins
+        residual = 4.351284333214264e-12,       iter = 860,     time = 2.0 mins
+        residual = 3.734487449539912e-12,       iter = 880,     time = 2.0 mins
+        residual = 1.3931389292131645e-14,      iter = 900,     time = 2.0 mins
+        residual = 0.25299113011416907, iter = 20,      time = 0.0 mins
+        residual = 0.1900283879859037,  iter = 40,      time = 0.0 mins
+        residual = 0.1731271969981687,  iter = 60,      time = 0.0 mins
+        residual = 0.1694252432211574,  iter = 80,      time = 0.0 mins
+        residual = 0.1565068831381072,  iter = 100,     time = 0.0 mins
+        residual = 0.15065882881177112, iter = 120,     time = 0.0 mins
+        residual = 0.10318950141196677, iter = 140,     time = 0.0 mins
+        residual = 0.0866113111334283,  iter = 160,     time = 0.0 mins
+        residual = 0.0827223208116879,  iter = 180,     time = 0.0 mins
+        residual = 0.05900151618303873, iter = 200,     time = 0.0 mins
+        residual = 0.001052162705703943,        iter = 220,     time = 0.0 mins
+        residual = 0.000872051942517375,        iter = 240,     time = 0.0 mins
+        residual = 4.098099361514252e-11,       iter = 260,     time = 0.0 mins
+        residual = 2.366748278038654e-11,       iter = 280,     time = 0.0 mins
+        residual = 2.1974448480291897e-11,      iter = 300,     time = 0.0 mins
+        residual = 1.4289628296681676e-11,      iter = 320,     time = 0.0 mins
+        residual = 1.1723141708717122e-11,      iter = 340,     time = 0.0 mins
+        residual = 1.0117199002248521e-11,      iter = 360,     time = 0.0 mins
+        residual = 9.724685809663573e-12,       iter = 380,     time = 1.0 mins
+        residual = 8.813302917753673e-12,       iter = 400,     time = 1.0 mins
+        residual = 7.403985747435837e-12,       iter = 420,     time = 1.0 mins
+        residual = 4.381477322709817e-12,       iter = 440,     time = 1.0 mins
+        residual = 3.9499595028899776e-12,      iter = 460,     time = 1.0 mins
+        residual = 3.699171205503225e-12,       iter = 480,     time = 1.0 mins
+        residual = 2.1519820414712386e-12,      iter = 500,     time = 1.0 mins
+        residual = 1.8247213485385947e-12,      iter = 520,     time = 1.0 mins
+        residual = 1.6234530363467555e-11,      iter = 540,     time = 1.0 mins
+        residual = 1.0273686264506165e-11,      iter = 560,     time = 1.0 mins
+        residual = 8.342675894414232e-12,       iter = 580,     time = 1.0 mins
+        residual = 6.450098027583572e-12,       iter = 600,     time = 1.0 mins
+        residual = 4.898361011710442e-12,       iter = 620,     time = 1.0 mins
+        residual = 4.354106659992133e-12,       iter = 640,     time = 1.0 mins
+        residual = 4.112971625923123e-12,       iter = 660,     time = 1.0 mins
+        residual = 3.4947747078515995e-12,      iter = 680,     time = 1.0 mins
+        residual = 3.1804941260784455e-12,      iter = 700,     time = 1.0 mins
+        residual = 2.4043985373697935e-12,      iter = 720,     time = 1.0 mins
+        residual = 2.015577913724777e-12,       iter = 740,     time = 1.0 mins
+        residual = 1.5961838226587145e-12,      iter = 760,     time = 2.0 mins
+        residual = 2.457173827592035e-13,       iter = 780,     time = 2.0 mins
+        residual = 0.21693663568308505, iter = 20,      time = 0.0 mins
+        residual = 0.175077813617318,   iter = 40,      time = 0.0 mins
+        residual = 0.1602526495133735,  iter = 60,      time = 0.0 mins
+        residual = 0.14600546119043797, iter = 80,      time = 0.0 mins
+        residual = 0.14045985488068913, iter = 100,     time = 0.0 mins
+        residual = 0.13223761958347666, iter = 120,     time = 0.0 mins
+        residual = 0.12315182623067128, iter = 140,     time = 0.0 mins
+        residual = 0.10612246531227425, iter = 160,     time = 0.0 mins
+        residual = 0.06559501101570402, iter = 180,     time = 0.0 mins
+        residual = 0.03904723176989032, iter = 200,     time = 0.0 mins
+        residual = 0.007122990484209631,        iter = 220,     time = 0.0 mins
+        residual = 0.002800970835693421,        iter = 240,     time = 0.0 mins
+        residual = 1.569230384694403e-10,       iter = 260,     time = 0.0 mins
+        residual = 1.1151706803448727e-10,      iter = 280,     time = 0.0 mins
+        residual = 9.792550861169415e-11,       iter = 300,     time = 0.0 mins
+        residual = 8.199232399711928e-11,       iter = 320,     time = 0.0 mins
+        residual = 7.916634263274533e-11,       iter = 340,     time = 0.0 mins
+        residual = 7.611431857452884e-11,       iter = 360,     time = 1.0 mins
+        residual = 7.418981537550407e-11,       iter = 380,     time = 1.0 mins
+        residual = 6.858041190565877e-11,       iter = 400,     time = 1.0 mins
+        residual = 4.405668620024245e-11,       iter = 420,     time = 1.0 mins
+        residual = 3.648659068283695e-11,       iter = 440,     time = 1.0 mins
+        residual = 3.044624088827185e-11,       iter = 460,     time = 1.0 mins
+        residual = 2.2002943262028737e-11,      iter = 480,     time = 1.0 mins
+        residual = 6.718111783716933e-11,       iter = 500,     time = 1.0 mins
+        residual = 4.760635278912484e-11,       iter = 520,     time = 1.0 mins
+        residual = 3.543765954571206e-11,       iter = 540,     time = 1.0 mins
+        residual = 1.9450024141415902e-11,      iter = 560,     time = 1.0 mins
+        residual = 1.6000986362986744e-11,      iter = 580,     time = 1.0 mins
+        residual = 1.531991894677893e-11,       iter = 600,     time = 1.0 mins
+        residual = 1.487625778362399e-11,       iter = 620,     time = 1.0 mins
+        residual = 1.2003289972647177e-11,      iter = 640,     time = 1.0 mins
+        residual = 1.0448955628645848e-11,      iter = 660,     time = 1.0 mins
+        residual = 1.0226704888862033e-11,      iter = 680,     time = 1.0 mins
+        residual = 9.15298719039158e-12,        iter = 700,     time = 1.0 mins
+        residual = 8.683635094681851e-12,       iter = 720,     time = 1.0 mins
+        residual = 2.0917028552619795e-12,      iter = 740,     time = 2.0 mins
+        residual = 4.733065261614863e-11,       iter = 760,     time = 2.0 mins
+        residual = 3.959102746089764e-11,       iter = 780,     time = 2.0 mins
+        residual = 3.38038582659513e-11,        iter = 800,     time = 2.0 mins
+        residual = 3.082966705772953e-11,       iter = 820,     time = 2.0 mins
+        residual = 2.99283909563104e-11,        iter = 840,     time = 2.0 mins
+        residual = 2.935107270160993e-11,       iter = 860,     time = 2.0 mins
+        residual = 2.4762711005166933e-11,      iter = 880,     time = 2.0 mins
+        residual = 1.9253291370182793e-11,      iter = 900,     time = 2.0 mins
+        residual = 1.6744827611643162e-11,      iter = 920,     time = 2.0 mins
+        residual = 1.5982690308911296e-11,      iter = 940,     time = 2.0 mins
+        residual = 5.014137629758779e-12,       iter = 960,     time = 2.0 mins
+        residual = 4.351627418886754e-12,       iter = 980,     time = 2.0 mins
+4 solver built, time used:  582.1634962558746 n omegas:  4
 
-5 geometry_built, time used:  22.060060024261475
-5 number of points:  11796
-        Residual norm: 0.05355940831013995 at iteration 100, time: 0.07584255139033 mins
-        Residual norm: 3.3149679276079513e-07 at iteration 100, time: 0.07354913155237834 mins
-5 solver built, time used:  11.466401100158691 n omegas:  2
+5 geometry_built, time used:  22.89554715156555
+5 number of points:  12415
+        residual = 0.1663025950015148,  iter = 20,      time = 0.0 mins
+        residual = 0.11604696408002972, iter = 40,      time = 0.0 mins
+        residual = 0.09134759665110714, iter = 60,      time = 0.0 mins
+        residual = 0.06275967719958658, iter = 80,      time = 0.0 mins
+        residual = 0.0534452718425259,  iter = 100,     time = 0.0 mins
+        residual = 4.844243711448326e-07,       iter = 120,     time = 0.0 mins
+        residual = 0.18387157218794697, iter = 20,      time = 0.0 mins
+        residual = 0.13580007263980162, iter = 40,      time = 0.0 mins
+        residual = 1.297287736163486e-05,       iter = 60,      time = 0.0 mins
+        residual = 3.9965307428951924e-07,      iter = 80,      time = 0.0 mins
+        residual = 1.6019150102132059e-07,      iter = 100,     time = 0.0 mins
+        residual = 2.433145623988939e-10,       iter = 120,     time = 0.0 mins
+        residual = 1.0520019449832337e-10,      iter = 140,     time = 0.0 mins
+        residual = 7.959654010810513e-11,       iter = 160,     time = 0.0 mins
+        residual = 7.767815719609575e-11,       iter = 180,     time = 0.0 mins
+        residual = 7.664113391374931e-11,       iter = 200,     time = 0.0 mins
+        residual = 7.600016125395627e-11,       iter = 220,     time = 0.0 mins
+        residual = 7.501220010351332e-11,       iter = 240,     time = 0.0 mins
+        residual = 7.432742512348481e-11,       iter = 260,     time = 0.0 mins
+        residual = 7.407667743624224e-11,       iter = 280,     time = 0.0 mins
+        residual = 3.742674725247117e-11,       iter = 300,     time = 0.0 mins
+        residual = 2.2679283265956334e-11,      iter = 320,     time = 0.0 mins
+        residual = 2.2636141661724826e-11,      iter = 340,     time = 0.0 mins
+        residual = 2.5708777505209567e-11,      iter = 360,     time = 0.0 mins
+        residual = 1.0682544018760457e-11,      iter = 380,     time = 0.0 mins
+        residual = 6.91619355633171e-12,        iter = 400,     time = 0.0 mins
+        residual = 4.1947078977298295e-12,      iter = 420,     time = 0.0 mins
+        residual = 3.409727293506686e-12,       iter = 440,     time = 1.0 mins
+        residual = 2.7316746747048743e-12,      iter = 460,     time = 1.0 mins
+        residual = 9.086552996946304e-12,       iter = 480,     time = 1.0 mins
+        residual = 5.9469275565087714e-12,      iter = 500,     time = 1.0 mins
+        residual = 4.74451639980969e-12,        iter = 520,     time = 1.0 mins
+        residual = 4.281821693283864e-12,       iter = 540,     time = 1.0 mins
+        residual = 3.5414088873223546e-12,      iter = 560,     time = 1.0 mins
+        residual = 2.656886621751129e-12,       iter = 580,     time = 1.0 mins
+        residual = 2.6193788076002532e-12,      iter = 600,     time = 1.0 mins
+        residual = 9.744099869396698e-13,       iter = 620,     time = 1.0 mins
+        residual = 9.287422902324987e-13,       iter = 640,     time = 1.0 mins
+        residual = 8.852003087442454e-13,       iter = 660,     time = 1.0 mins
+        residual = 8.770593102772276e-13,       iter = 680,     time = 1.0 mins
+        residual = 8.668935114829578e-13,       iter = 700,     time = 1.0 mins
+        residual = 8.591587307476594e-13,       iter = 720,     time = 1.0 mins
+        residual = 8.488006832134907e-13,       iter = 740,     time = 1.0 mins
+        residual = 8.04632936021916e-13,        iter = 760,     time = 1.0 mins
+        residual = 7.928226724749782e-13,       iter = 780,     time = 1.0 mins
+        residual = 7.895964753805206e-13,       iter = 800,     time = 1.0 mins
+        residual = 7.870224774763314e-13,       iter = 820,     time = 1.0 mins
+        residual = 7.772077944726516e-13,       iter = 840,     time = 1.0 mins
+        residual = 7.653312537748187e-13,       iter = 860,     time = 2.0 mins
+        residual = 7.640793065044134e-13,       iter = 880,     time = 2.0 mins
+        residual = 7.600909754328128e-13,       iter = 900,     time = 2.0 mins
+        residual = 7.513582913248553e-13,       iter = 920,     time = 2.0 mins
+        residual = 7.450378754034659e-13,       iter = 940,     time = 2.0 mins
+        residual = 7.284351716106907e-13,       iter = 960,     time = 2.0 mins
+5 solver built, time used:  154.5610523223877 n omegas:  2
 
-6 geometry_built, time used:  22.285635232925415
-6 number of points:  11796
-        Residual norm: 0.05271811655245171 at iteration 100, time: 0.07447452147801717 mins
-        Residual norm: 3.339416738653127e-07 at iteration 100, time: 0.07211870749791463 mins
-6 solver built, time used:  11.25504469871521 n omegas:  2
+6 geometry_built, time used:  23.09865713119507
+6 number of points:  12441
+        residual = 0.16640865372419986, iter = 20,      time = 0.0 mins
+        residual = 0.11599485342037494, iter = 40,      time = 0.0 mins
+        residual = 0.0909266258700701,  iter = 60,      time = 0.0 mins
+        residual = 0.06232773608766491, iter = 80,      time = 0.0 mins
+        residual = 0.05260855018068147, iter = 100,     time = 0.0 mins
+        residual = 4.862402972678104e-07,       iter = 120,     time = 0.0 mins
+        residual = 0.18378231500508097, iter = 20,      time = 0.0 mins
+        residual = 0.13285786990901627, iter = 40,      time = 0.0 mins
+        residual = 1.2881021584017982e-05,      iter = 60,      time = 0.0 mins
+        residual = 3.919055091455517e-07,       iter = 80,      time = 0.0 mins
+        residual = 1.603743681843306e-07,       iter = 100,     time = 0.0 mins
+        residual = 2.3185916805494537e-10,      iter = 120,     time = 0.0 mins
+        residual = 1.0435311010515979e-10,      iter = 140,     time = 0.0 mins
+        residual = 8.94732289619675e-11,        iter = 160,     time = 0.0 mins
+        residual = 8.82809846790492e-11,        iter = 180,     time = 0.0 mins
+        residual = 8.672593782350378e-11,       iter = 200,     time = 0.0 mins
+        residual = 8.63942821393056e-11,        iter = 220,     time = 0.0 mins
+        residual = 8.596975217176022e-11,       iter = 240,     time = 0.0 mins
+        residual = 8.522147390520558e-11,       iter = 260,     time = 0.0 mins
+        residual = 8.486472130468847e-11,       iter = 280,     time = 0.0 mins
+        residual = 2.29683661503252e-11,        iter = 300,     time = 0.0 mins
+        residual = 1.695240128199542e-11,       iter = 320,     time = 0.0 mins
+        residual = 1.2663025489182098e-11,      iter = 340,     time = 0.0 mins
+        residual = 1.168429995605351e-11,       iter = 360,     time = 0.0 mins
+        residual = 1.0869095863299703e-11,      iter = 380,     time = 0.0 mins
+        residual = 8.360749145300561e-12,       iter = 400,     time = 0.0 mins
+        residual = 7.875720145987939e-12,       iter = 420,     time = 0.0 mins
+        residual = 2.4954272255355716e-12,      iter = 440,     time = 1.0 mins
+        residual = 2.2150862422970856e-12,      iter = 460,     time = 1.0 mins
+        residual = 2.122928096073111e-12,       iter = 480,     time = 1.0 mins
+        residual = 2.1049285904936838e-12,      iter = 500,     time = 1.0 mins
+        residual = 2.096091558038991e-12,       iter = 520,     time = 1.0 mins
+        residual = 2.0689470969521774e-12,      iter = 540,     time = 1.0 mins
+        residual = 2.0681641932090337e-12,      iter = 560,     time = 1.0 mins
+        residual = 2.0447569042200857e-12,      iter = 580,     time = 1.0 mins
+        residual = 1.99484581178658e-12,        iter = 600,     time = 1.0 mins
+        residual = 1.9891624981669837e-12,      iter = 620,     time = 1.0 mins
+        residual = 1.9685435359417396e-12,      iter = 640,     time = 1.0 mins
+        residual = 1.9166101947520346e-12,      iter = 660,     time = 1.0 mins
+        residual = 1.8898653652204925e-12,      iter = 680,     time = 1.0 mins
+        residual = 1.8501998308953314e-12,      iter = 700,     time = 1.0 mins
+        residual = 1.8090693663653511e-12,      iter = 720,     time = 1.0 mins
+        residual = 1.7818420995112425e-12,      iter = 740,     time = 1.0 mins
+        residual = 1.7796158838406284e-12,      iter = 760,     time = 1.0 mins
+        residual = 1.7458840741036821e-12,      iter = 780,     time = 1.0 mins
+        residual = 2.1188707879370042e-11,      iter = 800,     time = 1.0 mins
+        residual = 1.6349157511931572e-11,      iter = 820,     time = 1.0 mins
+        residual = 1.2652076140068525e-11,      iter = 840,     time = 2.0 mins
+        residual = 1.0495315601152595e-11,      iter = 860,     time = 2.0 mins
+        residual = 7.549198791209731e-12,       iter = 880,     time = 2.0 mins
+        residual = 2.9689643313171105e-12,      iter = 900,     time = 2.0 mins
+        residual = 8.221076808908184e-13,       iter = 920,     time = 2.0 mins
+        residual = 2.2174272828624414e-13,      iter = 940,     time = 2.0 mins
+        residual = 2.1976849077802288e-13,      iter = 960,     time = 2.0 mins
+        residual = 2.1322379741613828e-13,      iter = 980,     time = 2.0 mins
+        residual = 1.8772481671757322e-13,      iter = 1000,    time = 2.0 mins
+        residual = 1.870346144677486e-13,       iter = 1020,    time = 2.0 mins
+        residual = 1.84510248347664e-13,        iter = 1040,    time = 2.0 mins
+        residual = 1.840345956861079e-13,       iter = 1060,    time = 2.0 mins
+        residual = 1.8370214201678968e-13,      iter = 1080,    time = 2.0 mins
+        residual = 1.8367128332368706e-13,      iter = 1100,    time = 2.0 mins
+        residual = 1.834983813653618e-13,       iter = 1120,    time = 2.0 mins
+        residual = 1.816031059816195e-13,       iter = 1140,    time = 2.0 mins
+        residual = 1.8048915414357504e-13,      iter = 1160,    time = 2.0 mins
+        residual = 1.7832891411976324e-13,      iter = 1180,    time = 2.0 mins
+        residual = 1.7597599516552818e-13,      iter = 1200,    time = 2.0 mins
+        residual = 1.75281477588233e-13,        iter = 1220,    time = 2.0 mins
+        residual = 1.7504817910272173e-13,      iter = 1240,    time = 2.0 mins
+        residual = 1.735821929934288e-13,       iter = 1260,    time = 3.0 mins
+        residual = 1.73064188243028e-13,        iter = 1280,    time = 3.0 mins
+6 solver built, time used:  204.6245083808899 n omegas:  2
 
-7 geometry_built, time used:  24.19597840309143
-7 number of points:  17976
-        Residual norm: 0.08588917629382284 at iteration 100, time: 0.11120736201604207 mins
-        Residual norm: 0.061248480275829985 at iteration 200, time: 0.22012011210123697 mins
-        Residual norm: 0.060690030157968575 at iteration 100, time: 0.10428070227305095 mins
-        Residual norm: 0.026509854163533502 at iteration 200, time: 0.21348786354064941 mins
-7 solver built, time used:  37.07592558860779 n omegas:  2
-
-8 geometry_built, time used:  24.35954523086548
-8 number of points:  17976
-        Residual norm: 0.08588917629383863 at iteration 100, time: 0.10977797508239746 mins
-        Residual norm: 0.06124848027587892 at iteration 200, time: 0.22377752065658568 mins
-        Residual norm: 0.06069003015795554 at iteration 100, time: 0.1085214893023173 mins
-        Residual norm: 0.02650985416353097 at iteration 200, time: 0.22035734256108602 mins
-8 solver built, time used:  37.81352996826172 n omegas:  2
+7 geometry_built, time used:  25.00269889831543
+7 number of points:  19084
+        residual = 0.16402117574286468, iter = 20,      time = 0.0 mins
+        residual = 0.12798348621129368, iter = 40,      time = 0.0 mins
+        residual = 0.10036167642959916, iter = 60,      time = 0.0 mins
+        residual = 0.09260846982170938, iter = 80,      time = 0.0 mins
+        residual = 0.08572173199067656, iter = 100,     time = 0.0 mins
+        residual = 0.07881878933959861, iter = 120,     time = 0.0 mins
+        residual = 0.06405464823855571, iter = 140,     time = 0.0 mins
+        residual = 0.06272988988273791, iter = 160,     time = 0.0 mins
+        residual = 0.06180687489542649, iter = 180,     time = 0.0 mins
+        residual = 0.06118364618080958, iter = 200,     time = 0.0 mins
+        residual = 0.06048585086908875, iter = 220,     time = 0.0 mins
+        residual = 0.04606472123376675, iter = 240,     time = 0.0 mins
+        residual = 0.04106847123953718, iter = 260,     time = 0.0 mins
+        residual = 1.1077572090538132e-09,      iter = 280,     time = 0.0 mins
+        residual = 1.9170107916927303e-10,      iter = 300,     time = 0.0 mins
+        residual = 0.17296587924117368, iter = 20,      time = 0.0 mins
+        residual = 0.12945063579095245, iter = 40,      time = 0.0 mins
+        residual = 0.08691797531510208, iter = 60,      time = 0.0 mins
+        residual = 0.07223638917784349, iter = 80,      time = 0.0 mins
+        residual = 0.06051503138259155, iter = 100,     time = 0.0 mins
+        residual = 0.049045262525678125,        iter = 120,     time = 0.0 mins
+        residual = 0.04271443224423943, iter = 140,     time = 0.0 mins
+        residual = 0.036693165732419895,        iter = 160,     time = 0.0 mins
+        residual = 0.03154401184326371, iter = 180,     time = 0.0 mins
+        residual = 0.026491457555727144,        iter = 200,     time = 0.0 mins
+        residual = 0.024546479546601396,        iter = 220,     time = 0.0 mins
+        residual = 0.018022979212669727,        iter = 240,     time = 0.0 mins
+        residual = 0.006697309471462663,        iter = 260,     time = 0.0 mins
+        residual = 5.940476954016573e-10,       iter = 280,     time = 0.0 mins
+7 solver built, time used:  95.77247428894043 n omegas:  2

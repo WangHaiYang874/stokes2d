@@ -43,6 +43,7 @@ class MatVec:
         self.indices_of_interior_boundary = pipe.indices_of_boundary[1:]
         
         self.panels = pipe.panels
+        self.curves = pipe.curves
     
     def Ck(self,omega):
         arr = omega*np.abs(self.dt)
@@ -78,7 +79,7 @@ class MatVec:
 
         for Ck, zk, bk in zip(self.Ck(omega), self.zk, self.bk(omega)):
             diff = self.t - zk
-            singular_terms += bk/np.conjugate(diff)
+            singular_terms += np.conjugate(bk/diff)
             singular_terms += 2*Ck*np.log(np.abs(diff))
             singular_terms += Ck.conj() * diff / np.conjugate(diff)
 

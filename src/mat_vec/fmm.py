@@ -1,5 +1,5 @@
 from .mat_vec import MatVec
-
+from curve import Line
 import numpy as np
 from fmm2dpy import cfmm2d, bhfmm2d
 from utils import FMM_EPS
@@ -26,10 +26,10 @@ class Fmm(MatVec):
         return np.concatenate([ret.real, ret.imag])
 
     def K_non_singular_terms(self, omega):
+        
         diagonal_term = omega + self.k1_diagonal * \
             omega + (self.k2_diagonal)*omega.conj()
 
-        
         dipoles = np.array([
             -omega*self.dt/(2j*np.pi),
             (omega.conj()*self.dt).real/(1j*np.pi),
@@ -38,8 +38,23 @@ class Fmm(MatVec):
         bh_term = bhfmm2d(
             eps=FMM_EPS, pg=1, sources=self.boundary_sources,
             dipoles=dipoles).pot
+        
+        # correction_term = np.zeros_like(omega,dtype=np.complex128)
+        
+        # index = np.insert(np.cumsum([len(c.t) for c in self.curves]), 0, 0)
+        # index = [(index[i], index[i+1]) for i in range(len(index)-1)]
+        
+        # for c,(start,end) in zip(self.curves,index):
+            
+        #     if isinstance(c,Line):
+            
+        #         dip = dipoles[:,start:end]
+        #         src = self.boundary_sources[:,start:end]
+                
+        #         correction_term[start:end] = bhfmm2d(
+        #             eps=FMM_EPS, pg=1, sources=src, dipoles=dip).pot
 
-        return diagonal_term + bh_term
+        return diagonal_term + bh_term # - correction_term
 
     def velocity(self,x,y, omega):
         ret = self.velocity_non_singular_terms(x, y, omega)
