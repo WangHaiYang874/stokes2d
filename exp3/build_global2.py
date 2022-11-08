@@ -14,7 +14,7 @@ curr_dir = os.path.dirname(__file__)
 with open(curr_dir + '/global_pipe_with_geometry.pickle','rb') as f:
     pipe = pickle.load(f)
 
-required_tol = 1e-10
+required_tol = 1e-9
 print(len(pipe.t),' pts')
 
 b = np.concatenate([pipe.boundary_value(0).real, pipe.boundary_value(0).imag],dtype=np.float64)
@@ -23,12 +23,11 @@ A = pipe.A
 
 omega_sep, _ = gmres(A, b, 
                     atol=0, tol=required_tol,
-                    restart=15000, maxiter=30, 
+                    restart=5000, maxiter=100, 
                     callback=Callback(),callback_type='pr_norm')
 
 if _ < 0:
     print('Did not converge')
-
 
 print('totol time cost', time() - t)
 
