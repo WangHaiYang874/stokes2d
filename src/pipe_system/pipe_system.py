@@ -187,7 +187,6 @@ class PipeSystem:
 
         xs = []
         ys = []
-        # interior = []
 
         unexplored = set(range(len(self.pipes)))
         open = []
@@ -199,6 +198,8 @@ class PipeSystem:
         while True:
 
             # taking data
+            # marking explored
+            unexplored.remove(pipe_index)
             
             pipe = self.pipes[pipe_index]
             fluxes = self.fluxes_of_pipe(pipe_index)
@@ -214,8 +215,6 @@ class PipeSystem:
             p_field.append(p)
             o_field.append(o)
 
-            # marking explored
-            unexplored.remove(pipe_index)
 
             if not unexplored:
                 break
@@ -229,13 +228,14 @@ class PipeSystem:
                 v = self.let2vertex[l1]
                 l2 = v.l1 if v.l1 != l1 else v.l2
                 another_pipe_index = l2.pipeIndex
-                if another_pipe_index not in unexplored:
-                    continue
-                another_base_pressure = pipe.pressure_at_let(
-                    fluxes, other_let_index, let_index, pressure_at_let)
-                another_let_index = l2.letIndex
-
-                open.append((another_pipe_index, another_let_index, another_base_pressure))
+                if another_pipe_index in unexplored:
+                    another_base_pressure = pipe.pressure_at_let(
+                        fluxes, other_let_index, let_index, pressure_at_let)
+                    another_let_index = l2.letIndex
+                    open.append((another_pipe_index, another_let_index, another_base_pressure))
+            
+            # cleaning open
+            open = [o for o in open if o[0] in unexplored]
             
             if not open:
                 raise Exception('No more open pipes')
