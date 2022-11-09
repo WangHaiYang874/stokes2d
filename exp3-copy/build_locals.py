@@ -24,29 +24,15 @@ while i < len(pipes):
         
 print("# pipes: ", len(pipes))
     
-required_tol = 1e-10
-
-def build_pipe(pipe,i):
-    t = time()
-    pipe.build_geometry(required_tol=required_tol)
-    for p in pipe.panels: p._build()
-    pipe.build_A(fmm=True)
-    print(i, "geometry_built, time used: ", time()-t)
-    print(i, "number of points: ", len(pipe.t))
-
-    t = time()
-    pipe.build_omegas(tol=required_tol)
-    
-    print(i, "solver built, time used: ", time()-t, 'n omegas: ', len(pipe.omegas))
-    print()
-    
-    pipe.build_pressure_drops()
-    
-    with open(curr_dir + '/local_pipes' + str(i) + '.pickle','wb') as f:
-        pickle.dump(pipe,f,fix_imports=True,protocol=None)
+required_tol = 1e-11
 
 for i,pipe in enumerate(pipes):
-    build_pipe(pipe,i)
+    
+    print("--------pipe: ", i)
+    pipe.build(required_tol=required_tol,fmm=True,density=70)
+    with open(curr_dir + '/local_pipes' + str(i) + '.pickle','wb') as f:
+        pickle.dump(pipe,f,fix_imports=True,protocol=None)
+    print()    
     
 with open(curr_dir + '/pipes_and_shifts_built.pickle','wb') as f:
     pickle.dump(pipe_and_shifts,f,fix_imports=True,protocol=None)
