@@ -5,8 +5,6 @@ from utils import *
 from multiply_connected_pipe import *
 import pickle
 
-from time import time
-
 import os
 curr_dir = os.path.dirname(__file__)
 
@@ -24,7 +22,7 @@ while i < len(pipes):
         
 print("# pipes: ", len(pipes))
     
-required_tol = 1e-11
+required_tol = 1e-9
 
 for i,pipe in enumerate(pipes):
     
