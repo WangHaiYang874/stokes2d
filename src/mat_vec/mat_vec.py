@@ -37,20 +37,23 @@ class MatVec:
         self.dt = pipe.dt
         self.dt_da = pipe.dt_da
         self.k1_diagonal = pipe.k * np.abs(pipe.dt) / (2*np.pi)
-        self.k2_diagonal = -pipe.k*pipe.dt_da * \
-            pipe.dt/(2*np.pi*np.abs(pipe.dt_da))
+        self.k2_diagonal = -pipe.k*pipe.dt_da**2 * pipe.da / (2*np.pi*np.abs(pipe.dt_da))
         self.zk = np.array([b.z for b in pipe.boundaries[1:]])
         self.indices_of_interior_boundary = pipe.indices_of_boundary[1:]
         
         self.panels = pipe.panels
         self.curves = pipe.curves
+        self.z0 = pipe.z0
+        
+    def b0(self,omega):
+        return np.real(np.sum(omega*self.dt/((self.t-self.z0)**2)))/(1j*np.pi)
     
     def Ck(self,omega):
         arr = omega*np.abs(self.dt)
         return self.singular_density(arr)
 
     def bk(self,omega):
-        arr = -2*(omega*np.conj(self.dt)).imag
+        arr = -2*np.imag(omega*np.conjugate(self.dt))
         return self.singular_density(arr)
     
     def singular_density(self, some_density):
@@ -81,7 +84,7 @@ class MatVec:
             diff = self.t - zk
             singular_terms += np.conjugate(bk/diff)
             singular_terms += 2*Ck*np.log(np.abs(diff))
-            singular_terms += Ck.conj() * diff / np.conjugate(diff)
+            singular_terms += np.conjugate(Ck) * diff / np.conjugate(diff)
 
         return singular_terms
     

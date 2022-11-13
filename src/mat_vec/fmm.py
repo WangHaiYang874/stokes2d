@@ -23,12 +23,32 @@ class Fmm(MatVec):
         ret = self.K_non_singular_terms(omega)
         if self.n_interior_boundaries > 0:
             ret += self.K_singular_terms(omega)
+        
+        # I an attempting to add an extra term to let
+        # the gmres to handle a linear system with
+        # no rank deficiency. 
+
+        flux = np.real(np.sum(omega*np.conjugate(self.dt)))
+        extra_term = flux*self.dt
+        ret += extra_term
+        
+        
+        # this term is ignored in professor Greengard's paper. 
+        # could it be the cause of stagnation?
+        
+        # b0 = self.b0(omega)
+        # extra_term2 = np.conj(b0/(self.t-self.z0))
+        # ret += extra_term2
+        
+        # print(np.abs(b0))
+        
         return np.concatenate([ret.real, ret.imag])
 
     def K_non_singular_terms(self, omega):
         
-        diagonal_term = omega + self.k1_diagonal * \
-            omega + (self.k2_diagonal)*omega.conj()
+        diagonal_term = omega \
+            + self.k1_diagonal * omega \
+            + self.k2_diagonal * np.conj(omega)
 
         dipoles = np.array([
             -omega*self.dt/(2j*np.pi),

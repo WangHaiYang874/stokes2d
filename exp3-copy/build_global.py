@@ -13,11 +13,12 @@ curr_dir = os.path.dirname(__file__)
 with open(curr_dir + '/global_pipe.pickle','rb') as f:
     pipe = pickle.load(f)
 
-required_tol = 1e-9
+required_tol = 1e-8
 
 t = time()
 
-pipe.build_geometry(required_tol=required_tol/10)
+pipe.build_geometry(required_tol=required_tol/100, n_jobs=6)
+print('npts = ', len(pipe.t))
 for p in pipe.panels:
     p._build()
 pipe.build_A(fmm=True)

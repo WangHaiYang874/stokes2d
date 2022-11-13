@@ -135,6 +135,10 @@ class MultiplyConnectedPipe:
                 return b
             self.boundaries = Parallel(n_jobs=n_jobs)(delayed(build)(b) for b in self.boundaries)
 
+        # a new point
+        z = self.lets[0].matching_pt
+        self.z0 = z[0] + 1j*z[1]
+
         # refining panels to handle the close panel interaction. 
         
         k0 = KDTree(np.array([i.matching_pt for i in self.lets]))
@@ -223,6 +227,7 @@ class MultiplyConnectedPipe:
                              callback=callback, callback_type='pr_norm')
 
         self.callbacks.append(callback)
+        print()
 
         if _ < 0:
             warnings.warn("gmres is not converging to tolerance. ")

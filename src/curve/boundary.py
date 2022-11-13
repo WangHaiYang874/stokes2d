@@ -86,6 +86,14 @@ class Boundary:
                 pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
         
         if not closed: return np.array(pts)
+        return np.array(pts + [pts[0]])    
+    
+    def dense_bdr(self,closed=True):
+        pts = []
+        for c in self.curves:
+            pts += [[c.x[i], c.y[i]] for i in range(len(c.a))]
+        
+        if not closed: return np.array(pts)
         return np.array(pts + [pts[0]])
         
     def smth_plyg_bdr(self,closed=True):
@@ -129,7 +137,14 @@ class Boundary:
                 ip_boundary_prev = (ip_boundary - 1) % len(self.panels)
                 ip_boundary_prev2 = (ip_boundary - 2) % len(self.panels)
                 
-                adj = [ip_boundary_next, ip_boundary_prev, ip_boundary, ip_boundary_next2, ip_boundary_prev2]
+                adj = [ip_boundary_next, ip_boundary_prev, ip_boundary]
+                if p == 0:
+                    adj.append(ip_boundary_next2)
+                if p == len(c.panels) - 1:
+                    adj.append(ip_boundary_prev2)
+                else:
+                    adj.append(ip_boundary_next2)
+                    adj.append(ip_boundary_prev2)
                 
                 k1 = KDTree(np.array([p.x,p.y]).T)
                 pts2 = np.concatenate([p2.t for j,p2 in enumerate(self.panels) if j not in adj])
@@ -148,9 +163,29 @@ class Boundary:
                 c.panels.insert(ip, p2)
                 c.panels.insert(ip, p1)
                 
+        try:
+            pt = polylabel(Polygon(self.plyg_bdr(1e-2)))
+            self.z = pt.x + 1j*pt.y
+            # checking it is inside
+        except:
+            self.z = np.mean(self.t)
+
+        p = path.Path(np.array(LineString(self.dense_bdr()).buffer(0.002).interiors[0].xy).T)
+        assert p.contains_point(np.array([self.z.real, self.z.imag]))
     
-        pt = polylabel(Polygon(self.plyg_bdr(1e-2)))
-        self.z = pt.x + 1j*pt.y
+        for ic, c in enumerate(self.curves):
+            ip = 0
+            while ip < len(c.panels):
+                p = c.panels[ip]
+                s = p.arclen
+                if np.min(np.abs(p.t - self.z)) > 3*s:
+                    ip += 1
+                    break
+                else:
+                    c.panels.pop(ip)
+                    p1, p2 = p.refined()
+                    c.panels.insert(ip, p2)
+                    c.panels.insert(ip, p1)
     
     def inside(self, xs, ys):
         p = path.Path(np.array(LineString(self.plyg_bdr()).buffer(0.002).interiors[0].xy).T)

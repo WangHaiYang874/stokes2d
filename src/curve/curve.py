@@ -18,7 +18,7 @@ class Curve:
 
     def __init__(self, start_pt, end_pt, mid_pt) -> None:
 
-        assert np.linalg.norm(start_pt - end_pt) > 1e-15
+        # assert np.linalg.norm(start_pt - end_pt) > 1e-15
 
         self.panels = []
         self.start_pt = start_pt
