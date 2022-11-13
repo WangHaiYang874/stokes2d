@@ -27,10 +27,11 @@ required_tol = 1e-9
 for i,pipe in enumerate(pipes):
     
     print("--------pipe: ", i)
-    pipe.build(required_tol=required_tol,fmm=True,density=70)
-    with open(curr_dir + '/local_pipes' + str(i) + '.pickle','wb') as f:
-        pickle.dump(pipe,f,fix_imports=True,protocol=None)
+    
+    pipe.build_geometry(required_tol=required_tol)
+    pipe.build_A(fmm=True)
+    pipe.build_omegas(tol=required_tol)
     print()    
     
-with open(curr_dir + '/pipes_and_shifts_built.pickle','wb') as f:
+with open(curr_dir + '/v0.pickle','wb') as f:
     pickle.dump(pipe_and_shifts,f,fix_imports=True,protocol=None)

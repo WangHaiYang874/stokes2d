@@ -20,8 +20,9 @@ class Circle(Curve):
         start_pt = pt(radius,0) + center
         end_pt = pt(radius,0) + center
         mid_pt = pt(-radius,0) + center
-        super().__init__(start_pt, end_pt, mid_pt)
         self.orientation = orientation
+        
+        super().__init__(start_pt, end_pt, mid_pt)
         
     def build_aff_trans(self):
         super().build_aff_trans()

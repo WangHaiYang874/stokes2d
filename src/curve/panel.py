@@ -126,18 +126,18 @@ class Panel:
         test_points = gauss_quad_rule(domain=self.domain, n=m)[0]
         x_eval, y_eval = self.aff_trans(
             self.x_fn(test_points), self.y_fn(test_points), with_affine=True)
-        # dx_da_eval, dy_da_eval = self.aff_trans(
-        #     self.dx_da_fn(test_points), self.dy_da_fn(test_points))
-        # ddx_dda_eval, ddy_dda_eval = self.aff_trans(
-        #     self.ddx_dda_fn(test_points), self.ddy_dda_fn(test_points))
-        # k_eval = (dx_da_eval * ddy_dda_eval - dy_da_eval * ddx_dda_eval) / \
-        #     ((dx_da_eval ** 2 + dy_da_eval ** 2) ** 1.5)
+        dx_da_eval, dy_da_eval = self.aff_trans(
+            self.dx_da_fn(test_points), self.dy_da_fn(test_points))
+        ddx_dda_eval, ddy_dda_eval = self.aff_trans(
+            self.ddx_dda_fn(test_points), self.ddy_dda_fn(test_points))
+        k_eval = (dx_da_eval * ddy_dda_eval - dy_da_eval * ddx_dda_eval) / \
+            ((dx_da_eval ** 2 + dy_da_eval ** 2) ** 1.5)
         # dt_da_eval = dx_da_eval + 1j * dy_da_eval
         t_eval = x_eval + 1j * y_eval
         
         g1_eval = t_eval
         # g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
-        # g3_eval = k_eval**2
+        g3_eval = k_eval**2
         # g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
         # g5_eval = np.imag(t_eval*np.conjugate(dt_da_eval)/dt_da_eval)
         # g5_eval = np.real(dt_da_eval)
@@ -147,7 +147,7 @@ class Panel:
         g1_interp = self.leg_interp(self.leg_fit(self.t), test_points)
         # g2_interp = self.leg_interp(
             # self.leg_fit(np.abs(self.dt_da)), test_points)
-        # g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
+        g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
         # g4_interp = self.leg_interp(self.leg_fit(
             # np.conjugate(self.dt_da)/self.dt_da), test_points)
         # g5_interp = self.leg_interp(self.leg_fit(np.imag(self.t*np.conjugate(self.dt_da)/self.dt_da)), test_points)
@@ -160,8 +160,7 @@ class Panel:
                 np.linalg.norm(g1_eval)
             # error2 = np.linalg.norm(g2_interp - g2_eval) / \
                 # np.linalg.norm(g2_eval)
-            # error3 = np.linalg.norm(g3_interp - g3_eval) / \
-                # np.linalg.norm(g3_eval)
+            error3 = np.linalg.norm(g3_interp - g3_eval)
             # error4 = np.sum(np.abs(g4_interp - g4_eval)) / \
                 # np.sum(np.abs(g4_eval))
             # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
@@ -179,10 +178,15 @@ class Panel:
         # ret = ret[~np.isnan(ret)]
         # return np.max(ret)
         
-        if np.isfinite(error1): return error1
-        return 0
+        errors = np.array([error1, error3])
         
-
+        if np.all(np.isfinite(errors)):
+            return np.max(errors)
+        elif np.all(~ np.isfinite(errors)):
+            return 0
+        else:
+            return np.max(errors[np.isfinite(errors)])
+            
     def good_enough(self, required_tol=REQUIRED_TOL, domain_threhold=DOMAIN_THRESHOLD):
 
         if self.domain[1] - self.domain[0] < domain_threhold:
