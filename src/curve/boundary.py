@@ -125,48 +125,63 @@ class Boundary:
         [c.build(required_tol,p) for c in self.curves]
         
         for ic, c in enumerate(self.curves):
+            ic_prev = (ic - 1) % len(self.curves)
+            ic_next = (ic + 1) % len(self.curves)
+            adj = [ic_prev,ic,ic_next]
+            
+            pts2 = np.concatenate([c2.t for j,c2 in enumerate(self.curves) if j not in adj])
+            pts2 = np.array([pts2.real, pts2.imag]).T
+            k2 = KDTree(pts2)
+            
             ip = 0
             
             while ip < len(c.panels):
                 
                 p = c.panels[ip]
                 s = p.arclen
-                ip_boundary = ip + sum([len(c_.panels) for c_ in self.curves[:ic]])
-                ip_boundary_next = (ip_boundary + 1) % len(self.panels)
-                ip_boundary_next2 = (ip_boundary + 2) % len(self.panels)
-                ip_boundary_next3 = (ip_boundary + 3) % len(self.panels)
-                ip_boundary_next4 = (ip_boundary + 4) % len(self.panels)
-                ip_boundary_prev = (ip_boundary - 1) % len(self.panels)
-                ip_boundary_prev2 = (ip_boundary - 2) % len(self.panels)
-                ip_boundary_prev3 = (ip_boundary - 3) % len(self.panels)
-                ip_boundary_prev4 = (ip_boundary - 4) % len(self.panels)
-                
-                adj = [ip_boundary_next, ip_boundary_prev, ip_boundary, ip_boundary_next2, ip_boundary_prev2, ip_boundary_next3, ip_boundary_prev3, ip_boundary_next4, ip_boundary_prev4]
-                if p == 0:
-                    adj.append(ip_boundary_next2)
-                if p == len(c.panels) - 1:
-                    adj.append(ip_boundary_prev2)
-                else:
-                    adj.append(ip_boundary_next2)
-                    adj.append(ip_boundary_prev2)
                 
                 k1 = KDTree(np.array([p.x,p.y]).T)
-                pts2 = np.concatenate([p2.t for j,p2 in enumerate(self.panels) if j not in adj])
-                pts2 = np.array([pts2.real, pts2.imag]).T
-                k2 = KDTree(pts2,compact_nodes=False)
-                near = k1.query_ball_tree(k2, r=2.95*s)
+                near = k1.query_ball_tree(k2, r=2.5*s)
                 near = np.any([bool(n) for n in near])
                 
                 if not near: 
                     ip += 1
-                    break
                 
+                else:                
+                    c.panels.pop(ip)
+                    p1, p2 = p.refined()
+                    c.panels.insert(ip, p2)
+                    c.panels.insert(ip, p1)
+        
+        for ic, c in enumerate(self.curves):
+            ic_prev = (ic - 1) % len(self.curves)
+            ic_next = (ic + 1) % len(self.curves)
+            adj = [ic_prev,ic,ic_next]
+            
+            pts2 = np.concatenate([c2.t for j,c2 in enumerate(self.curves) if j not in adj])
+            pts2 = np.array([pts2.real, pts2.imag]).T
+            k2 = KDTree(pts2)
+            
+            ip = 0
+            
+            while ip < len(c.panels):
                 
-                c.panels.pop(ip)
-                p1, p2 = p.refined()
-                c.panels.insert(ip, p2)
-                c.panels.insert(ip, p1)
+                p = c.panels[ip]
+                s = p.arclen
                 
+                k1 = KDTree(np.array([p.x,p.y]).T)
+                near = k1.query_ball_tree(k2, r=2.5*s)
+                near = np.any([bool(n) for n in near])
+                
+                if not near: 
+                    ip += 1
+                
+                else:                
+                    c.panels.pop(ip)
+                    p1, p2 = p.refined()
+                    c.panels.insert(ip, p2)
+                    c.panels.insert(ip, p1)
+        
         try:
             pt = polylabel(Polygon(self.plyg_bdr(1e-2)))
             self.z = pt.x + 1j*pt.y

@@ -30,6 +30,17 @@ for i,pipe in enumerate(pipes):
     
     pipe.build_geometry(required_tol=required_tol)
     pipe.build_A(fmm=True)
+    
+    matching_points = np.array([i.matching_pt for i in pipe.lets])
+    matching_points_z = matching_points[:,0] + 1j*matching_points[:,1]
+    pairs_needing_correction = np.array(pipe.mat_vec.pairs_needing_correction(matching_points_z))
+    total_corrections = np.sum(pairs_needing_correction)
+    if not total_corrections == 0:
+        print('?')
+    
+    print('n_pts: ', len(pipe.t))
+    
+    
     pipe.build_omegas(tol=required_tol)
     print()    
     

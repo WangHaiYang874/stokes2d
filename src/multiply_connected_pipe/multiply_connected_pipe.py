@@ -136,66 +136,58 @@ class MultiplyConnectedPipe:
                 return b
             self.boundaries = Parallel(n_jobs=n_jobs)(delayed(build)(b) for b in self.boundaries)
 
-        # a new point
-        z = self.lets[0].matching_pt
-        self.z0 = z[0] + 1j*z[1]
-
         #### refining panels to handle the close panel interaction. 
         
         # this makes sure that evaluation at matching points are correct.
         # this is crucial for the connecting algorithm.
-        k0 = KDTree(np.array([i.matching_pt for i in self.lets]))
+        mat_pts = np.array([i.matching_pt for i in self.lets])
+        mat_pts_z = mat_pts[:,0] + 1j*mat_pts[:,1]
         
         for b in self.boundaries:
             for c in b.curves:
                 ip = 0
-                
                 while ip < len(c.panels):
                     p = c.panels[ip]
                     s = p.arclen
                     
-                    k1 = KDTree(np.array([p.x,p.y]).T)
-                    
-                    near = k0.query_ball_tree(k1, r=6*s)
-                    near = np.any([bool(n) for n in near])
+                    dist = np.abs(mat_pts_z - p.start_pt) + np.abs(mat_pts_z - p.end_pt)
+                    near = np.any(dist < 5*s)
                     
                     if not near:
                         ip+=1
-                        break
-
-                    c.panels.pop(ip)
-                    p1, p2 = p.refined()
-                    c.panels.insert(ip, p2)
-                    c.panels.insert(ip, p1)
+                    else:
+                        c.panels.pop(ip)
+                        p1, p2 = p.refined()
+                        c.panels.insert(ip, p2)
+                        c.panels.insert(ip, p1)
                     
         # refining to avoid two boundary close to each other.             
         if len(self.boundaries) == 1:
             return # no need to refine the boundary curve
         for i,b in enumerate(self.boundaries):
             print(f"\t\trefining boundary {i} out of {len(self.boundaries)}")
+            
+            pts2 = np.concatenate([b2.t for b2 in self.boundaries if b2 is not b])
+            pts2 = np.array([pts2.real, pts2.imag]).T
+            k2 = KDTree(pts2,compact_nodes=False)
+            
             for c in b.curves:
                 ip = 0
-                
                 while ip < len(c.panels):
                     p = c.panels[ip]
                     s = p.arclen
-                    
                     k1 = KDTree(np.array([p.x,p.y]).T)
-                    pts2 = np.concatenate([b2.t for b2 in self.boundaries if b2 is not b])
-                    pts2 = np.array([pts2.real, pts2.imag]).T
-                    k2 = KDTree(pts2,compact_nodes=False)
-                    
-                    near = k1.query_ball_tree(k2, r=3*s)
+                    near = k1.query_ball_tree(k2, r=2.5*s)
                     near = np.any([bool(n) for n in near])
                     
                     if not near:
                         ip+=1
-                        break
-
-                    c.panels.pop(ip)
-                    p1, p2 = p.refined()
-                    c.panels.insert(ip, p2)
-                    c.panels.insert(ip, p1)
+                        
+                    else:
+                        c.panels.pop(ip)
+                        p1, p2 = p.refined()
+                        c.panels.insert(ip, p2)
+                        c.panels.insert(ip, p1)
 
 
     def build_A(self, fmm=None):

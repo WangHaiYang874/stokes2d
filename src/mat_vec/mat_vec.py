@@ -43,10 +43,7 @@ class MatVec:
         
         self.panels = pipe.panels
         self.curves = pipe.curves
-        self.z0 = pipe.z0
         
-    def b0(self,omega):
-        return np.real(np.sum(omega*self.dt/((self.t-self.z0)**2)))/(1j*np.pi)
     
     def Ck(self,omega):
         arr = omega*np.abs(self.dt)
