@@ -141,6 +141,11 @@ class PipeSystem:
 
             A.append(a)
             B.append(b)
+            
+            if np.linalg.matrix_rank(A) < len(A):
+                A.pop(-1)
+                B.pop(-1)
+                
 
         for c in self.cycles:
 
@@ -171,7 +176,7 @@ class PipeSystem:
         self.A = np.array(A)
         self.b = np.array(B)
 
-        self.fluxes = np.linalg.lstsq(self.A, self.b, rcond=None)[0]
+        self.fluxes = np.linalg.solve(self.A, self.b)
 
     def fluxes_of_pipe(self, pipe_index):
         return np.array(sorted([(flow_index, flux) for (pipe_index_, flow_index), flux in zip(

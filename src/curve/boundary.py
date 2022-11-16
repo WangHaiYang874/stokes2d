@@ -134,10 +134,14 @@ class Boundary:
                 ip_boundary = ip + sum([len(c_.panels) for c_ in self.curves[:ic]])
                 ip_boundary_next = (ip_boundary + 1) % len(self.panels)
                 ip_boundary_next2 = (ip_boundary + 2) % len(self.panels)
+                ip_boundary_next3 = (ip_boundary + 3) % len(self.panels)
+                ip_boundary_next4 = (ip_boundary + 4) % len(self.panels)
                 ip_boundary_prev = (ip_boundary - 1) % len(self.panels)
                 ip_boundary_prev2 = (ip_boundary - 2) % len(self.panels)
+                ip_boundary_prev3 = (ip_boundary - 3) % len(self.panels)
+                ip_boundary_prev4 = (ip_boundary - 4) % len(self.panels)
                 
-                adj = [ip_boundary_next, ip_boundary_prev, ip_boundary]
+                adj = [ip_boundary_next, ip_boundary_prev, ip_boundary, ip_boundary_next2, ip_boundary_prev2, ip_boundary_next3, ip_boundary_prev3, ip_boundary_next4, ip_boundary_prev4]
                 if p == 0:
                     adj.append(ip_boundary_next2)
                 if p == len(c.panels) - 1:

@@ -137,7 +137,7 @@ class Panel:
         
         g1_eval = t_eval
         # g2_eval = np.linalg.norm([dx_da_eval, dy_da_eval], axis=0)
-        g3_eval = k_eval**2
+        # g3_eval = k_eval**2
         # g4_eval = np.conjugate(dt_da_eval)/dt_da_eval
         # g5_eval = np.imag(t_eval*np.conjugate(dt_da_eval)/dt_da_eval)
         # g5_eval = np.real(dt_da_eval)
@@ -147,7 +147,7 @@ class Panel:
         g1_interp = self.leg_interp(self.leg_fit(self.t), test_points)
         # g2_interp = self.leg_interp(
             # self.leg_fit(np.abs(self.dt_da)), test_points)
-        g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
+        # g3_interp = self.leg_interp(self.leg_fit(self.k)**2, test_points)
         # g4_interp = self.leg_interp(self.leg_fit(
             # np.conjugate(self.dt_da)/self.dt_da), test_points)
         # g5_interp = self.leg_interp(self.leg_fit(np.imag(self.t*np.conjugate(self.dt_da)/self.dt_da)), test_points)
@@ -160,7 +160,7 @@ class Panel:
                 np.linalg.norm(g1_eval)
             # error2 = np.linalg.norm(g2_interp - g2_eval) / \
                 # np.linalg.norm(g2_eval)
-            error3 = np.linalg.norm(g3_interp - g3_eval)
+            # error3 = np.linalg.norm(g3_interp - g3_eval)
             # error4 = np.sum(np.abs(g4_interp - g4_eval)) / \
                 # np.sum(np.abs(g4_eval))
             # error5 = np.sum(np.abs(g5_interp - g5_eval))/np.sum(np.abs(g5_eval))
@@ -178,7 +178,7 @@ class Panel:
         # ret = ret[~np.isnan(ret)]
         # return np.max(ret)
         
-        errors = np.array([error1, error3])
+        errors = np.array([error1])
         
         if np.all(np.isfinite(errors)):
             return np.max(errors)

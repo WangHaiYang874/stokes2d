@@ -124,7 +124,8 @@ class MultiplyConnectedPipe:
         p = (np.ceil(-np.log10(required_tol)) + 2).astype(int)
 
         # this is not enough for handling corners, but we don't have any corners.
-        # bent panel refinement is ignored for our solver.
+        # bent panel refinement is ignored here. 
+        # Although, I did set a tolerance for curvature for scaled curvature of each panel. 
 
         # building each boundary separately
         if n_jobs == 1:
@@ -139,8 +140,10 @@ class MultiplyConnectedPipe:
         z = self.lets[0].matching_pt
         self.z0 = z[0] + 1j*z[1]
 
-        # refining panels to handle the close panel interaction. 
+        #### refining panels to handle the close panel interaction. 
         
+        # this makes sure that evaluation at matching points are correct.
+        # this is crucial for the connecting algorithm.
         k0 = KDTree(np.array([i.matching_pt for i in self.lets]))
         
         for b in self.boundaries:
@@ -153,7 +156,7 @@ class MultiplyConnectedPipe:
                     
                     k1 = KDTree(np.array([p.x,p.y]).T)
                     
-                    near = k0.query_ball_tree(k1, r=2.95*s)
+                    near = k0.query_ball_tree(k1, r=6*s)
                     near = np.any([bool(n) for n in near])
                     
                     if not near:
@@ -165,7 +168,7 @@ class MultiplyConnectedPipe:
                     c.panels.insert(ip, p2)
                     c.panels.insert(ip, p1)
                     
-                    
+        # refining to avoid two boundary close to each other.             
         if len(self.boundaries) == 1:
             return # no need to refine the boundary curve
         for i,b in enumerate(self.boundaries):
@@ -182,7 +185,7 @@ class MultiplyConnectedPipe:
                     pts2 = np.array([pts2.real, pts2.imag]).T
                     k2 = KDTree(pts2,compact_nodes=False)
                     
-                    near = k1.query_ball_tree(k2, r=2.8*s)
+                    near = k1.query_ball_tree(k2, r=3*s)
                     near = np.any([bool(n) for n in near])
                     
                     if not near:
@@ -204,7 +207,7 @@ class MultiplyConnectedPipe:
         self.omegas = array([
             self.compute_omega(self.boundary_value(i), tol,max_iter,restart)
             for i in range(self.n_flows)])
-
+    
     def build_pressure_drops(self):
         pts = array([let.matching_pt for let in self.lets])
         pressure_drops = []

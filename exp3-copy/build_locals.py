@@ -22,7 +22,7 @@ while i < len(pipes):
         
 print("# pipes: ", len(pipes))
     
-required_tol = 1e-9
+required_tol = 1e-12
 
 for i,pipe in enumerate(pipes):
     
