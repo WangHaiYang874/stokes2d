@@ -18,7 +18,7 @@ shifts = [pt(0,0) for _ in pipes]
 
 t = time()
 for pipe in pipes:
-    pipe.build(required_tol=1e-13,fmm=True)
+    pipe.build(required_tol=1e-12,fmm=True)
     print(time()-t)
     t = time()
 

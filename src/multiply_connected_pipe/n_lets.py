@@ -6,7 +6,7 @@ pi = np.pi
 
 
 class NLets(SmoothPipe):
-    def __init__(self, ls, rs, corner_size=1e-1):
+    def __init__(self, ls, rs, corner_size=0.05):
 
         assert len(ls) == len(rs)
         assert np.all(rs > 0)

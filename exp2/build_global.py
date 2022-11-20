@@ -8,13 +8,10 @@ sys.path.insert(0,'./src/')
 
 from utils import *
 from multiply_connected_pipe import *
-from pipe_system import PipeSystem
 from abstract_pipe import *
 from multiply_connected_pipe import MultiplyConnectedPipeFromPipeSystem
 
-import numpy as np
 import pickle
-from time import time
 
 import os
 curr_dir = os.path.dirname(__file__)

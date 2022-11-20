@@ -91,6 +91,7 @@ class PipeSystem:
         G.add_nodes_from(self.vertices)
         G.add_edges_from(self.edges)
         self.cycles = nx.cycle_basis(G)
+        self.G = G
 
         # Equations:
 
