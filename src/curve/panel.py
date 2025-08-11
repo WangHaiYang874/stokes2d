@@ -249,19 +249,21 @@ class Panel:
 
     def cauchy_integral(self, targets):
         P, _ = self.get_pr(targets)
-        return np.linalg.solve(self.V.T, P.T).T @ self.omega_interp / (2j*np.pi)
+        try: 
+            return np.linalg.solve(self.V.T, P.T).T @ self.omega_interp / (2j*np.pi)
+        except np.linalg.LinAlgError:
+            return np.linalg.lstsq(self.V.T, P.T, rcond=None)[0].T @ self.omega_interp / (2j*np.pi)
 
     def hadamard_integral(self, targets):
         _, R = self.get_pr(targets)
-        return np.linalg.solve(self.V.T, R.T).T @ self.omega_interp / (2j*np.pi)
+        try: 
+            return np.linalg.solve(self.V.T, R.T).T @ self.omega_interp / (2j*np.pi)
+        except np.linalg.LinAlgError:
+            return np.linalg.lstsq(self.V.T, R.T, rcond=None)[0].T @ self.omega_interp / (2j*np.pi)
 
     def both_integrals(self, targets):
 
-        P, R = self.get_pr(targets)
-        C = np.linalg.solve(self.V.T, P.T).T @ self.omega_interp / (2j*np.pi)
-        H = np.linalg.solve(self.V.T, R.T).T @ self.omega_interp / (2j*np.pi)
-
-        return C, H
+        return self.cauchy_integral(targets), self.hadamard_integral(targets)
 
     def p1(self, targets):
         targ_norm = self.normalize(targets, with_affine=True)
