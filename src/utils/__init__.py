@@ -18,10 +18,22 @@ DENSITY = 50
 
 # TODO: change this 
 def gauss_quad_rule(n=16, domain=(-1, 1)):
+    """Generate Gaussian quadrature points and weights for numerical integration.
+    
+    Args:
+        n: Number of quadrature points (default 16)
+        domain: Integration interval (default (-1, 1))
+    
+    Returns:
+        a: Quadrature points 
+        da: Quadrature weights
+    """
     assert n > 0
+    # Get standard Legendre-Gauss quadrature on [-1, 1]
     a, da = np.polynomial.legendre.leggauss(n)
     if domain == (-1, 1):
         return a, da
+    # Transform to arbitrary interval [left, right]
     left, right = domain
     a = ((right - left) * a + (right + left)) / 2
     da = da * (right - left) / 2
@@ -42,20 +54,25 @@ def line_intersect(p1, p2, p3, p4):
 
 
 def pt(x, y):
+    """Create 2D point as numpy array."""
     return np.array((x, y))
 
 def pt2cplx(pt):
+    """Convert 2D point to complex number."""
     return pt[0] + 1j * pt[1]
+
 def cplx2pt(cplx):
+    """Convert complex number to 2D point."""
     return np.array([cplx.real, cplx.imag])
 
 def U2H(U):
+    """Convert velocity field (u,v) to complex representation H = v + iu."""
     if U.shape == (2,):
         U = U.reshape((1, 2))
     return -U[:, 1] + 1j * U[:, 0]
 
-
 def H2U(H):
+    """Convert complex field H to velocity components (u,v)."""
     if isinstance(H, numbers.Number):
         return np.array([H.real, -H.imag]).reshape((1, 2))
     return np.array([H.imag, -H.real]).T

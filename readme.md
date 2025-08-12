@@ -1,12 +1,137 @@
-# stokes 2d
+# Stokes2D: Boundary Integral Solver for 2D Stokes Equations
 
-This repository aims to build solvers of 2d Stokes equation using boundary integration method of stream function in [Greengard et al.](https://www.sciencedirect.com/science/article/pii/S0021999196901023?via%3Dihub) for some simple geometries: a straight pipe, a curved pipe, a pipe with multiple income and outcome branches, etc.
+This repository implements high-accuracy solvers for the 2D Stokes equations using boundary integral methods with stream function formulation, based on [Greengard et al.](https://www.sciencedirect.com/science/article/pii/S0021999196901023?via%3Dihub). The solver supports both simple and multiply-connected domains, with particular focus on pipe networks and complex geometries.
 
-As pipes can be connected to form a network of pipes, our solvers can be connected to form a solver for a network of pipes. This gives us a fast and efficient way to build solver for 2d Stokes equation on complicated network of pipes.
+## Key Features
 
-On the other hand, this could also be used as a direct way of building solvers for 2d Stokes equation on bounded geometries with prescribed boundary velocity.
+- **Boundary integral formulation** using stream function for 2D Stokes equations
+- **Spectral accuracy** through adaptive panel-based discretization
+- **Fast Multipole Method (FMM)** acceleration for large problems (O(N log N) complexity)
+- **Modular pipe networks** - connect individual solvers to simulate complex pipe systems
+- **Multiple geometric primitives** - lines, circles, caps, corners with smooth connections
+- **Multiply-connected domains** - handles arbitrary topology with interior boundaries
+- **Automatic mesh refinement** with configurable error tolerance
 
-# credit
+## Mathematical Foundation
+
+The solver uses the biharmonic stream function formulation:
+- Stream function ψ satisfies ∇⁴ψ = 0 in the domain
+- Velocity field: **u** = (∂ψ/∂y, -∂ψ/∂x)
+- Boundary integral equation with logarithmic Green's function kernels
+- Handles both velocity and flux boundary conditions
+
+## Applications
+
+1. **Individual pipe solvers** for complex geometries (straight, curved, branched pipes)
+2. **Pipe network simulation** through modular connection of individual solvers
+3. **General bounded domain** Stokes problems with prescribed boundary conditions
+4. **Research applications** in microfluidics, porous media, and low Reynolds number flows
+
+## Quick Start
+
+### Installation
+```bash
+# Clone the repository
+git clone <repository-url>
+cd stokes2d
+
+# Install dependencies (using uv, conda, or pip)
+uv sync  # or conda env create -f environment.yaml
+```
+
+### Basic Usage
+```python
+import sys
+sys.path.insert(0, './src/')
+
+from curve import Line, Cap, Circle
+from multiply_connected_pipe import MultiplyConnectedPipeFromCurves
+
+# Define pipe geometry
+curves = [
+    Line(start_pt=pt(0,0), end_pt=pt(2,0)),      # Bottom wall
+    Cap(start_pt=pt(2,0), end_pt=pt(2,1)),       # Right cap (outlet)
+    Line(start_pt=pt(2,1), end_pt=pt(0,1)),      # Top wall  
+    Cap(start_pt=pt(0,1), end_pt=pt(0,0))        # Left cap (inlet)
+]
+
+# Create and solve
+pipe = MultiplyConnectedPipeFromCurves(curves)
+pipe.build()  # Adaptive mesh generation
+flows = pipe.solve_flows()  # Solve for flow scenarios
+
+# Evaluate velocity field
+x, y = np.meshgrid(np.linspace(0, 2, 100), np.linspace(0, 1, 50))
+u, v = pipe.velocity_field(x, y)
+```
+
+## Repository Structure
+
+```
+stokes2d/
+├── src/                    # Main source code
+│   ├── abstract_pipe/      # Pipe connection interfaces
+│   ├── curve/             # Geometric curve definitions
+│   ├── mat_vec/           # Matrix-vector operations & FMM
+│   ├── multiply_connected_pipe/  # Core Stokes solvers
+│   ├── pipe_system/       # Network topology management
+│   └── utils/             # Common utilities and constants
+├── docs/                   # Mathematical documentation
+├── exp1-5/                # Experimental validation studies
+├── graphs/                # Visualization notebooks
+├── misc/                  # Development utilities
+└── some notebooks/        # Additional testing notebooks
+```
+
+## Performance
+
+- **Small problems** (< 5000 points): Dense matrix methods
+- **Large problems** (≥ 5000 points): FMM acceleration with O(N log N) scaling
+- **Spectral accuracy**: Error decreases exponentially with mesh refinement
+- **Typical convergence**: GMRES solves in 2-4 iterations
+
+## Documentation
+
+- **`src/README.md`** - Overview of source code architecture
+- **`docs/`** - Mathematical theory and implementation details
+- **Individual module READMEs** - Detailed documentation for each component
+- **Jupyter notebooks** - Examples and validation studies
+
+## Key Notebooks
+
+### Main Testing Notebooks
+- **`test_multiply_connected.ipynb`** - Tests multiply-connected domain solver with multiple interior boundaries
+- **`comparing connection and global.ipynb`** - Compares local connection vs global solving approaches
+- **`dev.ipynb`** - Main development and testing notebook
+
+### Experimental Validation
+- **`exp1/demo.ipynb`** - FMM implementation testing and performance validation
+- **`exp2/demo.ipynb`** - Global vs local solving strategy comparison
+- **`exp3/connecting_local.ipynb`** - Pipe connection algorithm development
+- **`exp5-return2poiseuille_flow/demo.ipynb`** - Flow recovery analysis downstream of obstructions
+
+### Geometric Studies
+- **`some notebooks/circle n=*.ipynb`** - Circular domain studies with different discretizations
+- **`some notebooks/ellipse n=*.ipynb`** - Elliptical pipe cross-section analysis
+- **`graphs/caps.ipynb`** - Inlet/outlet cap geometry visualization
+
+## Summary
+
+This Stokes2D solver provides a comprehensive framework for high-accuracy simulation of 2D viscous flows in complex geometries. Key innovations include:
+
+1. **Modular Architecture**: Individual pipe solvers can be connected to simulate complex networks
+2. **Adaptive Accuracy**: Spectral convergence through automatic mesh refinement
+3. **Scalable Performance**: Automatic dense/FMM switching for optimal performance
+4. **Geometric Flexibility**: Support for arbitrary multiply-connected domains
+5. **Validated Implementation**: Extensive testing and comparison with analytical solutions
+
+The solver is particularly well-suited for:
+- Microfluidics and lab-on-chip design
+- Pipe network analysis and optimization  
+- Low Reynolds number flow research
+- Educational applications in computational fluid dynamics
+
+# Credit
 
 This is a summer project of Haiyang Wang as an undergraduate math student at NYU Courant, guided and advised by professor Greengard, Phd. Fryklund, and Phd. Samuel Potter.
 

@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0,'./src/')
+sys.path.insert(0,'../src/')
 from curve import *
 from utils import *
 import numpy as np

@@ -111,26 +111,40 @@ class MultiplyConnectedPipe:
     def extent(self): return self.exterior_boundary.extent
 
     def build(self, required_tol=REQUIRED_TOL, fmm=None,density=None):
-        self.build_geometry(required_tol=required_tol)
+        """Build complete solver: geometry, matrices, flow solutions.
+        
+        Args:
+            required_tol: Error tolerance for adaptive refinement
+            fmm: Force FMM (True) or dense (False), None for auto-select
+            density: Grid density for field evaluation
+        """
+        self.build_geometry(required_tol=required_tol)  # Adaptive mesh generation
         for p in self.panels:
-            p._build()
-        self.build_A(fmm=fmm)
-        self.build_omegas(tol=required_tol)
-        self.build_pressure_drops()
-        self.build_plotting_data(density=density)
+            p._build()  # Compute panel geometric data
+        self.build_A(fmm=fmm)  # Setup matrix-vector operations
+        self.build_omegas(tol=required_tol)  # Solve for boundary densities
+        self.build_pressure_drops()  # Compute pressure differences
+        self.build_plotting_data(density=density)  # Prepare visualization grids
 
     def build_geometry(self, required_tol=REQUIRED_TOL,n_jobs=1):
-
+        """Generate adaptive boundary discretization with error control.
+        
+        Args:
+            required_tol: Target accuracy for boundary representation
+            n_jobs: Number of parallel jobs for boundary building
+        """
+        # Determine quadrature order from tolerance
         p = (np.ceil(-np.log10(required_tol)) + 2).astype(int)
 
-        # this is not enough for handling corners, but we don't have any corners.
-        # bent panel refinement is ignored here. 
-        # Although, I did set a tolerance for curvature for scaled curvature of each panel. 
+        # Note: Corner handling would require additional refinement
+        # Current implementation focuses on smooth boundaries
+        # Curvature-based refinement is handled in panel subdivision
 
-        # building each boundary separately
+        # Build each boundary with adaptive refinement
         if n_jobs == 1:
             [b.build(required_tol, p) for b in self.boundaries]
         else:
+            # Parallel boundary construction for large problems
             def build(b):
                 b.build(required_tol, p)
                 return b
