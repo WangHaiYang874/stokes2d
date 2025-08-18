@@ -8,3 +8,4 @@ from .pipe_with_diff_r import PipeWithDifferentRadius
 from .smooth_pipe import SmoothPipe
 from .straight_pipe import StraightPipe
 from .t_shaped import TShaped
+from .l_shaped import LShaped

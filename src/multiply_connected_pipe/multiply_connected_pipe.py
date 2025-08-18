@@ -215,7 +215,16 @@ class MultiplyConnectedPipe:
             for i in range(self.n_flows)])
     
     def build_pressure_drops(self):
+        
+        """
+        dimension of the pressure drop is (n_flows, n_lets-1)
+        
+        pressure_drops[i,j] that for the i-th flow, is
+        the pressure of the (j+1)-th at let minus the pressure at the 0-th let. 
+        """
         pts = array([let.matching_pt for let in self.lets])
+        
+        
         pressure_drops = []
         for omega in self.omegas:
             pressure, _ = self.pressure_and_vorticity(
@@ -247,6 +256,17 @@ class MultiplyConnectedPipe:
 
     def boundary_value(self, flow_index):
         """Flow goes in the inlet and out the outlet. """
+        '''
+        the first boundary value is a flow from the 
+        0-th let to the 1st let
+        
+        the second boundary value is a flow from the 
+        0-th let to the 2nd let. 
+        
+        etc. 
+        
+        '''
+        
         o = self.let_index2curve_index[flow_index+1]  # outlet
         i = self.let_index2curve_index[0]             # inlet
         ret = []

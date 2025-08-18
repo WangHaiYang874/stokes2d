@@ -33,6 +33,11 @@ This module contains common utilities, constants, and helper functions used thro
 - `U2H(U)` - Converts velocity field to complex representation
 - `H2U(H)` - Converts complex field to velocity components
 
+### Rotation Operations
+- `rotation_matrix_2d(theta)` - Creates 2D rotation matrix for angle theta
+- `rotate_point_2d(point, theta)` - Rotates 2D point counter-clockwise
+- `rotate_vector_field_2d(u, v, theta)` - Rotates velocity field components
+
 These utilities provide the mathematical foundation and consistent parameter settings for the entire Stokes2D solver framework.
 
 ## Classes
@@ -56,6 +61,11 @@ intersection = line_intersect(p1, p2, p3, p4)
 # Coordinate conversions
 z = pt2cplx(pt(1, 2))  # 1 + 2j
 velocity = U2H(np.array([u, v]))  # Convert to complex representation
+
+# Rotation operations
+R = rotation_matrix_2d(np.pi/4)  # 45-degree rotation matrix
+rotated_pt = rotate_point_2d(pt(1, 0), np.pi/2)  # Rotate point 90°
+u_rot, v_rot = rotate_vector_field_2d(u_field, v_field, np.pi/3)  # Rotate velocity field
 
 # Solver monitoring
 callback = Callback()

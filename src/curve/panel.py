@@ -1,4 +1,4 @@
-from distutils.log import warn
+import warnings
 from random import gauss
 from utils import *
 

@@ -29,7 +29,8 @@ Connection point data structures defining inlet/outlet properties:
 
 ### Spatial Transformations
 - `RealPipe` supports translation via shift parameters
-- Rotation support planned but not yet implemented
+- **Rotation support**: Counter-clockwise rotation by arbitrary angles [0, 2π)
+- **Transformation order**: Rotation applied first, then translation
 - Maintains geometric consistency during transformations
 
 ### Flow Management
@@ -40,10 +41,17 @@ Connection point data structures defining inlet/outlet properties:
 ## Usage Example
 
 ```python
-# Create pipe from solved geometry
+# Create pipe with translation only
 real_pipe = RealPipe(multiply_connected_pipe, shift_x=1.0, shift_y=0.5)
 
-# Check if two lets can connect
+# Create pipe with rotation (90° counter-clockwise)
+rotated_pipe = RealPipe(multiply_connected_pipe, rotation=np.pi/2)
+
+# Create pipe with rotation and translation (rotation applied first)
+transformed_pipe = RealPipe(multiply_connected_pipe, 
+                           shift_x=2.0, shift_y=1.0, rotation=np.pi/4)
+
+# Check if two lets can connect (rotation affects matching)
 if let1.almost_match(let2):
     # Connect pipes in network
     pipe_system.connect(pipe1, let1_idx, pipe2, let2_idx)

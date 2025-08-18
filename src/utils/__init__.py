@@ -6,7 +6,7 @@ from .callback import Callback
 
 ERR = 1e-17 # the quadrature error setted for scipy.integrate.quad
 THRESHOLD = 1e-10 # for matcthing let. 
-FMM_EPS = 5e-16
+FMM_EPS = 5e-14
 
 REQUIRED_TOL = 1e-8
 DOMAIN_THRESHOLD = 1e-6 # The minimal size of interval of 16 pts gauss quad rule
@@ -76,3 +76,54 @@ def H2U(H):
     if isinstance(H, numbers.Number):
         return np.array([H.real, -H.imag]).reshape((1, 2))
     return np.array([H.imag, -H.real]).T
+
+def rotation_matrix_2d(theta):
+    """Create 2D rotation matrix for counter-clockwise rotation by angle theta.
+    
+    Args:
+        theta: Rotation angle in radians [0, 2π)
+    
+    Returns:
+        2x2 rotation matrix
+    """
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta) 
+    return np.array([[cos_theta, -sin_theta],
+                     [sin_theta, cos_theta]])
+
+def rotate_point_2d(point, theta):
+    """Rotate a 2D point counter-clockwise by angle theta.
+    
+    Args:
+        point: 2D point as numpy array [x, y]
+        theta: Rotation angle in radians
+        
+    Returns:
+        Rotated 2D point
+    """
+    if theta == 0:
+        return point.copy()
+    R = rotation_matrix_2d(theta)
+    return R @ point
+
+def rotate_vector_field_2d(u, v, theta):
+    """Rotate velocity field components counter-clockwise by angle theta.
+    
+    Args:
+        u, v: Velocity field components (same shape)
+        theta: Rotation angle in radians
+        
+    Returns:
+        u_rot, v_rot: Rotated velocity components
+    """
+    if theta == 0:
+        return u.copy(), v.copy()
+        
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+    
+    # Apply rotation transformation: [u_rot, v_rot] = R @ [u, v]
+    u_rot = cos_theta * u - sin_theta * v
+    v_rot = sin_theta * u + cos_theta * v
+    
+    return u_rot, v_rot

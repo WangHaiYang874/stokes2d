@@ -15,6 +15,8 @@ class Let:
         return np.array([self.x, self.y])
 
     def almost_match(self, other: 'Let', threshold=THRESHOLD):
+        
+        
         return np.max(np.abs([
             np.linalg.norm(self.pos - other.pos),       # same position
             self.dia - other.dia,                       # same diameter

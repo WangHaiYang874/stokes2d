@@ -19,7 +19,7 @@ class SmoothPipe(MultiplyConnectedPipe):
     and then it should automatically smooth the corners.
     """
 
-    def __init__(self, points, lines, corner_size=1e-1) -> None:
+    def __init__(self, points, lines, corner_size=1) -> None:
 
         super().__init__()
         assert len(points) == len(lines)
@@ -44,7 +44,7 @@ class SmoothPipe(MultiplyConnectedPipe):
         bdr = Boundary(curves)
         self.boundaries = [bdr]
 
-def smooth_corners(curves, corner_size=1e-1):
+def smooth_corners(curves, corner_size=1):
 
     i = next_corner(curves)
 
@@ -57,8 +57,15 @@ def smooth_corners(curves, corner_size=1e-1):
         q = l1.end_pt
         r = l2.end_pt
 
-        corner_size = min(corner_size, np.linalg.norm(
-            p - q) / 2, np.linalg.norm(r - q) / 2)
+
+        corner_size = min(corner_size, 
+                          np.linalg.norm(p - q) / 2, 
+                          np.linalg.norm(r - q) / 2)
+        
+        print(corner_size)
+        
+        
+        
         assert (corner_size > 1e-3)
 
         start_pt = q + (((p - q) / np.linalg.norm(p - q)) * corner_size)

@@ -201,10 +201,13 @@ class PipeSystem:
         let_index = 0
         pressure_at_let = 0
 
-        while True:
+        while unexplored:
 
             # taking data
             # marking explored
+            
+            print(unexplored)
+            
             unexplored.remove(pipe_index)
             
             pipe = self.pipes[pipe_index]
@@ -222,9 +225,6 @@ class PipeSystem:
             o_field.append(o)
 
 
-            if not unexplored:
-                break
-            
             # updating opens
 
             for other_let_index in range(pipe.n_lets):
@@ -247,6 +247,9 @@ class PipeSystem:
                 raise Exception('No more open pipes')
             
             pipe_index, let_index, pressure_at_let = open.pop()
+            
+            
+        print('system built')
 
         xs = np.concatenate(xs)
         ys = np.concatenate(ys)
