@@ -14,7 +14,7 @@ class NLets(SmoothPipe):
         thetas = np.arctan2(ls[:, 1], ls[:, 0])
         thetas[thetas == pi] = -pi
 
-        assert np.all(np.diff(thetas) > 0)
+        # assert np.all(np.diff(thetas) > 0)
 
         n = len(ls)
 

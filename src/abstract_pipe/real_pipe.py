@@ -230,28 +230,33 @@ class RealPipe(AbstractPipe):
         return pts
         
     
-    def plot_plyg_bdr(self, ax, color='k'):
+    def plot_plyg_bdr(self, ax, color='k',linewidth_coef=1):
         
         curves = self.prototye.exterior_boundary.curves
+        
+        thin_linewidth = 1*linewidth_coef
+        thick_linewidth = 2*linewidth_coef
+        
         for c1,c2 in zip(curves,curves[1:]+[curves[0]]):
             if isinstance(c1,Corner):
                 pts = [c1.start_pt] + [[c1.x[i], c1.y[i]] for i in range(len(c1.a))] + [c2.start_pt]
                 pts = np.array(pts)
                 pts = self.transform(pts)                
-                ax.plot(pts[:,0],pts[:,1],'-',linewidth=2,color=color)
-                ax.plot(pts[:,0],pts[:,1],'-',linewidth=4,color=color)
+                ax.plot(pts[:,0],pts[:,1],'-',linewidth=thin_linewidth,color=color)
+                ax.plot(pts[:,0],pts[:,1],'--',linewidth=thick_linewidth,color=color)
                 
             elif isinstance(c1,Cap):
                 pts = [c1.start_pt] + [c2.start_pt]
                 pts = np.array(pts)
                 pts = self.transform(pts)
-                ax.plot(pts[:,0],pts[:,1],'--',linewidth=1,color=color)
+                ax.plot(pts[:,0],pts[:,1],'--',linewidth=thin_linewidth,color=color)
             else: 
                 pts = [c1.start_pt] + [c2.start_pt]
                 pts = np.array(pts)
                 pts = self.transform(pts)
-                ax.plot(pts[:,0],pts[:,1],'-',linewidth=2,color=color)
-                ax.plot(pts[:,0],pts[:,1],'-',linewidth=4,color=color)
+                ax.plot(pts[:,0],pts[:,1],'-',linewidth=thin_linewidth,color=color)
+                ax.plot(pts[:,0],pts[:,1],'--',linewidth=thick_linewidth,color=color)
+                
             
     
     # def clean_prototype(self):

@@ -88,7 +88,7 @@ class Boundary:
         if not closed: return np.array(pts)
         return np.array(pts + [pts[0]])    
     
-    def plot_plyg_bdr(self,ax,color='b'):
+    def plot_plyg_bdr(self,ax,color='b',linewidth_coef=1):
         
         '''
         plot the polygon boundary of the pipe. 
@@ -103,18 +103,18 @@ class Boundary:
             if isinstance(c1,Corner):
                 pts = [c1.start_pt] + [[c1.x[i], c1.y[i]] for i in range(len(c1.a))] + [c2.start_pt]
                 pts = np.array(pts)
-                ax.plot(pts[:,0],pts[:,1],'-',linewidth=2,color=color)
-                ax.plot(pts[:,0],pts[:,1],'--',linewidth=4,color=color)
+                ax.plot(pts[:,0],pts[:,1],'-',linewidth=2*linewidth_coef,color=color)
+                ax.plot(pts[:,0],pts[:,1],'--',linewidth=4*linewidth_coef,color=color)
                 
             elif isinstance(c1,Cap):
                 pts = [c1.start_pt] + [c2.start_pt]
                 pts = np.array(pts)
-                ax.plot(pts[:,0],pts[:,1],'--',linewidth=1,color=color)
+                ax.plot(pts[:,0],pts[:,1],'--',linewidth=1*linewidth_coef,color=color)
             else: 
                 pts = [c1.start_pt] + [c2.start_pt]
                 pts = np.array(pts)
-                ax.plot(pts[:,0],pts[:,1],'-',linewidth=2,color=color)
-                ax.plot(pts[:,0],pts[:,1],'--',linewidth=4,color=color)
+                ax.plot(pts[:,0],pts[:,1],'-',linewidth=2*linewidth_coef,color=color)
+                ax.plot(pts[:,0],pts[:,1],'--',linewidth=4*linewidth_coef,color=color)
             
         
     
